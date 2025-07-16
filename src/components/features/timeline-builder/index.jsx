@@ -1,124 +1,141 @@
 import React, { useState, useEffect } from 'react';
 import TimelineControls from './TimelineControls';
 import TimelineVisualization from './TimelineVisualization';
-import ItemDetailsPanel from './ItemDetailsPanel';
-import './TimelineBuilder.css';
 
 /**
  * Main TimelineBuilder component that integrates all timeline sub-components
  * Manages state and data flow between components
  */
-const TimelineBuilder = ({ context }) => {
+const TimelineBuilder = ({ context, boardItems = [] }) => {
   const [timelineItems, setTimelineItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [zoomLevel, setZoomLevel] = useState(1);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [filterText, setFilterText] = useState('');
+  const [selectedItemIds, setSelectedItemIds] = useState([]);
+  const [backgroundColor, setBackgroundColor] = useState('#2d2d2d');
+  const [timeScale, setTimeScale] = useState('weeks'); // 'days', 'weeks', 'months', 'quarters', 'years'
+  const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
 
-  // Fetch timeline data from monday.com when context is available
+  // Detect browser dark mode preference
   useEffect(() => {
-    if (context) {
-      // TODO: Implement data fetching from monday.com using the SDK
-      // For now, we'll use mock data
-      const mockData = [
+    // Check if window is available (for SSR compatibility)
+    if (typeof window !== 'undefined') {
+      // Check initial preference
+      const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      setIsDarkMode(darkModeMediaQuery.matches);
+      
+      // Set up listener for changes
+      const handleChange = (e) => {
+        setIsDarkMode(e.matches);
+      };
+      
+      // Modern way to listen for changes
+      darkModeMediaQuery.addEventListener('change', handleChange);
+      
+      // Cleanup
+      return () => {
+        darkModeMediaQuery.removeEventListener('change', handleChange);
+      };
+    }
+  }, []);
+
+  // Process board items into timeline items when they change
+  useEffect(() => {
+    if (!boardItems || boardItems.length === 0) {
+      // If no board items are available yet,
+      // show empty state with message that no items are available
+      // with a 'task' and 'date' column
+      const emptyState = [
         {
-          id: '1',
-          name: 'Design Phase',
-          startDate: '2025-07-01',
-          endDate: '2025-07-15',
-          status: 'Done',
-          description: 'Complete all design work for the project',
-          assignee: 'Alice Smith'
-        },
-        {
-          id: '2',
-          name: 'Development Sprint 1',
-          startDate: '2025-07-16',
-          endDate: '2025-07-30',
-          status: 'In Progress',
-          description: 'Implement core features',
-          assignee: 'Bob Johnson'
-        },
-        {
-          id: '3',
-          name: 'Testing',
-          startDate: '2025-07-25',
-          endDate: '2025-08-05',
-          status: 'Not Started',
-          description: 'Test all implemented features',
-          assignee: 'Charlie Brown'
+          id: 'empty',
+          name: 'No items available',
+          startDate: 'N/A',
+          endDate: 'N/A',
+          status: 'N/A',
+          description: 'No items available',
+          assignee: 'N/A'
         }
       ];
-      
-      setTimelineItems(mockData);
-      setFilteredItems(mockData);
-      setIsLoading(false);
-    }
-  }, [context]);
+      setTimelineItems(emptyState);
+      setFilteredItems(emptyState);
+    } else {
+      // Transform monday.com board items into timeline items
+      const transformedItems = boardItems.map(item => {
+        return {
+          id: item.id,
+          name: item.name,
+          dueDate: item.due_date
+        };
+      });
 
-  // Filter items when filterText changes
+      setTimelineItems(transformedItems);
+      setFilteredItems(transformedItems);
+      
+      // Initially select all items
+      setSelectedItemIds(transformedItems.map(item => item.id));
+    }
+    
+    setIsLoading(false);
+  }, [boardItems]);
+
+  // Filter items based on selected IDs
   useEffect(() => {
     if (!timelineItems.length) return;
     
-    const filtered = filterText
-      ? timelineItems.filter(item => 
-          item.name.toLowerCase().includes(filterText.toLowerCase()) ||
-          item.description?.toLowerCase().includes(filterText.toLowerCase()) ||
-          item.assignee?.toLowerCase().includes(filterText.toLowerCase())
-        )
+    const filtered = selectedItemIds.length > 0
+      ? timelineItems.filter(item => selectedItemIds.includes(item.id))
       : timelineItems;
     
     setFilteredItems(filtered);
-  }, [filterText, timelineItems]);
-
-  // Handle zoom controls
-  const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 0.5, 3));
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel(prev => Math.max(prev - 0.5, 0.5));
-  };
+  }, [selectedItemIds, timelineItems]);
 
   // Handle item selection
   const handleItemSelect = (item) => {
     setSelectedItem(item);
   };
 
-  // Handle filter change
-  const handleFilterChange = (value) => {
-    setFilterText(value);
+  // Handle item selection change from dropdown
+  const handleItemSelectionChange = (selectedValues) => {
+    setSelectedItemIds(selectedValues || []);
   };
 
-  // Close details panel
-  const handleCloseDetails = () => {
-    setSelectedItem(null);
+  // Handle background color change
+  const handleBackgroundColorChange = (color) => {
+    setBackgroundColor(color);
+  };
+
+  // Handle time scale change
+  const handleTimeScaleChange = (scale) => {
+    setTimeScale(scale);
   };
 
   return (
-    <div className="timeline-builder">
-      <div className="timeline-builder__controls">
-        <TimelineControls 
-          onZoomIn={handleZoomIn} 
-          onZoomOut={handleZoomOut} 
-          onFilterChange={handleFilterChange}
-        />
-      </div>
-      
-      <div className="timeline-builder__main">
+    <div className="timeline-builder" style={{
+      display: 'flex',
+      margin: '16px',
+    }}>
+      <div className="timeline-builder__main" style={{
+        flex: 1,
+      }}>
         <TimelineVisualization 
           items={filteredItems}
           isLoading={isLoading}
-          zoomLevel={zoomLevel}
           onItemSelect={handleItemSelect}
+          backgroundColor={backgroundColor}
+          timeScale={timeScale}
         />
       </div>
       
-      <div className="timeline-builder__details">
-        <ItemDetailsPanel 
-          selectedItem={selectedItem}
-          onClose={handleCloseDetails}
+      <div className="timeline-builder__controls">
+        <TimelineControls 
+          items={timelineItems}
+          selectedItems={selectedItemIds}
+          onItemSelectionChange={handleItemSelectionChange}
+          backgroundColor={backgroundColor}
+          onBackgroundColorChange={handleBackgroundColorChange}
+          timeScale={timeScale}
+          onTimeScaleChange={handleTimeScaleChange}
+          isDarkMode={isDarkMode}
         />
       </div>
     </div>
