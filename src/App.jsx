@@ -1,38 +1,102 @@
 import React from "react";
 import { useState, useEffect } from "react";
-import "./App.css";
 import mondaySdk from "monday-sdk-js";
 import "@vibe/core/tokens";
 //Explore more Monday React Components here: https://vibe.monday.com/
 import TimelineBuilder from './components/features/timeline-builder';
-import { Box } from "@vibe/core";
+import { Box, Loader } from "@vibe/core";
 
 // Usage of mondaySDK example, for more information visit here: https://developer.monday.com/apps/docs/introduction-to-the-sdk/
 const monday = mondaySdk();
 
 const App = () => {
-  const [context, setContext] = useState();
+  const [context, setContext] = useState(null);
+  const [boardItems, setBoardItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
+  // Set up context listener
   useEffect(() => {
     // Notice this method notifies the monday platform that user gains a first value in an app.
     // Read more about it here: https://developer.monday.com/apps/docs/mondayexecute#value-created-for-user/
     monday.execute("valueCreatedForUser");
 
-    // TODO: set up event listeners, Here`s an example, read more here: https://developer.monday.com/apps/docs/mondaylisten/
+    // Set up event listeners for context changes
     monday.listen("context", (res) => {
       setContext(res.data);
     });
+
+    return () => {
+      // Clean up listeners when component unmounts
+      monday.removeEventListener("context");
+    };
   }, []);
+  
+  // Fetch board items when context changes and has a boardId
+  useEffect(() => {
+    const fetchBoardItems = async () => {
+      if (!context || !context.boardId) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const query = `query {
+            boards(ids: ${context.boardId}) {
+              items_page(limit: 500) {
+                cursor
+                items {
+                  id
+                  name
+                  group {
+                    id
+                  }
+                  column_values {
+                    id
+                  }
+                }
+              }
+            }
+          }`;
+                
+        const response = await monday.api(query);
+        
+        if (response.data && response.data.boards && response.data.boards.length > 0) {
+          setBoardItems(response.data.boards[0].items_page.items);
+          console.log('Board items fetched:', response.data.boards[0].items_page.items);
+        } else {
+          console.warn('No board data found');
+          setBoardItems([]);
+        }
+      } catch (err) {
+        console.error('Error fetching board items:', err);
+        setError('Failed to load board items');
+        setBoardItems([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchBoardItems();
+  }, [context?.boardId]); // Only re-run when boardId changes
 
   return (
     <div className="App">
       <Box
-          style={{
-            width: '100%',
-            height: '100%',
-          }}
-        >
-        <TimelineBuilder context={context} />
+        style={{
+          width: '100%',
+          height: '100%',
+        }}
+      >
+        {isLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+            <Loader size="large" />
+          </div>
+        ) : error ? (
+          <div style={{ color: 'red' }}>{error}</div>
+        ) : (
+          <TimelineBuilder context={context} boardItems={boardItems} />
+        )}
       </Box>
     </div>
   );
