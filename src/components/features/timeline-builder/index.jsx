@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import TimelineControls from './TimelineControls';
 import TimelineVisualization from './TimelineVisualization';
+import { ThemeProvider } from "@vibe/core";
 
 /**
  * Main TimelineBuilder component that integrates all timeline sub-components
@@ -14,30 +15,7 @@ const TimelineBuilder = ({ context, boardItems = [] }) => {
   const [selectedItemIds, setSelectedItemIds] = useState([]);
   const [backgroundColor, setBackgroundColor] = useState('#2d2d2d');
   const [timeScale, setTimeScale] = useState('weeks'); // 'days', 'weeks', 'months', 'quarters', 'years'
-  const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
-
-  // Detect browser dark mode preference
-  useEffect(() => {
-    // Check if window is available (for SSR compatibility)
-    if (typeof window !== 'undefined') {
-      // Check initial preference
-      const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      setIsDarkMode(darkModeMediaQuery.matches);
-      
-      // Set up listener for changes
-      const handleChange = (e) => {
-        setIsDarkMode(e.matches);
-      };
-      
-      // Modern way to listen for changes
-      darkModeMediaQuery.addEventListener('change', handleChange);
-      
-      // Cleanup
-      return () => {
-        darkModeMediaQuery.removeEventListener('change', handleChange);
-      };
-    }
-  }, []);
+  const [timelineTitle, setTimelineTitle] = useState('Event Timeline'); // Default title
 
   // Process board items into timeline items when they change
   useEffect(() => {
@@ -109,12 +87,18 @@ const TimelineBuilder = ({ context, boardItems = [] }) => {
     setTimeScale(scale);
   };
 
+  // Handle title change
+  const handleTitleChange = (newTitle) => {
+    setTimelineTitle(newTitle);
+  };
+
   return (
-    <div className="timeline-builder" style={{
+    <ThemeProvider systemTheme={context?.theme}>
+    <div style={{
       display: 'flex',
       margin: '16px',
     }}>
-      <div className="timeline-builder__main" style={{
+      <div style={{
         flex: 1,
       }}>
         <TimelineVisualization 
@@ -123,6 +107,7 @@ const TimelineBuilder = ({ context, boardItems = [] }) => {
           onItemSelect={handleItemSelect}
           backgroundColor={backgroundColor}
           timeScale={timeScale}
+          timelineTitle={timelineTitle}
         />
       </div>
       
@@ -135,10 +120,12 @@ const TimelineBuilder = ({ context, boardItems = [] }) => {
           onBackgroundColorChange={handleBackgroundColorChange}
           timeScale={timeScale}
           onTimeScaleChange={handleTimeScaleChange}
-          isDarkMode={isDarkMode}
+          timelineTitle={timelineTitle}
+          onTitleChange={handleTitleChange}
         />
       </div>
     </div>
+    </ThemeProvider>
   );
 };
 
