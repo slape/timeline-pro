@@ -5,7 +5,7 @@ import { Loader, EmptyState, Tooltip } from '@vibe/core';
  * Main visualization component for the Timeline Builder
  * Displays timeline items in a chronological format
  */
-const TimelineVisualization = ({ items, isLoading, zoomLevel, onItemSelect, backgroundColor = '#2d2d2d', timeScale = 'quarters' }) => {
+const TimelineVisualization = ({ items, isLoading, onItemSelect, backgroundColor = '#2d2d2d', timeScale = 'quarters', timelineTitle = 'Event Timeline' }) => {
   if (isLoading) {
     return (
       <div className="timeline-visualization timeline-visualization--loading">
@@ -20,7 +20,7 @@ const TimelineVisualization = ({ items, isLoading, zoomLevel, onItemSelect, back
         <EmptyState 
           title="No timeline items to display"
           description="Add items to your board to see them on the timeline"
-          visual="timeline"
+          visual={<img alt="No items found" height={184} src="static/media/image.58816df3.png" width={280}/>}
         />
       </div>
     );
@@ -117,7 +117,7 @@ const TimelineVisualization = ({ items, isLoading, zoomLevel, onItemSelect, back
         fontSize: '24px',
         fontWeight: '500'
       }}>
-        Event Timeline ({timeScale.charAt(0).toUpperCase() + timeScale.slice(1)})
+        {timelineTitle}
       </h2>
       
       {/* Timeline visualization */}

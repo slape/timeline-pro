@@ -2,7 +2,6 @@ import React from "react";
 import { useState, useEffect } from "react";
 import mondaySdk from "monday-sdk-js";
 import "@vibe/core/tokens";
-//Explore more Monday React Components here: https://vibe.monday.com/
 import TimelineBuilder from './components/features/timeline-builder';
 import { Box, Loader } from "@vibe/core";
 
@@ -12,6 +11,7 @@ const monday = mondaySdk();
 const App = () => {
   const [context, setContext] = useState(null);
   const [boardItems, setBoardItems] = useState([]);
+  const [itemIds, setItemIds] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -26,12 +26,17 @@ const App = () => {
       setContext(res.data);
     });
 
+    monday.listen("itemIds", (res) => {
+      setItemIds(res.data);
+    });
+
     return () => {
       // Clean up listeners when component unmounts
       monday.removeEventListener("context");
     };
   }, []);
-  
+  console.log(context);
+  console.log(itemIds);
   // Fetch board items when context changes and has a boardId
   useEffect(() => {
     const fetchBoardItems = async () => {
@@ -81,6 +86,7 @@ const App = () => {
   }, [context?.boardId]); // Only re-run when boardId changes
 
   return (
+    
     <div className="App">
       <Box
         style={{
@@ -99,7 +105,7 @@ const App = () => {
         )}
       </Box>
     </div>
-  );
+    );
 };
 
 export default App;

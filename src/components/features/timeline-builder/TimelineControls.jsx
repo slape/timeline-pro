@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Button, Text, Divider, Checkbox, ExpandCollapse, Icon, ColorPicker, Dropdown } from '@vibe/core';
+import { Text, Divider, Checkbox, ExpandCollapse, Icon, Accordion, AccordionItem, Dropdown, TextField, Flex } from '@vibe/core';
 
 /**
  * Controls component for the Timeline Builder
  * Provides zoom and item selection functionality as a side panel
  */
-const TimelineControls = ({ items, selectedItems, onItemSelectionChange, backgroundColor, onBackgroundColorChange, timeScale, onTimeScaleChange, isDarkMode = true }) => {
-  const [isItemsExpanded, setIsItemsExpanded] = useState(true);
+const TimelineControls = ({ items, selectedItems, onItemSelectionChange, backgroundColor, onBackgroundColorChange, timeScale, onTimeScaleChange, timelineTitle, onTitleChange }) => {
+  const [isItemsExpanded, setIsItemsExpanded] = useState(false);
 
   // Handle checkbox changes
   const handleCheckboxChange = (itemId) => {
@@ -19,85 +19,63 @@ const TimelineControls = ({ items, selectedItems, onItemSelectionChange, backgro
     }
   };
 
-  // Use browser dark mode preference for text color
-  const textColor = isDarkMode ? 'white' : '#333333';
-  const secondaryTextColor = isDarkMode ? '#aaaaaa' : '#666666';
-
   return (
-    <div className="timeline-controls" style={{
+    <div style={{
       height: '100%',
       padding: '10px',
       width: '200px',
       display: 'flex',
       flexDirection: 'column',
-      color: textColor
     }}>
-      <Text style={{ color: textColor }}>
-        Event Timeline Controls
-      </Text>
-      
-      <Divider />
-      
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <div 
-          style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            cursor: 'pointer'
-          }}
-          onClick={() => setIsItemsExpanded(!isItemsExpanded)}
-        >
-          <Icon
-            iconName={isItemsExpanded ? "ChevronUp" : "ChevronDown"}
-            iconSize={16}
+      <div>
+        <Text style={{ marginBottom: '4px' }}>
+          Title
+        </Text>
+        <div style={{ 
+          padding: '8px',
+          borderRadius: '4px'
+        }}>
+          <TextField
+            value={timelineTitle}
+            onChange={(e) => onTitleChange(e.target.value)}
           />
         </div>
-        
-        <ExpandCollapse
-          title={<Text style={{ color: textColor }}>Select Events</Text>}
+      </div>
+      <Divider />
+      <ExpandCollapse
+          title={<Text>Select Events</Text>}
           expanded={isItemsExpanded}
           hideBorder={true}
-          defaultOpenState={true}
+          defaultOpenState={false}
         >
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '8px',
-            maxHeight: '300px',
-            overflow: 'auto',
-            padding: '8px'
-          }}>
-            
+          <Flex direction="column" gap={4} align="start" width="190px">
             {items.map(item => (
               <Checkbox
                 key={item.id}
                 checked={selectedItems.includes(item.id)}
                 onChange={() => handleCheckboxChange(item.id)}
-                label={<Text style={{ color: textColor }}>{item.name}</Text>}
+                label={item.name}
               />
             ))}
             
             {items.length === 0 && (
-              <Text type="text3" style={{ color: secondaryTextColor, textAlign: 'center', padding: '16px 0' }}>
+              <Text>
                 No items available
               </Text>
             )}
-          </div>
+          </Flex>
         </ExpandCollapse>
-      </div>
       
       <Divider />
-      
-      <div>
-        <Text style={{ color: textColor }}>
+      <Text style={{ marginBottom: '4px' }}>
           Time Scale
         </Text>
+      <div>
         <div style={{ marginTop: '8px' }}>
           <Dropdown
-            className="time-scale-dropdown"
             value={timeScale}
             onChange={onTimeScaleChange}
+            size='small'
             options={[
               { value: 'days', label: 'Days' },
               { value: 'weeks', label: 'Weeks' },
@@ -105,7 +83,6 @@ const TimelineControls = ({ items, selectedItems, onItemSelectionChange, backgro
               { value: 'quarters', label: 'Quarters' },
               { value: 'years', label: 'Years' }
             ]}
-            placeholder="Select time scale"
           />
         </div>
       </div>
@@ -113,9 +90,7 @@ const TimelineControls = ({ items, selectedItems, onItemSelectionChange, backgro
       <Divider />
       
       <div>
-        <Text style={{ color: textColor }}>
-          Background Color
-        </Text>
+        <Text>Background Color</Text>
         <div style={{ marginTop: '8px' }}>
           <div style={{ 
             display: 'flex', 
@@ -123,7 +98,7 @@ const TimelineControls = ({ items, selectedItems, onItemSelectionChange, backgro
             marginTop: '8px',
             flexWrap: 'wrap'
           }}>
-            {['#2d2d2d', '#ffffff', '#0073ea', '#292f4c', '#401694'].map(color => (
+            {['#2d2d2d', '#ffffff', '#f7e1d3', '#bfb5b2', '##00000000'].map(color => (
               <div
                 key={color}
                 onClick={() => onBackgroundColorChange(color)}
@@ -141,6 +116,7 @@ const TimelineControls = ({ items, selectedItems, onItemSelectionChange, backgro
         </div>
       </div>
     </div>
+    
   );
 };
 
