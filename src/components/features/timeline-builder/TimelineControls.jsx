@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Text, Divider, Checkbox, ExpandCollapse, Icon, Accordion, AccordionItem, Dropdown, TextField, Flex } from '@vibe/core';
+import { Text, Checkbox, ExpandCollapse,
+   Dropdown, TextField, Flex, Box } from '@vibe/core';
 
 /**
  * Controls component for the Timeline Builder
@@ -20,103 +21,77 @@ const TimelineControls = ({ items, selectedItems, onItemSelectionChange, backgro
   };
 
   return (
-    <div style={{
-      height: '100%',
-      padding: '10px',
-      width: '200px',
-      display: 'flex',
-      flexDirection: 'column',
-    }}>
-      <div>
-        <Text style={{ marginBottom: '4px' }}>
-          Title
-        </Text>
-        <div style={{ 
-          padding: '8px',
-          borderRadius: '4px'
-        }}>
-          <TextField
-            value={timelineTitle}
-            onChange={(e) => onTitleChange(e.target.value)}
+    <div>
+    <Box margin='small'>
+    <Flex direction="column" gap={10} align="start">
+    <Text>Title</Text>
+    <TextField value={timelineTitle} onChange={(e) => onTitleChange(e.target.value)} />
+    <Text>Time Scale</Text>
+    <div />
+    </Flex>
+    <Dropdown
+      value={timeScale}
+      onChange={onTimeScaleChange}
+      size='small'
+      options={[
+        { value: 'days', label: 'Days' },
+        { value: 'weeks', label: 'Weeks' },
+        { value: 'months', label: 'Months' },
+        { value: 'quarters', label: 'Quarters' },
+        { value: 'years', label: 'Years' }
+      ]}
+    />
+    <div style={{ width: '250px', margin: '10px 0 10px 0' }}>
+    <ExpandCollapse 
+      title={<Text>Select Events</Text>}
+      expanded={isItemsExpanded}
+      hideBorder={false}
+      defaultOpenState={true}
+    >
+      <div style={{ padding: '0 10px 0 10px' }}>
+      <Flex direction="column" gap={4} align="start">
+        {items.map(item => (
+          <div key={item.id} style={{ width: '100%' }}>
+          <Flex gap={4} align="start">
+          <Checkbox
+            checked={selectedItems.includes(item.id)}
+            onChange={() => handleCheckboxChange(item.id)}
           />
-        </div>
-      </div>
-      <Divider />
-      <ExpandCollapse
-          title={<Text>Select Events</Text>}
-          expanded={isItemsExpanded}
-          hideBorder={true}
-          defaultOpenState={false}
-        >
-          <Flex direction="column" gap={4} align="start" width="190px">
-            {items.map(item => (
-              <Checkbox
-                key={item.id}
-                checked={selectedItems.includes(item.id)}
-                onChange={() => handleCheckboxChange(item.id)}
-                label={item.name}
-              />
-            ))}
-            
-            {items.length === 0 && (
-              <Text>
-                No items available
-              </Text>
-            )}
+          <Text>{item.name}</Text>
           </Flex>
-        </ExpandCollapse>
-      
-      <Divider />
-      <Text style={{ marginBottom: '4px' }}>
-          Time Scale
-        </Text>
-      <div>
-        <div style={{ marginTop: '8px' }}>
-          <Dropdown
-            value={timeScale}
-            onChange={onTimeScaleChange}
-            size='small'
-            options={[
-              { value: 'days', label: 'Days' },
-              { value: 'weeks', label: 'Weeks' },
-              { value: 'months', label: 'Months' },
-              { value: 'quarters', label: 'Quarters' },
-              { value: 'years', label: 'Years' }
-            ]}
-          />
-        </div>
-      </div>
-      
-      <Divider />
-      
-      <div>
-        <Text>Background Color</Text>
-        <div style={{ marginTop: '8px' }}>
-          <div style={{ 
-            display: 'flex', 
-            gap: '8px', 
-            marginTop: '8px',
-            flexWrap: 'wrap'
-          }}>
-            {['#2d2d2d', '#ffffff', '#f7e1d3', '#bfb5b2', '##00000000'].map(color => (
-              <div
-                key={color}
-                onClick={() => onBackgroundColorChange(color)}
-                style={{
-                  width: '24px',
-                  height: '24px',
-                  backgroundColor: color,
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  border: backgroundColor === color ? '2px solid #0073ea' : '1px solid #ccc'
-                }}
-              />
-            ))}
           </div>
-        </div>
+        ))}
+        
+        {items.length === 0 && (
+          <Text>
+            No items available
+          </Text>
+        )}
+      </Flex>
       </div>
+    </ExpandCollapse>
     </div>
-    
+    <Flex direction="column" gap={10} align="start">
+      <Text>Background Color</Text>
+      <Flex gap={8}>
+        {['#2d2d2d', '#ffffff', '#f7e1d3', '#bfb5b2', '##00000000'].map(color => (
+          <div
+            key={color}
+            onClick={() => onBackgroundColorChange(color)}
+            style={{
+              width: '24px',
+              height: '24px',
+              backgroundColor: color,
+              borderRadius: '4px',
+              cursor: 'pointer',
+              border: backgroundColor === color ? '2px solid #0073ea' : '1px solid #ccc'
+            }}
+          />
+        ))}
+      </Flex>
+    </Flex>
+    </Box>
+    </div>
   );
 };
 

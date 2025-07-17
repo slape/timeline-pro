@@ -12,6 +12,7 @@ const App = () => {
   const [context, setContext] = useState(null);
   const [boardItems, setBoardItems] = useState([]);
   const [itemIds, setItemIds] = useState([]);
+  const [settings, setSettings] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -30,6 +31,10 @@ const App = () => {
       setItemIds(res.data);
     });
 
+    monday.listen("settings", (res) => {
+      setSettings(res.data);
+    });
+
     return () => {
       // Clean up listeners when component unmounts
       monday.removeEventListener("context");
@@ -37,6 +42,7 @@ const App = () => {
   }, []);
   console.log(context);
   console.log(itemIds);
+  console.log(settings);
   // Fetch board items when context changes and has a boardId
   useEffect(() => {
     const fetchBoardItems = async () => {
@@ -86,13 +92,8 @@ const App = () => {
   }, [context?.boardId]); // Only re-run when boardId changes
 
   return (
-    
-    <div className="App">
       <Box
-        style={{
-          width: '100%',
-          height: '100%',
-        }}
+      padding='medium'
       >
         {isLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
@@ -101,10 +102,9 @@ const App = () => {
         ) : error ? (
           <div style={{ color: 'red' }}>{error}</div>
         ) : (
-          <TimelineBuilder context={context} boardItems={boardItems} />
+          <TimelineBuilder context={context} boardItems={boardItems} settings={settings} />
         )}
       </Box>
-    </div>
     );
 };
 

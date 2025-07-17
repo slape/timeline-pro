@@ -1,21 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import TimelineControls from './TimelineControls';
 import TimelineVisualization from './TimelineVisualization';
-import { ThemeProvider } from "@vibe/core";
+import { ThemeProvider, Flex } from "@vibe/core";
 
 /**
  * Main TimelineBuilder component that integrates all timeline sub-components
  * Manages state and data flow between components
  */
-const TimelineBuilder = ({ context, boardItems = [] }) => {
+const TimelineBuilder = ({ context, boardItems, settings }) => {
   const [timelineItems, setTimelineItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedItem, setSelectedItem] = useState(null);
   const [selectedItemIds, setSelectedItemIds] = useState([]);
-  const [backgroundColor, setBackgroundColor] = useState('#2d2d2d');
-  const [timeScale, setTimeScale] = useState('weeks'); // 'days', 'weeks', 'months', 'quarters', 'years'
-  const [timelineTitle, setTimelineTitle] = useState('Event Timeline'); // Default title
 
   // Process board items into timeline items when they change
   useEffect(() => {
@@ -66,65 +62,20 @@ const TimelineBuilder = ({ context, boardItems = [] }) => {
     
     setFilteredItems(filtered);
   }, [selectedItemIds, timelineItems]);
-
-  // Handle item selection
-  const handleItemSelect = (item) => {
-    setSelectedItem(item);
-  };
-
-  // Handle item selection change from dropdown
-  const handleItemSelectionChange = (selectedValues) => {
-    setSelectedItemIds(selectedValues || []);
-  };
-
-  // Handle background color change
-  const handleBackgroundColorChange = (color) => {
-    setBackgroundColor(color);
-  };
-
-  // Handle time scale change
-  const handleTimeScaleChange = (scale) => {
-    setTimeScale(scale);
-  };
-
-  // Handle title change
-  const handleTitleChange = (newTitle) => {
-    setTimelineTitle(newTitle);
-  };
+  
+  // Prepare settings object with items
+  const timelineSettings = useMemo(() => {
+    if (!settings) return null;
+    
+    return {
+      ...settings,
+      items: filteredItems
+    };
+  }, [settings, filteredItems]);
 
   return (
     <ThemeProvider systemTheme={context?.theme}>
-    <div style={{
-      display: 'flex',
-      margin: '16px',
-    }}>
-      <div style={{
-        flex: 1,
-      }}>
-        <TimelineVisualization 
-          items={filteredItems}
-          isLoading={isLoading}
-          onItemSelect={handleItemSelect}
-          backgroundColor={backgroundColor}
-          timeScale={timeScale}
-          timelineTitle={timelineTitle}
-        />
-      </div>
-      
-      <div className="timeline-builder__controls">
-        <TimelineControls 
-          items={timelineItems}
-          selectedItems={selectedItemIds}
-          onItemSelectionChange={handleItemSelectionChange}
-          backgroundColor={backgroundColor}
-          onBackgroundColorChange={handleBackgroundColorChange}
-          timeScale={timeScale}
-          onTimeScaleChange={handleTimeScaleChange}
-          timelineTitle={timelineTitle}
-          onTitleChange={handleTitleChange}
-        />
-      </div>
-    </div>
+      <TimelineVisualization isLoading={isLoading} settings={timelineSettings} boardItems={boardItems}/>
     </ThemeProvider>
   );
 };
