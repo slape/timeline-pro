@@ -3,14 +3,15 @@ import { useDraggable, DndContext, useSensor, useSensors, PointerSensor } from '
 import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import { EditableText, Tooltip } from '@vibe/core';
 import { determineTimelineScale, generateTimelineMarkers, calculateItemPosition } from '../../functions/timelineUtils';
+import DraggableBoardItem from './DraggableBoardItem';
 
 /**
  * TimelineItem component for individual draggable points on the timeline
  */
-const TimelineItem = ({ id, label, position, onLabelChange }) => {
+const TimelineItem = ({ id, label, position, onLabelChange, originalItem }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id,
-    data: { label, position }
+    data: { label, position, originalItem }
   });
 
   const style = {
@@ -26,19 +27,60 @@ const TimelineItem = ({ id, label, position, onLabelChange }) => {
     top: '-5px', // Position dot to center on the line
   };
 
+  // If we have the original item, render a dot with the item's color
+  if (!originalItem) {
+    return (
+      <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+        <div
+          style={{
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            backgroundColor: 'var(--primary-color)',
+            marginBottom: '8px',
+            boxShadow: isDragging ? '0 2px 2px rgba(0,0,0,0.3)' : '0 1px 2px rgba(0,0,0,0.2)',
+            border: '1px solid white', // Add border for better visibility
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Render a small dot on the timeline
+  const dotStyle = {
+    width: '12px',
+    height: '12px',
+    borderRadius: '50%',
+    backgroundColor: originalItem.group?.color ? `var(--${originalItem.group.color}-color)` : 'var(--primary-color)',
+    border: '1px solid white',
+    position: 'absolute',
+    top: 0,
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    zIndex: 2,
+  };
+
+  // Calculate position for the board item card
+  const cardStyle = {
+    position: 'absolute',
+    top: '15px', // Position below the timeline
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: isDragging ? 10 : 1,
+  };
+
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      <div
-        style={{
-          width: '12px',
-          height: '12px',
-          borderRadius: '50%',
-          backgroundColor: 'var(--primary-color)',
-          marginBottom: '8px',
-          boxShadow: isDragging ? '0 2px 2px rgba(0,0,0,0.3)' : '0 1px 2px rgba(0,0,0,0.2)',
-          border: '1px solid white', // Add border for better visibility
-        }}
-      />
+      {/* The dot on the timeline */}
+      <div style={dotStyle} />
+      
+      {/* The board item card below the timeline */}
+      <div style={cardStyle}>
+        <DraggableBoardItem 
+          item={originalItem} 
+          date={originalItem.parsedDate || new Date()} 
+        />
+      </div>
     </div>
   );
 };
@@ -192,6 +234,7 @@ const Timeline = ({
               label={item.label}
               position={item.position || calculateItemPosition(item.date, startDate, endDate)}
               onLabelChange={handleLabelChange}
+              originalItem={item}
             />
           ))}
         </DndContext>

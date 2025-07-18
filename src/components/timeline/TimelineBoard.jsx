@@ -123,12 +123,6 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
       // Determine appropriate scale
       const timelineScale = determineTimelineScale(startDate, endDate, scale);
       
-      console.log('Timeline parameters:', {
-        startDate,
-        endDate,
-        scale: timelineScale
-      });
-      
       // Update timeline parameters
       setTimelineParams({
         startDate,
@@ -137,16 +131,23 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
       });
       
       // Create timeline items with positions
-      const items = itemsWithDates.map(item => ({
-        id: item.id,
-        label: item.label,
-        date: item.date,
-        position: calculateItemPosition(item.date, startDate, endDate),
-        originalItem: item.originalItem
-      }));
+      const items = itemsWithDates.map(item => {
+        // Add parsed date to the original item for use in DraggableBoardItem
+        const originalItemWithDate = {
+          ...item.originalItem,
+          parsedDate: item.date
+        };
+        
+        return {
+          id: item.id,
+          label: item.label,
+          date: item.date,
+          position: calculateItemPosition(item.date, startDate, endDate),
+          originalItem: originalItemWithDate
+        };
+      });
       
       setTimelineItems(items);
-      console.log('Timeline items created:', items);
       
     } catch (error) {
       console.error('Error processing timeline data:', error);
