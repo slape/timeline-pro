@@ -2,18 +2,50 @@ import React from "react";
 import { useState, useEffect } from "react";
 import mondaySdk from "monday-sdk-js";
 import "@vibe/core/tokens";
-import TimelineBuilder from './components/features/timeline-builder';
-import { Box, Loader } from "@vibe/core";
+import TimelineBoard from './components/timeline/TimelineBoard';
+import { Box, Loader, ThemeProvider } from "@vibe/core";
+import fetchBoardItems from './functions/fetchBoardItems';
 
 // Usage of mondaySDK example, for more information visit here: https://developer.monday.com/apps/docs/introduction-to-the-sdk/
 const monday = mondaySdk();
 
+/** BoardItem type
+ * @typedef {Object} BoardItem
+ * @property {string} id - Unique item ID
+ * @property {string} name - Item name
+ * @property {Object} group - Group information
+ * @property {string} group.color - Color of the group
+ * @property {string} group.title - Title of the group
+ * @property {string} group.id - ID of the group
+ * @property {Array.<{id: string, value: string}>} column_values - Array of column values (JSON strings)
+ */
+
+/** ColumnValue type
+ * @typedef {Object} ColumnValue
+ * @property {string} id - ID of the column value
+ * @property {string} value - Value of the column value
+ */
+
+/** Settings type
+ * @typedef {Object} AppSettings
+ * @property {Object.<string, boolean>} date - Selected date column, e.g., { date_mksykvae: true }
+ * @property {string} scale - Display scale, e.g., 'weeks'
+ * @property {string} button - Button behavior setting
+ */
+
+/** context type 
+ * @typedef {Object} AppContext
+ * @property {int} boardId - ID of the current board
+ * @property {Object.<string, boolean>} user - User information
+ * @property {string} boardName - Name of the board
+ * @property {string} theme - Theme of the board
+ */
+
 const App = () => {
   const [context, setContext] = useState(null);
   const [boardItems, setBoardItems] = useState([]);
-  const [itemIds, setItemIds] = useState([]);
   const [settings, setSettings] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Set up context listener
@@ -21,74 +53,23 @@ const App = () => {
     // Notice this method notifies the monday platform that user gains a first value in an app.
     // Read more about it here: https://developer.monday.com/apps/docs/mondayexecute#value-created-for-user/
     monday.execute("valueCreatedForUser");
-
     // Set up event listeners for context changes
     monday.listen("context", (res) => {
       setContext(res.data);
     });
-
-    monday.listen("itemIds", (res) => {
-      setItemIds(res.data);
-    });
-
     monday.listen("settings", (res) => {
       setSettings(res.data);
     });
-
-    return () => {
-      // Clean up listeners when component unmounts
-      monday.removeEventListener("context");
-    };
   }, []);
-  console.log(context);
-  console.log(itemIds);
-  console.log(settings);
+  console.log("context", context);
+  console.log("settings", settings);
+  
   // Fetch board items when context changes and has a boardId
   useEffect(() => {
-    const fetchBoardItems = async () => {
-      if (!context || !context.boardId) return;
-      
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        const query = `query {
-            boards(ids: ${context.boardId}) {
-              items_page(limit: 500) {
-                cursor
-                items {
-                  id
-                  name
-                  group {
-                    id
-                  }
-                  column_values {
-                    id
-                  }
-                }
-              }
-            }
-          }`;
-                
-        const response = await monday.api(query);
-        
-        if (response.data && response.data.boards && response.data.boards.length > 0) {
-          setBoardItems(response.data.boards[0].items_page.items);
-          console.log('Board items fetched:', response.data.boards[0].items_page.items);
-        } else {
-          console.warn('No board data found');
-          setBoardItems([]);
-        }
-      } catch (err) {
-        console.error('Error fetching board items:', err);
-        setError('Failed to load board items');
-        setBoardItems([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchBoardItems();
+    // Call the imported fetchBoardItems function
+    if (context?.boardId) {
+      fetchBoardItems(context, setBoardItems, setIsLoading, setError);
+    }
   }, [context?.boardId]); // Only re-run when boardId changes
 
   return (
@@ -102,7 +83,9 @@ const App = () => {
         ) : error ? (
           <div style={{ color: 'red' }}>{error}</div>
         ) : (
-          <TimelineBuilder context={context} boardItems={boardItems} settings={settings} />
+          <ThemeProvider systemTheme={context.theme}>
+            <TimelineBoard boardItems={boardItems} settings={settings} />
+          </ThemeProvider>
         )}
       </Box>
     );
