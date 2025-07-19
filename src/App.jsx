@@ -45,6 +45,7 @@ const App = () => {
   const [context, setContext] = useState(null);
   const [boardItems, setBoardItems] = useState([]);
   const [settings, setSettings] = useState(null);
+  const [itemIds, setItemIds] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -60,15 +61,19 @@ const App = () => {
     monday.listen("settings", (res) => {
       setSettings(res.data);
     });
+    monday.listen("itemIds", (res) => {
+      setItemIds(res.data);
+    });
   }, []);
   console.log("context", context);
   console.log("settings", settings);
+  console.log("itemIds", itemIds);
   
   // Fetch board items when context changes and has a boardId
   useEffect(() => {
     // Call the imported fetchBoardItems function
     if (context?.boardId) {
-      fetchBoardItems(context, setBoardItems, setIsLoading, setError);
+      fetchBoardItems(context, itemIds, setBoardItems, setIsLoading, setError);
     }
   }, [context?.boardId]); // Only re-run when boardId changes
 

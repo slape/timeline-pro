@@ -12,7 +12,7 @@ const monday = mondaySdk();
  * @returns {Promise<void>}
  */
 
-const fetchBoardItems = async (context, setBoardItems, setIsLoading, setError) => {
+const fetchBoardItems = async (context, itemIds, setBoardItems, setIsLoading, setError) => {
   if (!context || !context.boardId) return;
   
   setIsLoading(true);

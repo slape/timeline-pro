@@ -4,8 +4,7 @@ import { determineTimelineScale, generateTimelineMarkers, calculateItemPosition 
 import { getItemsWithDates } from '../../functions/getItemsWithDates';
 import Timeline from './Timeline';
 
-/** BoardItem type
- * @typedef {Object} BoardItem
+/** BoardItem type * @typedef {Object} BoardItem
  * @property {string} id - Unique item ID
  * @property {string} name - Item name
  * @property {Object} group - Group information
@@ -50,7 +49,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
     backgroundColor = 'var(--primary-background-color)',
     primaryColor = 'var(--primary-color)',
     scale = 'auto',
-    position = 'below' // Default position for timeline items
+    position = 'alternate' // Default position for timeline items
   } = settings;
 
   // Handle title change
@@ -198,6 +197,8 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
               endDate={timelineParams.endDate}
               scale={timelineParams.scale}
               items={timelineItems}
+              boardItems={boardItems}
+              dateColumn={Object.keys(settings.date || {})[0]}
               onItemMove={handleTimelineItemMove}
               onLabelChange={handleLabelChange}
               position={position}
