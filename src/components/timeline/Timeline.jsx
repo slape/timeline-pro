@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { determineTimelineScale, calculateItemPosition, generateTimelineMarkers } from '../../functions/timelineUtils';
 import getUniqueDates from '../../functions/getUniqueDates';
+import formatDate from '../../functions/formatDate';
 import TimelineItem from './TimelineItem';
 
 /**
@@ -13,6 +14,7 @@ import TimelineItem from './TimelineItem';
  * @param {Array} props.items - Array of items to display on the timeline
  * @param {Array} props.boardItems - Array of board items from monday.com for extracting unique dates
  * @param {string} props.dateColumn - The ID of the column containing date values
+ * @param {string} props.dateFormat - Format for displaying dates ('mdyy', 'mmddyyyy', 'md', 'mdy')
  * @param {Function} props.onItemMove - Callback when an item is moved
  * @param {Function} props.onLabelChange - Callback when an item label is changed
  * @param {string} props.position - Position of timeline items ('above', 'below', or 'alternate')
@@ -25,6 +27,7 @@ const Timeline = ({
   items = [],
   boardItems = [],
   dateColumn,
+  dateFormat = 'mdyy',
   onItemMove,
   onLabelChange,
   position = 'below' // Default to below
@@ -55,7 +58,7 @@ const Timeline = ({
         // Create markers for each unique date using the expanded timeline range
         const dateMarkers = uniqueDates.map(date => ({
           date,
-          label: `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear().toString().slice(-2)}`,
+          label: formatDate(date, dateFormat),
           position: calculateItemPosition(date, timelineStart, timelineEnd)
         }));
         
@@ -66,7 +69,7 @@ const Timeline = ({
         if (timelineStart.getTime() !== actualStartDate.getTime()) {
           allMarkers.push({
             date: timelineStart,
-            label: `${timelineStart.getMonth() + 1}/${timelineStart.getDate()}/${timelineStart.getFullYear().toString().slice(-2)}`,
+            label: formatDate(timelineStart, dateFormat),
             position: 0
           });
         }
@@ -75,7 +78,7 @@ const Timeline = ({
         if (timelineEnd.getTime() !== actualEndDate.getTime()) {
           allMarkers.push({
             date: timelineEnd,
-            label: `${timelineEnd.getMonth() + 1}/${timelineEnd.getDate()}/${timelineEnd.getFullYear().toString().slice(-2)}`,
+            label: formatDate(timelineEnd, dateFormat),
             position: 100
           });
         }
@@ -92,12 +95,12 @@ const Timeline = ({
         setMarkers([
           {
             date: startDate,
-            label: `${startDate.getMonth() + 1}/${startDate.getDate()}/${startDate.getFullYear().toString().slice(-2)}`,
+            label: formatDate(startDate, dateFormat),
             position: 0
           },
           {
             date: endDate,
-            label: `${endDate.getMonth() + 1}/${endDate.getDate()}/${endDate.getFullYear().toString().slice(-2)}`,
+            label: formatDate(endDate, dateFormat),
             position: 100
           }
         ]);
@@ -107,17 +110,17 @@ const Timeline = ({
       setMarkers([
         {
           date: startDate,
-          label: `${startDate.getMonth() + 1}/${startDate.getDate()}/${startDate.getFullYear().toString().slice(-2)}`,
+          label: formatDate(startDate, dateFormat),
           position: 0
         },
         {
           date: endDate,
-          label: `${endDate.getMonth() + 1}/${endDate.getDate()}/${endDate.getFullYear().toString().slice(-2)}`,
+          label: formatDate(endDate, dateFormat),
           position: 100
         }
       ]);
     }
-  }, [boardItemsString, dateColumn, startDateString, endDateString]);
+  }, [boardItemsString, dateColumn, startDateString, endDateString, dateFormat]);
   
 
   
