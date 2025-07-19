@@ -49,7 +49,8 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
     title = 'Timeline',
     backgroundColor = 'var(--primary-background-color)',
     primaryColor = 'var(--primary-color)',
-    scale = 'auto'
+    scale = 'auto',
+    position = 'below' // Default position for timeline items
   } = settings;
 
   // Handle title change
@@ -199,6 +200,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
               items={timelineItems}
               onItemMove={handleTimelineItemMove}
               onLabelChange={handleLabelChange}
+              position={position}
             />
           ) : (
             <Flex 

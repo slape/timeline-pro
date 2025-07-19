@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Badge, Tooltip } from '@vibe/core';
+import { EditableText, Box } from '@vibe/core';
 
 /**
  * DraggableBoardItem component that renders a draggable item from monday.com board
@@ -32,53 +32,38 @@ const DraggableBoardItem = ({ item, date, onClick }) => {
     : null;
 
   return (
-    <div
+    <Box
       ref={setNodeRef}
       style={{
         ...style,
         opacity: isDragging ? 0.8 : 1,
         cursor: 'grab',
         padding: '8px 12px',
-        backgroundColor: 'white',
+        backgroundColor: itemColor,
         borderRadius: '4px',
         boxShadow: isDragging ? '0 5px 15px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.1)',
         marginBottom: '8px',
         transition: 'box-shadow 0.2s, opacity 0.2s',
-        borderLeft: `4px solid var(--${itemColor}-color)`,
         userSelect: 'none',
         position: 'relative',
         maxWidth: '300px',
+        height: '100%',
       }}
       onClick={onClick}
       {...listeners}
       {...attributes}
     >
-      <Tooltip content={item.name}>
-        <div style={{ 
-          fontWeight: 'bold', 
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          marginBottom: '4px'
-        }}>
-          {item.name}
-        </div>
-      </Tooltip>
-
+      <EditableText
+        value={item.name}
+        onChange={(e) => handleLabelChange(item.id, e.target.value)}
+      />
+      
       {formattedDate && (
-        <div style={{ fontSize: '0.85em', color: '#555', marginBottom: '4px' }}>
+        <div style={{ fontSize: '0.6em', color: '#555', marginBottom: '4px' }}>
           {formattedDate}
         </div>
       )}
-
-      {item.group && (
-        <Badge
-          text={item.group.title}
-          size="small"
-          kind={itemColor}
-        />
-      )}
-    </div>
+    </Box>
   );
 };
 
