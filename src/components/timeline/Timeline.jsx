@@ -15,6 +15,7 @@ import TimelineItem from './TimelineItem';
  * @param {Array} props.boardItems - Array of board items from monday.com for extracting unique dates
  * @param {string} props.dateColumn - The ID of the column containing date values
  * @param {string} props.dateFormat - Format for displaying dates ('mdyy', 'mmddyyyy', 'md', 'mdy')
+ * @param {string} props.datePosition - Position and style of date markers ('angled-above', 'horizontal-above', 'angled-below', 'horizontal-below')
  * @param {Function} props.onItemMove - Callback when an item is moved
  * @param {Function} props.onLabelChange - Callback when an item label is changed
  * @param {string} props.position - Position of timeline items ('above', 'below', or 'alternate')
@@ -28,6 +29,7 @@ const Timeline = ({
   boardItems = [],
   dateColumn,
   dateFormat = 'mdyy',
+  datePosition = 'angled-below', // Default to angled-below
   onItemMove,
   onLabelChange,
   position = 'below' // Default to below
@@ -124,6 +126,37 @@ const Timeline = ({
   
 
   
+  // Get marker and date styles based on datePosition
+  const getMarkerStyles = (datePosition) => {
+    const isAbove = datePosition.includes('above');
+    const isAngled = datePosition.includes('angled');
+    
+    return {
+      markerContainer: {
+        flexDirection: isAbove ? 'column-reverse' : 'column',
+      },
+      markerLine: {
+        width: '1px',
+        height: '8px',
+        backgroundColor: 'var(--ui-border-color)',
+        [isAbove ? 'marginTop' : 'marginBottom']: '4px',
+      },
+      dateLabel: {
+        fontSize: '10px',
+        color: 'var(--secondary-text-color)',
+        whiteSpace: 'nowrap',
+        textAlign: 'center',
+        transform: isAngled ? 'rotate(-25deg)' : 'none',
+        transformOrigin: isAbove ? 'center top' : 'center bottom',
+        [isAbove ? 'marginBottom' : 'marginTop']: '4px',
+      },
+      positioning: {
+        top: isAbove ? '50%' : '50%',
+        transform: isAbove ? 'translateX(-50%) translateY(-100%)' : 'translateX(-50%)',
+      }
+    };
+  };
+
   // Handle label change
   const handleLabelChange = (itemId, newLabel) => {
     if (onLabelChange) {
@@ -159,37 +192,25 @@ const Timeline = ({
 
       {/* Timeline markers */}
       {markers.map((marker, index) => {
+        const markerStyles = getMarkerStyles(datePosition);
+        
         return (
           <div
             key={`marker-${index}`}
             style={{
               position: 'absolute',
               left: `${marker.position}%`,
-              transform: 'translateX(-50%)',
+              ...markerStyles.positioning,
               display: 'flex',
-              flexDirection: 'column',
+              ...markerStyles.markerContainer,
               alignItems: 'center',
-              top: '50%', // Center the marker vertically
             }}
           >
             <div
-              style={{
-                width: '1px',
-                height: '8px',
-                backgroundColor: 'var(--ui-border-color)',
-                marginBottom: '4px',
-              }}
+              style={markerStyles.markerLine}
             />
             <div
-              style={{
-                fontSize: '10px',
-                color: 'var(--secondary-text-color)',
-                whiteSpace: 'nowrap',
-                transform: 'rotate(-25deg)',
-                transformOrigin: 'center bottom',
-                marginTop: '4px',
-                textAlign: 'center',
-              }}
+              style={markerStyles.dateLabel}
             >
               {marker.label}
             </div>
