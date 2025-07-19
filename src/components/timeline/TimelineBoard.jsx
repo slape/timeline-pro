@@ -50,7 +50,8 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
     primaryColor = 'var(--primary-color)',
     scale = 'auto',
     position = 'alternate', // Default position for timeline items
-    dateFormat = 'mdyy' // Default date format
+    dateFormat = 'mdyy', // Default date format
+    datePosition = 'angled-below' // Default date position
   } = settings;
 
   // Handle title change
@@ -201,6 +202,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
               boardItems={boardItems}
               dateColumn={Object.keys(settings.date || {})[0]}
               dateFormat={dateFormat}
+              datePosition={datePosition}
               onItemMove={handleTimelineItemMove}
               onLabelChange={handleLabelChange}
               position={position}
