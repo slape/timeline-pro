@@ -155,6 +155,10 @@ const Timeline = ({
             console.log('Label changed:', itemId, newLabel);
             // TODO: Implement label change handler
           },
+          (itemId) => {
+            console.log('Remove item:', itemId);
+            // TODO: Implement item removal from timeline display
+          },
           shape
         );
       })()}

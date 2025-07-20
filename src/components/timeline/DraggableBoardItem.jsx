@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Rnd } from 'react-rnd';
-import { EditableText, Box, Flex } from '@vibe/core';
+import { EditableText, Box, Flex, IconButton, Icon } from '@vibe/core';
 import { getShapeStyles } from '../../functions/getShapeStyles';
 import './DraggableBoardItem.css';
 
@@ -16,18 +16,20 @@ import './DraggableBoardItem.css';
  * @param {string} props.shape - Shape of the item ('rectangle', 'circle', 'diamond')
  * @param {Function} props.onClick - Optional click handler
  * @param {Function} props.onLabelChange - Handler for label changes
+ * @param {Function} props.onRemove - Handler for removing the item
  * @returns {JSX.Element} - Draggable board item component
  */
-const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelChange }) => {
+const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelChange, onRemove }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   // Initialize size based on shape - circles should be square, ovals can be flexible
   const [size, setSize] = useState(() => {
     if (shape === 'circle') {
       return { width: 100, height: 100 };
     }
-    return { width: 140, height: 80 };
+    return { width: 140, height: 30 };
   });
   const [isDragging, setIsDragging] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const itemColor = item.originalItem.group?.color || 'primary';
 
@@ -86,6 +88,8 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
       minHeight={shape === 'circle' ? 80 : 70}
       maxWidth={shape === 'circle' ? 120 : 200}
       maxHeight={shape === 'circle' ? 120 : 120}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <Box
         style={{
@@ -104,10 +108,59 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
           flexDirection: 'column',
           justifyContent: (shape === 'circle' || shape === 'oval') ? 'center' : 'space-between',
           alignItems: (shape === 'circle' || shape === 'oval') ? 'center' : 'stretch',
-          overflow: 'hidden',
+          overflow: 'visible',
         }}
         onClick={onClick}
       >
+
+        {isHovered && onRemove && (
+          <div
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent triggering the item's onClick
+              onRemove(item.id);
+            }}
+            style={{
+              position: 'absolute',
+              top: '-5px',
+              right: '-5px',
+              width: '16px',
+              height: '16px',
+              backgroundColor: 'rgba(200, 200, 200, 0.85)', // Light gray
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 1000,
+              border: '1px solid rgba(180, 180, 180, 0.9)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = 'rgba(200, 200, 200, 0.95)';
+              e.target.style.transform = 'scale(1.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(200, 200, 200, 0.85)';
+              e.target.style.transform = 'scale(1)';
+            }}
+          >
+            <span
+              style={{
+                fontSize: '15px',
+                color: '#333', // Dark X for contrast against light gray
+                fontWeight: 'bold',
+                pointerEvents: 'none',
+                lineHeight: 1,
+                fontFamily: 'Arial, sans-serif',
+                userSelect: 'none',
+              }}
+            >
+              ×
+            </span>
+          </div>
+        )}
+        
         <div style={{ 
           fontSize: '0.75em', 
           fontWeight: '500',
