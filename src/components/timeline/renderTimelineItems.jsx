@@ -7,7 +7,7 @@ import DraggableBoardItem from './DraggableBoardItem';
  * @param {Function} onItemClick - Callback for item click events
  * @param {Function} onLabelChange - Callback for label change events
  * @param {Function} onRemove - Callback for removing items
- * @param {string} shape - Shape of timeline items ('rectangle', 'circle', 'diamond')
+ * @param {string} shape - Shape of timeline items ('rectangle', 'circle')
  * @returns {Array} Array of JSX elements for timeline items
  */
 export function renderTimelineItems(itemsWithPositions, onItemClick, onLabelChange, onRemove, shape = 'rectangle') {
