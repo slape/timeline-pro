@@ -51,7 +51,8 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
     scale = 'auto',
     position = 'alternate', // Default position for timeline items
     dateFormat = 'mdyy', // Default date format
-    datePosition = 'angled-below' // Default date position
+    datePosition = 'angled-below', // Default date position
+    shape = 'rectangle' // Default shape for timeline items
   } = settings;
 
   // Get the actual background color value
@@ -150,6 +151,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
               onItemMove={handleTimelineItemMove}
               onLabelChange={handleLabelChange}
               position={position}
+              shape={shape}
             />
           ) : (
             <Flex 

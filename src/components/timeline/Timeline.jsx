@@ -28,6 +28,7 @@ import DraggableBoardItem from './DraggableBoardItem';
  * @param {Function} props.onItemMove - Callback when an item is moved
  * @param {Function} props.onLabelChange - Callback when an item label is changed
  * @param {string} props.position - Position of timeline items ('above', 'below', or 'alternate')
+ * @param {string} props.shape - Shape of timeline items ('rectangle', 'circle', 'diamond')
  * @returns {JSX.Element} - Timeline component
  */
 const Timeline = ({
@@ -38,7 +39,8 @@ const Timeline = ({
   dateColumn,
   dateFormat = 'mdyy',
   datePosition = 'angled-below', // Default to angled-below
-  position = 'below' // Default to below
+  position = 'below', // Default to below
+  shape = 'rectangle' // Default to rectangle
 }) => {
   // Generate timeline markers from unique dates in board items
   const [markers, setMarkers] = useState([]);
@@ -152,7 +154,8 @@ const Timeline = ({
           (itemId, newLabel) => {
             console.log('Label changed:', itemId, newLabel);
             // TODO: Implement label change handler
-          }
+          },
+          shape
         );
       })()}
     </div>

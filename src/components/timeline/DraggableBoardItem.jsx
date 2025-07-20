@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Rnd } from 'react-rnd';
 import { EditableText, Box, Flex } from '@vibe/core';
+import { getShapeStyles } from '../../functions/getShapeStyles';
 import './DraggableBoardItem.css';
 
 /**
@@ -12,13 +13,20 @@ import './DraggableBoardItem.css';
  * @param {string} props.item.name - Name/title of the item
  * @param {Object} props.item.group - Group information for the item
  * @param {string} props.item.group.color - Color associated with the group
+ * @param {string} props.shape - Shape of the item ('rectangle', 'circle', 'diamond')
  * @param {Function} props.onClick - Optional click handler
  * @param {Function} props.onLabelChange - Handler for label changes
  * @returns {JSX.Element} - Draggable board item component
  */
-const DraggableBoardItem = ({ item, date, onClick, onLabelChange }) => {
+const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelChange }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [size, setSize] = useState({ width: 140, height: 80 });
+  // Initialize size based on shape - circles should be square
+  const [size, setSize] = useState(() => {
+    if (shape === 'circle') {
+      return { width: 100, height: 100 };
+    }
+    return { width: 140, height: 80 };
+  });
   const [isDragging, setIsDragging] = useState(false);
 
   const itemColor = item.originalItem.group?.color || 'primary';
@@ -27,6 +35,8 @@ const DraggableBoardItem = ({ item, date, onClick, onLabelChange }) => {
   const formattedDate = date 
     ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(date)
     : null;
+
+  const shapeStyles = getShapeStyles(shape);
 
   const handleDragStart = () => {
     setIsDragging(true);
@@ -38,9 +48,19 @@ const DraggableBoardItem = ({ item, date, onClick, onLabelChange }) => {
   };
 
   const handleResize = (e, direction, ref, delta, position) => {
+    let newWidth = ref.offsetWidth;
+    let newHeight = ref.offsetHeight;
+    
+    // For circle shapes, maintain square dimensions
+    if (shape === 'circle') {
+      const size = Math.min(newWidth, newHeight);
+      newWidth = size;
+      newHeight = size;
+    }
+    
     setSize({
-      width: ref.offsetWidth,
-      height: ref.offsetHeight,
+      width: newWidth,
+      height: newHeight,
     });
     setPosition(position);
   };
@@ -52,10 +72,11 @@ const DraggableBoardItem = ({ item, date, onClick, onLabelChange }) => {
       onDragStart={handleDragStart}
       onDragStop={handleDragStop}
       onResize={handleResize}
-      minWidth={120}
-      minHeight={70}
-      maxWidth={200}
-      maxHeight={120}
+      minWidth={shape === 'circle' ? 80 : 120}
+      minHeight={shape === 'circle' ? 80 : 70}
+      maxWidth={shape === 'circle' ? 150 : 200}
+      maxHeight={shape === 'circle' ? 150 : 120}
+      lockAspectRatio={shape === 'circle'}
     >
       <Box
         style={{
@@ -63,7 +84,7 @@ const DraggableBoardItem = ({ item, date, onClick, onLabelChange }) => {
           cursor: 'grab',
           padding: '8px',
           backgroundColor: itemColor,
-          borderRadius: '6px',
+          ...shapeStyles,
           boxShadow: isDragging ? '0 5px 15px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
           transition: 'box-shadow 0.2s, opacity 0.2s',
           userSelect: 'none',
@@ -72,7 +93,8 @@ const DraggableBoardItem = ({ item, date, onClick, onLabelChange }) => {
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
+          justifyContent: shape === 'circle' ? 'center' : 'space-between',
+          alignItems: shape === 'circle' ? 'center' : 'stretch',
           overflow: 'hidden',
         }}
         onClick={onClick}
@@ -84,9 +106,15 @@ const DraggableBoardItem = ({ item, date, onClick, onLabelChange }) => {
           wordWrap: 'break-word',
           overflowWrap: 'break-word',
           hyphens: 'auto',
-          flex: 1,
+          flex: shape === 'circle' ? 'none' : 1,
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          width: shape === 'circle' ? '100%' : 'auto',
+          height: shape === 'circle' ? '100%' : 'auto',
+          // Counter-rotate text for diamond shape to keep it readable
+          transform: shape === 'diamond' ? 'rotate(-45deg)' : 'none',
         }}>
           <EditableText
             className='text-center'
