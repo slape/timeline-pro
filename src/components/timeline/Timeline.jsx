@@ -8,6 +8,8 @@ import getMarkerStyles from '../../functions/getMarkerStyles';
 import generateTimelineMarkersFunction from '../../functions/generateTimelineMarkers';
 import processBoardItemsWithMarkers from '../../functions/processBoardItemsWithMarkers';
 import calculateItemSpacing from '../../functions/calculateItemSpacing';
+import { calculateTimelineItemPositions } from '../../functions/calculateTimelineItemPositions';
+import { renderTimelineItems } from './renderTimelineItems.jsx'
 import TimelineItem from './TimelineItem';
 import DraggableBoardItem from './DraggableBoardItem';
 
@@ -96,7 +98,7 @@ const Timeline = ({
       <div
         style={{
           position: 'absolute',
-          top: '50%', // Center the line vertically
+          top: position === 'above' ? '75%' : position === 'below' ? '25%' : '50%', // Dynamic positioning based on item placement
           left: 0,
           width: '100%',
           height: '2px',
@@ -109,13 +111,18 @@ const Timeline = ({
       {markers.map((marker, index) => {
         const markerStyles = getMarkerStyles(datePosition);
         
+        // Calculate dynamic marker position based on timeline position
+        const timelineTop = position === 'above' ? '75%' : position === 'below' ? '25%' : '50%';
+        const isAbove = datePosition.includes('above');
+        
         return (
           <div
             key={`marker-${index}`}
             style={{
               position: 'absolute',
               left: `${marker.position}%`,
-              ...markerStyles.positioning,
+              top: timelineTop,
+              transform: isAbove ? 'translateX(-50%) translateY(-100%)' : 'translateX(-50%)',
               display: 'flex',
               ...markerStyles.markerContainer,
               alignItems: 'center',
@@ -133,35 +140,21 @@ const Timeline = ({
         );
       })}
 
-      {/* Board Items */}
-      {spacedBoardItems.map((item, index) => {
-        const itemDate = new Date(item.date);
+      {/* Board Items - Render all items chronologically with position logic */}
+      {(() => {
+        // Calculate positions for all items using extracted function
+        const itemsWithPositions = calculateTimelineItemPositions(items, startDate, endDate, position);
         
-        return (
-          <div
-            key={item.id}
-            style={{
-              position: 'absolute',
-              left: `${item.positioning.x}%`,
-              top: `calc(50% + ${item.positioning.y}px)`,
-              transform: 'translateX(-50%)',
-              zIndex: 10,
-              width: `${item.positioning.width}px`,
-              height: `${item.positioning.height}px`,
-            }}
-          >
-            <DraggableBoardItem
-              item={item}
-              date={itemDate}
-              onClick={() => console.log('Board item clicked:', item)}
-              onLabelChange={(itemId, newLabel) => {
-                console.log('Label changed:', itemId, newLabel);
-                // TODO: Implement label change handler
-              }}
-            />
-          </div>
+        // Render items using extracted function
+        return renderTimelineItems(
+          itemsWithPositions,
+          (item) => console.log('Board item clicked:', item),
+          (itemId, newLabel) => {
+            console.log('Label changed:', itemId, newLabel);
+            // TODO: Implement label change handler
+          }
         );
-      })}
+      })()}
     </div>
   );
 };
