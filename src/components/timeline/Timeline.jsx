@@ -51,6 +51,9 @@ const Timeline = ({
   // State for item-to-marker mapping
   const [itemToMarkerMap, setItemToMarkerMap] = useState(new Map());
   
+  // State to track which items are hidden (removed from view)
+  const [hiddenItemIds, setHiddenItemIds] = useState(new Set());
+  
   // Convert dates and boardItems to strings for stable dependencies
   const startDateString = startDate.toISOString();
   const endDateString = endDate.toISOString();
@@ -157,9 +160,11 @@ const Timeline = ({
           },
           (itemId) => {
             console.log('Remove item:', itemId);
-            // TODO: Implement item removal from timeline display
+            // Hide the item by adding its ID to hiddenItemIds
+            setHiddenItemIds(prev => new Set([...prev, itemId]));
           },
-          shape
+          shape,
+          hiddenItemIds
         );
       })()}
     </div>
