@@ -20,7 +20,7 @@ const DraggableBoardItem = ({ item, date, onClick, onLabelChange }) => {
   const [size, setSize] = useState({ width: 300, height: 'auto' });
   const [isDragging, setIsDragging] = useState(false);
 
-  const itemColor = item.group?.color || 'primary';
+  const itemColor = item.originalItem.group?.color || 'primary';
 
   // Format date as needed, e.g., "Jul 18, 2025"
   const formattedDate = date 
@@ -72,7 +72,7 @@ const DraggableBoardItem = ({ item, date, onClick, onLabelChange }) => {
         onClick={onClick}
       >
         <EditableText
-          value={item.name}
+          value={item.originalItem.name}
           onChange={(e) => onLabelChange?.(item.id, e.target.value)}
         />
         

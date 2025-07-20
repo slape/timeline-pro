@@ -7,7 +7,9 @@ import processBoardItems from '../../functions/processBoardItems';
 import getMarkerStyles from '../../functions/getMarkerStyles';
 import generateTimelineMarkersFunction from '../../functions/generateTimelineMarkers';
 import processBoardItemsWithMarkers from '../../functions/processBoardItemsWithMarkers';
+import calculateItemSpacing from '../../functions/calculateItemSpacing';
 import TimelineItem from './TimelineItem';
+import DraggableBoardItem from './DraggableBoardItem';
 
 /**
  * Timeline component that displays a horizontal timeline with markers and draggable items
@@ -71,6 +73,11 @@ const Timeline = ({
     setItemToMarkerMap(result.itemToMarkerMap);
   }, [boardItemsString, dateColumn, startDateString, endDateString, markers, position]);
 
+  // Calculate item spacing to prevent overlaps
+  const spacedBoardItems = useMemo(() => {
+    return calculateItemSpacing(processedBoardItems, position);
+  }, [processedBoardItems, position]);
+
   
   return (
     <div 
@@ -126,27 +133,33 @@ const Timeline = ({
         );
       })}
 
-      {/* Timeline items */}
-      {items.map((item, index) => {
-        // Determine item position based on the position prop
-        let itemPosition = position;
-        
-        // If position is 'alternate', alternate between 'above' and 'below'
-        if (position === 'alternate') {
-          itemPosition = index % 2 === 0 ? 'below' : 'above';
-        }
+      {/* Board Items */}
+      {spacedBoardItems.map((item, index) => {
+        const itemDate = new Date(item.date);
         
         return (
-          // <TimelineItem
-          //   key={item.id}
-          //   id={item.id}
-          //   label={item.label}
-          //   position={item.position || calculateItemPosition(item.date, startDate, endDate)}
-          //   onLabelChange={handleLabelChange}
-          //   originalItem={item}
-          //   itemPosition={itemPosition}
-          // />
-          <div></div>
+          <div
+            key={item.id}
+            style={{
+              position: 'absolute',
+              left: `${item.positioning.x}%`,
+              top: `calc(50% + ${item.positioning.y}px)`,
+              transform: 'translateX(-50%)',
+              zIndex: 10,
+              width: `${item.positioning.width}px`,
+              height: `${item.positioning.height}px`,
+            }}
+          >
+            <DraggableBoardItem
+              item={item}
+              date={itemDate}
+              onClick={() => console.log('Board item clicked:', item)}
+              onLabelChange={(itemId, newLabel) => {
+                console.log('Label changed:', itemId, newLabel);
+                // TODO: Implement label change handler
+              }}
+            />
+          </div>
         );
       })}
     </div>
