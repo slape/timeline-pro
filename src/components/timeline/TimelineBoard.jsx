@@ -50,7 +50,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
         return '#ffffff';
       case 'dark':
         return 'var(--primary-background-color)';
-      case 'None':
+      case 'none':
         return 'transparent';
       default:
         return 'var(--primary-background-color)'; // Default to dark
@@ -61,7 +61,6 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
   const {
     title = 'Timeline',
     backgroundColor: backgroundColorSetting = 'dark',
-    primaryColor = 'var(--primary-color)',
     scale = 'auto',
     position = 'alternate', // Default position for timeline items
     dateFormat = 'mdyy', // Default date format
