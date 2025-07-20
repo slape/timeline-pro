@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Rnd } from 'react-rnd';
-import { EditableText, Box } from '@vibe/core';
+import { EditableText, Box, Flex } from '@vibe/core';
+import './DraggableBoardItem.css';
 
 /**
  * DraggableBoardItem component that renders a draggable item from monday.com board
@@ -17,7 +18,7 @@ import { EditableText, Box } from '@vibe/core';
  */
 const DraggableBoardItem = ({ item, date, onClick, onLabelChange }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [size, setSize] = useState({ width: 300, height: 'auto' });
+  const [size, setSize] = useState({ width: 140, height: 80 });
   const [isDragging, setIsDragging] = useState(false);
 
   const itemColor = item.originalItem.group?.color || 'primary';
@@ -51,36 +52,49 @@ const DraggableBoardItem = ({ item, date, onClick, onLabelChange }) => {
       onDragStart={handleDragStart}
       onDragStop={handleDragStop}
       onResize={handleResize}
-      bounds="parent"
-      minWidth={200}
-      minHeight={60}
+      minWidth={120}
+      minHeight={70}
+      maxWidth={200}
+      maxHeight={120}
     >
       <Box
         style={{
           opacity: isDragging ? 0.8 : 1,
           cursor: 'grab',
-          padding: '8px 12px',
+          padding: '8px',
           backgroundColor: itemColor,
-          borderRadius: '4px',
-          boxShadow: isDragging ? '0 5px 15px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.1)',
+          borderRadius: '6px',
+          boxShadow: isDragging ? '0 5px 15px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
           transition: 'box-shadow 0.2s, opacity 0.2s',
           userSelect: 'none',
           width: '100%',
           height: '100%',
           boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          overflow: 'hidden',
         }}
         onClick={onClick}
       >
-        <EditableText
-          value={item.originalItem.name}
-          onChange={(e) => onLabelChange?.(item.id, e.target.value)}
-        />
-        
-        {formattedDate && (
-          <div style={{ fontSize: '0.6em', color: '#555', marginBottom: '4px' }}>
-            {formattedDate}
-          </div>
-        )}
+        <div style={{ 
+          fontSize: '0.75em', 
+          fontWeight: '500',
+          lineHeight: '1.3',
+          wordWrap: 'break-word',
+          overflowWrap: 'break-word',
+          hyphens: 'auto',
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+        }}>
+          <EditableText
+            className='text-center'
+            value={item.originalItem.name}
+            onChange={(e) => onLabelChange?.(item.id, e.target.value)}
+            multiline
+          />
+        </div>
       </Box>
     </Rnd>
   );

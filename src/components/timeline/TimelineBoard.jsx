@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Box, EditableHeading, Flex, Text } from '@vibe/core';
-import { determineTimelineScale, generateTimelineMarkers, calculateItemPosition } from '../../functions/timelineUtils';
-import { getItemsWithDates } from '../../functions/getItemsWithDates';
+import { generateTimelineMarkers } from '../../functions/timelineUtils';
+import { processTimelineData } from '../../functions/processTimelineData';
+import getBackgroundColor from '../../functions/getBackgroundColor';
 import Timeline from './Timeline';
 
 /** BoardItem type * @typedef {Object} BoardItem
@@ -42,20 +43,6 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
     endDate: new Date(new Date().setMonth(new Date().getMonth() + 3)),
     scale: 'auto'
   });
-
-  // Function to get background color based on setting
-  const getBackgroundColor = (backgroundSetting) => {
-    switch (backgroundSetting) {
-      case 'light':
-        return '#ffffff';
-      case 'dark':
-        return 'var(--primary-background-color)';
-      case 'none':
-        return 'transparent';
-      default:
-        return 'var(--primary-background-color)'; // Default to dark
-    }
-  };
 
   // Extract settings with defaults
   const {
@@ -105,70 +92,11 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
 
   // Extract dates from board items and determine timeline parameters
   useEffect(() => {
-    if (!boardItems || boardItems.length === 0) {
-      console.log('No board items available');
-      return;
-    }
-    try {
-      // Find the date column ID (first key in the date object)
-      const dateColumn = Object.keys(settings.date || {})[0];
-
-      if (!dateColumn) {
-        console.warn('No date column selected in settings');
-        return;
-      }
-      
-      // Extract dates from board items using the imported function
-      const itemsWithDates = getItemsWithDates(boardItems, dateColumn);
-      
-      if (itemsWithDates.length === 0) {
-        console.warn('No valid dates found in board items');
-        return;
-      }
-      
-      // Find min and max dates
-      const dates = itemsWithDates.map(item => item.date);
-      const minDate = new Date(Math.min(...dates));
-      const maxDate = new Date(Math.max(...dates));
-      
-      // Add padding to the timeline (10% on each side)
-      const timeRange = maxDate - minDate;
-      const padding = timeRange * 0.1;
-      
-      const startDate = new Date(minDate.getTime() - padding);
-      const endDate = new Date(maxDate.getTime() + padding);
-      
-      // Determine appropriate scale
-      const timelineScale = determineTimelineScale(startDate, endDate, scale);
-      
-      // Update timeline parameters
-      setTimelineParams({
-        startDate,
-        endDate,
-        scale: timelineScale
-      });
-      
-      // Create timeline items with positions
-      const items = itemsWithDates.map(item => {
-        // Add parsed date to the original item for use in DraggableBoardItem
-        const originalItemWithDate = {
-          ...item.originalItem,
-          parsedDate: item.date
-        };
-        
-        return {
-          id: item.id,
-          label: item.label,
-          date: item.date,
-          position: calculateItemPosition(item.date, startDate, endDate),
-          originalItem: originalItemWithDate
-        };
-      });
-      
-      setTimelineItems(items);
-      
-    } catch (error) {
-      console.error('Error processing timeline data:', error);
+    const result = processTimelineData(boardItems, settings, scale);
+    
+    if (result) {
+      setTimelineParams(result.timelineParams);
+      setTimelineItems(result.timelineItems);
     }
   }, [boardItems, settings]);
 
