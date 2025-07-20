@@ -43,16 +43,33 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
     scale: 'auto'
   });
 
+  // Function to get background color based on setting
+  const getBackgroundColor = (backgroundSetting) => {
+    switch (backgroundSetting) {
+      case 'light':
+        return '#ffffff';
+      case 'dark':
+        return 'var(--primary-background-color)';
+      case 'None':
+        return 'transparent';
+      default:
+        return 'var(--primary-background-color)'; // Default to dark
+    }
+  };
+
   // Extract settings with defaults
   const {
     title = 'Timeline',
-    backgroundColor = 'var(--primary-background-color)',
+    backgroundColor: backgroundColorSetting = 'dark',
     primaryColor = 'var(--primary-color)',
     scale = 'auto',
     position = 'alternate', // Default position for timeline items
     dateFormat = 'mdyy', // Default date format
     datePosition = 'angled-below' // Default date position
   } = settings;
+
+  // Get the actual background color value
+  const backgroundColor = getBackgroundColor(backgroundColorSetting);
 
   // Handle title change
   const handleTitleChange = (newTitle) => {
