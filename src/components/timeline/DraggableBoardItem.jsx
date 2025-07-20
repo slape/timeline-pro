@@ -13,7 +13,7 @@ import './DraggableBoardItem.css';
  * @param {string} props.item.name - Name/title of the item
  * @param {Object} props.item.group - Group information for the item
  * @param {string} props.item.group.color - Color associated with the group
- * @param {string} props.shape - Shape of the item ('rectangle', 'circle', 'diamond')
+ * @param {string} props.shape - Shape of the item ('rectangle', 'circle')
  * @param {Function} props.onClick - Optional click handler
  * @param {Function} props.onLabelChange - Handler for label changes
  * @param {Function} props.onRemove - Handler for removing the item
@@ -106,8 +106,8 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: (shape === 'circle' || shape === 'oval') ? 'center' : 'space-between',
-          alignItems: (shape === 'circle' || shape === 'oval') ? 'center' : 'stretch',
+          justifyContent: shape === 'circle' ? 'center' : 'space-between',
+          alignItems: shape === 'circle' ? 'center' : 'stretch',
           overflow: 'visible',
         }}
         onClick={onClick}
@@ -131,7 +131,7 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              zIndex: 1000,
+              zIndex: 1001, // Higher z-index for diamond shapes
               border: '1px solid rgba(180, 180, 180, 0.9)',
               boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
               transition: 'all 0.2s ease',
@@ -168,14 +168,13 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
           wordWrap: 'break-word',
           overflowWrap: 'break-word',
           hyphens: 'auto',
-          flex: (shape === 'circle' || shape === 'oval') ? 'none' : 1,
+          flex: shape === 'circle' ? 'none' : 1,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           textAlign: 'center',
-          width: (shape === 'circle' || shape === 'oval') ? '100%' : 'auto',
-          height: (shape === 'circle' || shape === 'oval') ? '100%' : 'auto',
-          // No transform needed for diamond with clip-path
+          width: shape === 'circle' ? '100%' : 'auto',
+          height: shape === 'circle' ? '100%' : 'auto',
           transform: 'none',
         }}>
           <EditableText
