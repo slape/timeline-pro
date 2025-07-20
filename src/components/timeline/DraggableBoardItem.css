@@ -1,0 +1,23 @@
+/* DraggableBoardItem styles */
+
+.text-center {
+  text-align: center !important;
+  width: 100%;
+}
+
+.text-center input,
+.text-center textarea,
+.text-center div {
+  text-align: center !important;
+  width: 100%;
+}
+
+/* Ensure EditableText component content is centered */
+.text-center .editable-text-input,
+.text-center .editable-text-display {
+  text-align: center !important;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+}
