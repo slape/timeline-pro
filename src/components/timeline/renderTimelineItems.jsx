@@ -6,10 +6,11 @@ import DraggableBoardItem from './DraggableBoardItem';
  * @param {Array} itemsWithPositions - Array of items with calculated render positions
  * @param {Function} onItemClick - Callback for item click events
  * @param {Function} onLabelChange - Callback for label change events
+ * @param {Function} onRemove - Callback for removing items
  * @param {string} shape - Shape of timeline items ('rectangle', 'circle', 'diamond')
  * @returns {Array} Array of JSX elements for timeline items
  */
-export function renderTimelineItems(itemsWithPositions, onItemClick, onLabelChange, shape = 'rectangle') {
+export function renderTimelineItems(itemsWithPositions, onItemClick, onLabelChange, onRemove, shape = 'rectangle') {
   return itemsWithPositions.map((item, index) => {
     const itemDate = new Date(item.date);
     
@@ -30,6 +31,7 @@ export function renderTimelineItems(itemsWithPositions, onItemClick, onLabelChan
           shape={shape}
           onClick={() => onItemClick?.(item)}
           onLabelChange={(itemId, newLabel) => onLabelChange?.(itemId, newLabel)}
+          onRemove={onRemove}
         />
       </div>
     );

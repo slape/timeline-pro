@@ -36,9 +36,16 @@ export function processTimelineData(boardItems, settings, scale) {
     const minDate = new Date(Math.min(...dates));
     const maxDate = new Date(Math.max(...dates));
     
-    // Add padding to the timeline (10% on each side)
+    // Add padding to the timeline to prevent items from falling off the display area
     const timeRange = maxDate - minDate;
-    const padding = timeRange * 0.1;
+    const timeRangeInDays = timeRange / (1000 * 60 * 60 * 24);
+    
+    // Use percentage-based padding with a minimum of 3 days on each side
+    const percentagePadding = timeRange * 0.15; // Increased from 10% to 15%
+    const minimumPaddingInMs = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
+    
+    // Use the larger of percentage padding or minimum padding
+    const padding = Math.max(percentagePadding, minimumPaddingInMs);
     
     const startDate = new Date(minDate.getTime() - padding);
     const endDate = new Date(maxDate.getTime() + padding);

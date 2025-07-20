@@ -22,7 +22,7 @@ export const getShapeStyles = (shape) => {
     case 'diamond':
       return {
         clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-        borderRadius: '0px',
+        borderRadius: '3px',
       };
     case 'rectangle':
     default:
