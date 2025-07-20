@@ -69,13 +69,14 @@ const App = () => {
   console.log("settings", settings);
   console.log("itemIds", itemIds);
   
-  // Fetch board items when context changes and has a boardId
+  // Fetch board items when context changes and has a boardId, and itemIds are available
   useEffect(() => {
     // Call the imported fetchBoardItems function
-    if (context?.boardId) {
+    // Wait for both boardId and itemIds to be available before fetching
+    if (context?.boardId && itemIds && itemIds.length > 0) {
       fetchBoardItems(context, itemIds, setBoardItems, setIsLoading, setError);
     }
-  }, [context?.boardId]); // Only re-run when boardId changes
+  }, [context?.boardId, itemIds]); // Re-run when boardId or itemIds change
 
   return (
       <Box

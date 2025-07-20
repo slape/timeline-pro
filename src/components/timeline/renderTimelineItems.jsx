@@ -8,11 +8,15 @@ import DraggableBoardItem from './DraggableBoardItem';
  * @param {Function} onLabelChange - Callback for label change events
  * @param {Function} onRemove - Callback for removing items
  * @param {string} shape - Shape of timeline items ('rectangle', 'circle')
+ * @param {Set} hiddenItemIds - Set of item IDs that should be hidden from view
  * @returns {Array} Array of JSX elements for timeline items
  */
-export function renderTimelineItems(itemsWithPositions, onItemClick, onLabelChange, onRemove, shape = 'rectangle') {
+export function renderTimelineItems(itemsWithPositions, onItemClick, onLabelChange, onRemove, shape = 'rectangle', hiddenItemIds = new Set()) {
   return itemsWithPositions.map((item, index) => {
     const itemDate = new Date(item.date);
+    
+    // Check if this item should be hidden
+    const isHidden = hiddenItemIds.has(item.id);
     
     return (
       <div
@@ -23,6 +27,7 @@ export function renderTimelineItems(itemsWithPositions, onItemClick, onLabelChan
           top: `calc(50% + ${item.renderPosition.y}px)`,
           transform: 'translateX(-50%)',
           zIndex: item.renderPosition.zIndex,
+          display: isHidden ? 'none' : 'block', // Hide the item if it's in hiddenItemIds
         }}
       >
         <DraggableBoardItem

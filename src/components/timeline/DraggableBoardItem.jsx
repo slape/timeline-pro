@@ -115,9 +115,18 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
 
         {isHovered && onRemove && (
           <div
+            onMouseDown={(e) => {
+              e.stopPropagation(); // Prevent Rnd from capturing the event
+              e.preventDefault();
+            }}
             onClick={(e) => {
               e.stopPropagation(); // Prevent triggering the item's onClick
+              e.preventDefault(); // Prevent default behavior
+              console.log('Remove button clicked for item:', item.id);
               onRemove(item.id);
+            }}
+            onPointerDown={(e) => {
+              e.stopPropagation(); // Additional event prevention for touch devices
             }}
             style={{
               position: 'absolute',
@@ -135,6 +144,7 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
               border: '1px solid rgba(180, 180, 180, 0.9)',
               boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
               transition: 'all 0.2s ease',
+              pointerEvents: 'auto', // Ensure pointer events are enabled
             }}
             onMouseEnter={(e) => {
               e.target.style.backgroundColor = 'rgba(200, 200, 200, 0.95)';
