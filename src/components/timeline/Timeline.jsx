@@ -1,17 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { determineTimelineScale, calculateItemPosition, generateTimelineMarkers } from '../../functions/timelineUtils';
-import getUniqueDates from '../../functions/getUniqueDates';
-import getItemsWithDates from '../../functions/getItemsWithDates';
-import formatDate from '../../functions/formatDate';
-import processBoardItems from '../../functions/processBoardItems';
 import getMarkerStyles from '../../functions/getMarkerStyles';
 import generateTimelineMarkersFunction from '../../functions/generateTimelineMarkers';
 import processBoardItemsWithMarkers from '../../functions/processBoardItemsWithMarkers';
 import calculateItemSpacing from '../../functions/calculateItemSpacing';
 import { calculateTimelineItemPositions } from '../../functions/calculateTimelineItemPositions';
 import { renderTimelineItems } from './renderTimelineItems.jsx'
-import TimelineItem from './TimelineItem';
-import DraggableBoardItem from './DraggableBoardItem';
 import LeaderLineConnector from './LeaderLineConnector';
 
 /**
