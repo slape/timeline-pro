@@ -109,6 +109,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
 
   return (
     <Box
+      className="timeline-board"
       padding="medium"
       rounded="medium"
       border="true"
@@ -119,7 +120,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
         overflowX: 'auto',
         overflowY: 'hidden',
       }}
-    >
+    > 
       {/* Timeline Title */}
       {titleSetting && (
         <Flex justify="center" width="100%" marginBottom="medium">
