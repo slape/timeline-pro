@@ -30,12 +30,9 @@ import Timeline from './Timeline';
  * @returns {JSX.Element} - Timeline board component
  */
 const TimelineBoard = ({ boardItems = [], settings = {} }) => {
-  // State for timeline title
-  const [timelineTitle, setTimelineTitle] = useState('Timeline');
-  
   // State for timeline items
   const [timelineItems, setTimelineItems] = useState([]);
-  
+  const [titleSetting, setTitleSetting] = useState(settings.title || false);
   // State for timeline parameters
   const [timelineParams, setTimelineParams] = useState({
     startDate: new Date(),
@@ -43,9 +40,18 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
     scale: 'auto'
   });
 
-  // Extract settings with defaults
+  // Sync titleSetting with settings.title
+  useEffect(() => {
+    if (settings.title !== undefined) {
+      setTitleSetting(settings.title);
+    } else {
+      setTitleSetting(true); // Default to true if not specified
+    }
+  }, [settings.title]);
+
+  // Destructure settings with defaults
   const {
-    title = 'Timeline',
+    title = titleSetting, // Use the state value as default
     scale = 'auto',
     position = 'alternate', // Default position for timeline items
     dateFormat = 'mdyy', // Default date format
@@ -55,13 +61,6 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
 
   // Always use transparent background
   const backgroundColor = 'transparent';
-
-  // Handle title change
-  const handleTitleChange = (newTitle) => {
-    setTimelineTitle(newTitle);
-    console.log('Title changed to:', newTitle);
-    // Here you could update the settings or save to monday.com if needed
-  };
 
   // Handle timeline item move
   const handleTimelineItemMove = (itemId, newPosition) => {
@@ -99,13 +98,6 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
     }
   }, [boardItems, settings]);
 
-  // Set initial title from settings
-  useEffect(() => {
-    if (title) {
-      setTimelineTitle(title);
-    }
-  }, [title]);
-
   return (
     <Box
       padding="medium"
@@ -118,15 +110,16 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
         overflowY: 'hidden',
       }}
     >
-        <Flex justify="center" width="100%" marginBottom="medium">
-          <EditableHeading
-            type="h3"
-            value={timelineTitle}
-            onChange={handleTitleChange}
-            placeholder="Enter timeline title"
-            style={{ textAlign: 'center' }}
-          />
-        </Flex>
+        {/* Only render title if titleSetting is true */}
+        {titleSetting && (
+          <Flex justify="center" width="100%" marginBottom="medium">
+            <EditableHeading
+              type="h3"
+              value='Timeline Title'
+              style={{ textAlign: 'center' }}
+            />
+          </Flex>
+        )}
         
         {/* Timeline component */}
         <Box 
