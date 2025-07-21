@@ -4,11 +4,11 @@ const getBackgroundColor = (backgroundSetting) => {
     case 'light':
       return '#ffffff';
     case 'dark':
-      return 'var(--primary-background-color)';
+      return '#36454F'; // Charcoal color for dark mode
     case 'none':
       return 'transparent';
     default:
-      return 'var(--primary-background-color)'; // Default to dark
+      return '#36454F'; // Default to charcoal dark
   }
 };
 

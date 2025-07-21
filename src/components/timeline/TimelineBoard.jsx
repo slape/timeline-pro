@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Box, EditableHeading, Flex, Text } from '@vibe/core';
 import { generateTimelineMarkers } from '../../functions/timelineUtils';
 import { processTimelineData } from '../../functions/processTimelineData';
-import getBackgroundColor from '../../functions/getBackgroundColor';
 import Timeline from './Timeline';
 
 /** BoardItem type * @typedef {Object} BoardItem
@@ -47,7 +46,6 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
   // Extract settings with defaults
   const {
     title = 'Timeline',
-    backgroundColor: backgroundColorSetting = 'dark',
     scale = 'auto',
     position = 'alternate', // Default position for timeline items
     dateFormat = 'mdyy', // Default date format
@@ -55,8 +53,8 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
     shape = 'rectangle' // Default shape for timeline items
   } = settings;
 
-  // Get the actual background color value
-  const backgroundColor = getBackgroundColor(backgroundColorSetting);
+  // Always use transparent background
+  const backgroundColor = 'transparent';
 
   // Handle title change
   const handleTitleChange = (newTitle) => {
@@ -131,9 +129,6 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
         <Box 
           marginTop="medium"
           style={{
-            border: `1px solid var(--ui-border-color)`,
-            borderRadius: '4px',
-            backgroundColor: 'var(--secondary-background-color)',
             padding: '16px',
             minHeight: '200px',
           }}

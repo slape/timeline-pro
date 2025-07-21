@@ -44,16 +44,16 @@ export function calculateTimelineItemPositions(items, startDate, endDate, positi
       // Determine position based on setting
       if (position === 'above') {
         itemPosition = 'above';
-        // For same-date items, stack them with slight overlap
+        // For same-date items, stack them vertically with no overlap
         // Timeline is at 75%, so items need to be positioned relative to that
-        verticalOffset = -80 - (sameDateIndex * 20); // Stack upward with 20px overlap
-        horizontalOffset = sameDateIndex * 10; // Slight horizontal offset
+        verticalOffset = -100 - (sameDateIndex * 50); // Stack upward with 50px spacing (no overlap)
+        horizontalOffset = 0; // No horizontal offset to maintain perpendicular lines
       } else if (position === 'below') {
         itemPosition = 'below';
-        // For same-date items, stack them with slight overlap
+        // For same-date items, stack them vertically with no overlap
         // Timeline is at 25%, so items need to be positioned relative to that
-        verticalOffset = 80 + (sameDateIndex * 20); // Stack downward with 20px overlap
-        horizontalOffset = sameDateIndex * 10; // Slight horizontal offset
+        verticalOffset = 100 + (sameDateIndex * 50); // Stack downward with 50px spacing (no overlap)
+        horizontalOffset = 0; // No horizontal offset to maintain perpendicular lines
       } else { // alternate
         // Alternate between above and below for same-date items
         if (sameDateIndex % 2 === 0) {
@@ -62,13 +62,14 @@ export function calculateTimelineItemPositions(items, startDate, endDate, positi
           itemPosition = globalIndex % 2 === 0 ? 'above' : 'below';
         }
         
-        // Timeline is centered at 50% for alternating, with increased offset for above items for better visual balance
-        verticalOffset = itemPosition === 'above' ? -150 : 120;
-        horizontalOffset = sameDateIndex * 15; // More horizontal offset for alternating
+        // Timeline is centered at 50% for alternating, with increased spacing to prevent overlap
+        verticalOffset = itemPosition === 'above' ? -150 - (sameDateIndex * 60) : 150 + (sameDateIndex * 60);
+        horizontalOffset = 0; // No horizontal offset to maintain perpendicular lines
       }
       
-      // Ensure items stay within display bounds
-      const finalHorizontalPosition = Math.max(5, Math.min(90, datePosition + (horizontalOffset / 10))); // Keep within 5-90% with margin
+      // Ensure items stay within display bounds but maintain exact horizontal alignment with date marker
+      // For perpendicular connector lines on initial render, keep exact datePosition with no offset
+      const finalHorizontalPosition = datePosition; // Exact alignment with date position for perpendicular line
       const maxVerticalOffset = 200; // Maximum distance from timeline
       const finalVerticalOffset = Math.max(-maxVerticalOffset, Math.min(maxVerticalOffset, verticalOffset));
       
