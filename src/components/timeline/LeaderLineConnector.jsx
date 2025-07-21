@@ -4,39 +4,90 @@ const LeaderLineConnector = ({ fromId, toId }) => {
   const [lineCoords, setLineCoords] = useState(null);
 
   const updateLinePosition = () => {
-    const fromElem = document.getElementById(fromId);
-    const toElem = document.getElementById(toId);
+    const fromElem = document.getElementById(fromId); // Board item container
+    const toElem = document.getElementById(toId); // Timeline marker
 
     if (fromElem && toElem) {
-      const fromRect = fromElem.getBoundingClientRect();
-      const toRect = toElem.getBoundingClientRect();
-      
       // Get the timeline container to calculate relative positions
       const timelineContainer = fromElem.closest('.timeline-container');
-      const containerRect = timelineContainer ? timelineContainer.getBoundingClientRect() : { left: 0, top: 0 };
+      if (!timelineContainer) return;
       
-      // Calculate connection points
-      const fromX = fromRect.left + fromRect.width / 2 - containerRect.left;
-      const fromY = fromRect.top + fromRect.height / 2 - containerRect.top;
+      const containerRect = timelineContainer.getBoundingClientRect();
+      
+      // Debug: Log the element structure to understand Rnd wrapping
+      if (Math.random() < 0.01) { // Only log occasionally to avoid spam
+        console.log('FromElem structure:', {
+          id: fromElem.id,
+          className: fromElem.className,
+          children: Array.from(fromElem.children).map(child => ({
+            tagName: child.tagName,
+            className: child.className,
+            style: child.style.cssText
+          }))
+        });
+      }
+      
+      // For Rnd components, we should use the container element directly
+      // since Rnd manages the positioning through transforms
+      let actualItemElement = fromElem;
+      
+      // Look for the Rnd wrapper or the Box component inside
+      const rndWrapper = fromElem.querySelector('div[style*="transform"]');
+      const boxElement = fromElem.querySelector('div[style*="background-color"]');
+      
+      if (rndWrapper) {
+        actualItemElement = rndWrapper;
+      } else if (boxElement) {
+        actualItemElement = boxElement;
+      }
+      const fromRect = actualItemElement.getBoundingClientRect();
+      const toRect = toElem.getBoundingClientRect();
+      
+      // Calculate timeline marker position (center)
       const toX = toRect.left + toRect.width / 2 - containerRect.left;
       const toY = toRect.top + toRect.height / 2 - containerRect.top;
       
-      setLineCoords({ fromX, fromY, toX, toY });
+      // Calculate board item position relative to timeline
+      const itemCenterX = fromRect.left + fromRect.width / 2 - containerRect.left;
+      const itemCenterY = fromRect.top + fromRect.height / 2 - containerRect.top;
+      
+      // Determine if item is above or below the timeline marker
+      const isItemBelow = itemCenterY > toY;
+      
+      // Calculate attachment point on the board item
+      // If item is below timeline, attach to top edge; if above, attach to bottom edge
+      const fromX = itemCenterX; // Always center horizontally
+      const fromY = isItemBelow 
+        ? fromRect.top - containerRect.top // Top edge of item
+        : fromRect.bottom - containerRect.top; // Bottom edge of item
+      
+      // For perpendicular lines, the connection should be straight vertical
+      // So the line goes from the item edge directly to the timeline marker's Y position
+      setLineCoords({ 
+        fromX, 
+        fromY, 
+        toX: fromX, // Keep X the same for perpendicular line
+        toY 
+      });
     }
   };
 
   useEffect(() => {
-    // Initial position calculation
-    const timer = setTimeout(updateLinePosition, 100); // Small delay to ensure elements are rendered
+    // Initial position calculation with multiple attempts
+    const timer1 = setTimeout(updateLinePosition, 50);
+    const timer2 = setTimeout(updateLinePosition, 200);
+    const timer3 = setTimeout(updateLinePosition, 500);
     
     // Update on resize
     window.addEventListener('resize', updateLinePosition);
     
-    // Update frequently for drag operations
-    const interval = setInterval(updateLinePosition, 16); // ~60fps
+    // Update very frequently for drag operations (higher frequency to catch Rnd updates)
+    const interval = setInterval(updateLinePosition, 8); // ~120fps for better tracking
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
       clearInterval(interval);
       window.removeEventListener('resize', updateLinePosition);
     };
