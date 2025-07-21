@@ -14,6 +14,7 @@
   "dependencies": {
     "@mondaycom/apps-sdk": "^2.1.2",
     "@vibe/core": "^3.54.2",
+    "html-to-image": "^1.11.13",
     "leader-line": "^1.0.8",
     "monday-sdk-js": "^0.5.5",
     "react-rnd": "^10.5.2"

@@ -5,6 +5,7 @@ import "@vibe/core/tokens";
 import TimelineBoard from './components/timeline/TimelineBoard';
 import { Box, Loader, ThemeProvider } from "@vibe/core";
 import fetchBoardItems from './functions/fetchBoardItems';
+import ExportButton from './components/export/ExportButton';
 
 // Usage of mondaySDK example, for more information visit here: https://developer.monday.com/apps/docs/introduction-to-the-sdk/
 const monday = mondaySdk();
@@ -100,6 +101,10 @@ const App = () => {
         ) : (
           <ThemeProvider systemTheme={context.theme}>
             <TimelineBoard boardItems={boardItems} settings={settings} />
+            {/* Export Button - Left justified */}
+            <Box marginBottom="medium">
+              <ExportButton theme={context.theme} />
+            </Box>  
           </ThemeProvider>
         )}
       </Box>
