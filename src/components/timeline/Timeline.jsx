@@ -109,10 +109,16 @@ const Timeline = ({
       {/* Timeline markers */}
       {markers.map((marker, index) => {
         const markerStyles = getMarkerStyles(datePosition);
-        
-        // Calculate dynamic marker position based on timeline position
+        const isEdgeMarker = index === 0 || index === markers.length - 1;
         const timelineTop = position === 'above' ? '75%' : position === 'below' ? '25%' : '50%';
         const isAbove = datePosition.includes('above');
+        
+        // For 'none' date position, only show the marker and label for first and last markers
+        const showMarker = datePosition !== 'none' || isEdgeMarker;
+        
+        if (!showMarker) {
+          return null; // Don't render non-edge markers when datePosition is 'none'
+        }
         
         return (
           <div
@@ -128,12 +134,8 @@ const Timeline = ({
               alignItems: 'center',
             }}
           >
-            <div
-              style={markerStyles.markerLine}
-            />
-            <div
-              style={markerStyles.dateLabel}
-            >
+            <div style={markerStyles.markerLine} />
+            <div style={markerStyles.dateLabel}>
               {marker.label}
             </div>
           </div>

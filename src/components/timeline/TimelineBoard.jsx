@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Box, EditableHeading, Flex, Text } from '@vibe/core';
-import { generateTimelineMarkers } from '../../functions/timelineUtils';
 import { processTimelineData } from '../../functions/processTimelineData';
 import Timeline from './Timeline';
 import GroupLegend from './GroupLegend';
