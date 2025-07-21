@@ -23,7 +23,7 @@ export default function processBoardItems(itemsWithDates, startDate, endDate, po
       timelinePosition, // Position on the timeline (0-100%)
       visualPosition: {
         x: horizontalOffset,
-        y: position === 'above' ? -120 - verticalOffset : 80 + verticalOffset
+        y: position === 'above' ? -60 - (verticalOffset * 0.7) : 40 + (verticalOffset * 0.7)
       },
       index
     };
