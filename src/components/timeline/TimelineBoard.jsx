@@ -3,6 +3,7 @@ import { Box, EditableHeading, Flex, Text } from '@vibe/core';
 import { generateTimelineMarkers } from '../../functions/timelineUtils';
 import { processTimelineData } from '../../functions/processTimelineData';
 import Timeline from './Timeline';
+import GroupLegend from './GroupLegend';
 
 /** BoardItem type * @typedef {Object} BoardItem
  * @property {string} id - Unique item ID
@@ -32,7 +33,8 @@ import Timeline from './Timeline';
 const TimelineBoard = ({ boardItems = [], settings = {} }) => {
   // State for timeline items
   const [timelineItems, setTimelineItems] = useState([]);
-  const [titleSetting, setTitleSetting] = useState(settings.title || false);
+  const [titleSetting, setTitleSetting] = useState(settings.title !== undefined ? settings.title : true);
+  const [showLedger, setShowLedger] = useState(settings.ledger !== undefined ? settings.ledger : true);
   // State for timeline parameters
   const [timelineParams, setTimelineParams] = useState({
     startDate: new Date(),
@@ -40,14 +42,22 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
     scale: 'auto'
   });
 
-  // Sync titleSetting with settings.title
+  // Sync settings with local state
   useEffect(() => {
+    // Sync title setting
     if (settings.title !== undefined) {
       setTitleSetting(settings.title);
     } else {
       setTitleSetting(true); // Default to true if not specified
     }
-  }, [settings.title]);
+    
+    // Sync ledger setting
+    if (settings.ledger !== undefined) {
+      setShowLedger(settings.ledger);
+    } else {
+      setShowLedger(true); // Default to true if not specified
+    }
+  }, [settings.title, settings.ledger]);
 
   // Destructure settings with defaults
   const {
@@ -157,6 +167,8 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
             </Flex>
           )}
         </Box>
+        {/* Group Legend - only show if ledger setting is true */}
+        {showLedger && <GroupLegend boardItems={boardItems} />}
     </Box>
   );
 };
