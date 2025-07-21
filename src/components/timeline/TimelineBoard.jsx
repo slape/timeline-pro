@@ -3,6 +3,7 @@ import { Box, EditableHeading, Flex, Text } from '@vibe/core';
 import { processTimelineData } from '../../functions/processTimelineData';
 import Timeline from './Timeline';
 import GroupLegend from './GroupLegend';
+import ScaleMarkers from './ScaleMarkers';
 
 /** BoardItem type * @typedef {Object} BoardItem
  * @property {string} id - Unique item ID
@@ -113,23 +114,34 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
       rounded="medium"
       border="true"
       style={{
+        width: '100%',
         height: '100%',
-        backgroundColor,
+        padding: '20px',
         overflowX: 'auto',
         overflowY: 'hidden',
       }}
     >
-        {/* Only render title if titleSetting is true */}
-        {titleSetting && (
-          <Flex justify="center" width="100%" marginBottom="medium">
-            <EditableHeading
-              type="h3"
-              value='Timeline Title'
-              style={{ textAlign: 'center' }}
-            />
-          </Flex>
-        )}
-        
+      {/* Timeline Title */}
+      {titleSetting && (
+        <Flex justify="center" width="100%" marginBottom="medium">
+          <EditableHeading
+            type="h3"
+            value={settings.titleText || 'Timeline Title'}
+            style={{ textAlign: 'center' }}
+          />
+        </Flex>
+      )}
+      
+      {/* Scale Markers */}
+      <Box marginLeft="10%" marginRight="10%" marginBottom={4}>
+        <ScaleMarkers 
+          startDate={timelineParams.startDate}
+          endDate={timelineParams.endDate}
+          scale={settings.scale || 'weeks'}
+          position="below"
+        />
+      </Box>
+
         {/* Timeline component */}
         <Box 
           marginTop="medium"
