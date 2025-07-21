@@ -79,12 +79,21 @@ const App = () => {
   }, [context?.boardId, itemIds]); // Re-run when boardId or itemIds change
 
   return (
-      <Box
-      padding='medium'
-      >
+      <Box padding='medium'>
         {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-            <Loader size="large" />
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: '100vh',
+            width: '100%'
+          }}>
+            <Loader size="medium" />
           </div>
         ) : error ? (
           <div style={{ color: 'red' }}>{error}</div>
