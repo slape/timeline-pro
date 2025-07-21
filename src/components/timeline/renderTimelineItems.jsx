@@ -26,9 +26,10 @@ export function renderTimelineItems(itemsWithPositions, onItemClick, onLabelChan
           position: 'absolute',
           left: `${item.renderPosition.x}%`,
           top: `calc(50% + ${item.renderPosition.y}px)`,
-          transform: 'translateX(-50%)',
           zIndex: item.renderPosition.zIndex,
           display: isHidden ? 'none' : 'block', // Hide the item if it's in hiddenItemIds
+          transform: 'translateX(-50%)', // Center the item on its position
+          textAlign: 'center' // Center content within item
         }}
       >
         <DraggableBoardItem

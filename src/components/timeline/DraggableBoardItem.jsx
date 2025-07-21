@@ -20,14 +20,22 @@ import './DraggableBoardItem.css';
  * @returns {JSX.Element} - Draggable board item component
  */
 const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelChange, onRemove }) => {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
   // Initialize size based on shape - circles should be square, ovals can be flexible
-  const [size, setSize] = useState(() => {
-    if (shape === 'circle') {
-      return { width: 100, height: 100 };
-    }
-    return { width: 140, height: 30 };
-  });
+  const [size, setSize] = useState(() => ({
+    width: shape === 'circle' ? 100 : 140,
+    height: shape === 'circle' ? 100 : 30
+  }));
+  
+  // Calculate position based on center alignment with fine-tuned offset
+  const calculateCenterOffset = (currentWidth) => {
+    const baseOffset = -(currentWidth / 2);
+    // Fine-tune offset for pixel-perfect alignment
+    // This accounts for any padding/margin/border that might affect the visual center
+    const fineTuneOffset = shape === 'circle' ? -4 : -4;
+    return { x: baseOffset + fineTuneOffset, y: 0 };
+  };
+  
+  const [position, setPosition] = useState(() => calculateCenterOffset(shape === 'circle' ? 100 : 140));
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -40,15 +48,18 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
 
   const shapeStyles = getShapeStyles(shape);
 
-  // Force square dimensions for circle shapes
+  // Update position and size when shape changes
   useEffect(() => {
-    if (shape === 'circle') {
-      const currentSize = Math.min(size.width, size.height);
-      if (size.width !== currentSize || size.height !== currentSize) {
-        setSize({ width: currentSize, height: currentSize });
-      }
-    }
-  }, [shape, size.width, size.height]);
+    const newWidth = shape === 'circle' ? 100 : 140;
+    const newHeight = shape === 'circle' ? 100 : 30;
+    
+    setSize({
+      width: newWidth,
+      height: newHeight
+    });
+    
+    setPosition(calculateCenterOffset(newWidth));
+  }, [shape]);
 
   const handleDragStart = () => {
     setIsDragging(true);
