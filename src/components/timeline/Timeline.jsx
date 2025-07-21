@@ -12,6 +12,7 @@ import { calculateTimelineItemPositions } from '../../functions/calculateTimelin
 import { renderTimelineItems } from './renderTimelineItems.jsx'
 import TimelineItem from './TimelineItem';
 import DraggableBoardItem from './DraggableBoardItem';
+import LeaderLineConnector from './LeaderLineConnector';
 
 /**
  * Timeline component that displays a horizontal timeline with markers and draggable items
@@ -123,6 +124,7 @@ const Timeline = ({
         return (
           <div
             key={`marker-${index}`}
+            id={`timeline-marker-${index}`}
             style={{
               position: 'absolute',
               left: `${marker.position}%`,
@@ -166,6 +168,37 @@ const Timeline = ({
           shape,
           hiddenItemIds
         );
+      })()}
+      
+      {/* LeaderLine Connectors - Connect board items to timeline markers */}
+      {(() => {
+        // Calculate positions for all items using extracted function
+        const itemsWithPositions = calculateTimelineItemPositions(items, startDate, endDate, position);
+        
+        // Create connectors for visible items only
+        return itemsWithPositions
+          .filter(item => !hiddenItemIds.has(item.id)) // Only show connectors for visible items
+          .map((item, index) => {
+            // Find the corresponding marker for this item
+            const markerInfo = itemToMarkerMap.get(item.id);
+            if (!markerInfo) return null;
+            
+            // Find the marker index based on marker position
+            const markerIndex = markers.findIndex(marker => 
+              Math.abs(marker.position - markerInfo.markerPosition) < 0.1
+            );
+            
+            if (markerIndex === -1) return null;
+            
+            return (
+              <LeaderLineConnector
+                key={`connector-${item.id}`}
+                fromId={`board-item-${item.id}`}
+                toId={`timeline-marker-${markerIndex}`}
+              />
+            );
+          })
+          .filter(Boolean); // Remove null values
       })()}
     </div>
   );
