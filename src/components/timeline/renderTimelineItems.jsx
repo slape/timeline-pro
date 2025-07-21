@@ -21,6 +21,7 @@ export function renderTimelineItems(itemsWithPositions, onItemClick, onLabelChan
     return (
       <div
         key={item.id}
+        id={`board-item-${item.id}`}
         style={{
           position: 'absolute',
           left: `${item.renderPosition.x}%`,
