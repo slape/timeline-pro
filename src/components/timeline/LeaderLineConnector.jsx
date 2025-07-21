@@ -43,7 +43,7 @@ const LeaderLineConnector = ({ fromId, toId }) => {
       const fromRect = actualItemElement.getBoundingClientRect();
       const toRect = toElem.getBoundingClientRect();
       
-      // Calculate timeline marker position (center)
+      // Calculate timeline marker position (center) - this is the FIXED endpoint
       const toX = toRect.left + toRect.width / 2 - containerRect.left;
       const toY = toRect.top + toRect.height / 2 - containerRect.top;
       
@@ -56,18 +56,19 @@ const LeaderLineConnector = ({ fromId, toId }) => {
       
       // Calculate attachment point on the board item
       // If item is below timeline, attach to top edge; if above, attach to bottom edge
-      const fromX = itemCenterX; // Always center horizontally
+      const fromX = itemCenterX; // Center horizontally on the item
       const fromY = isItemBelow 
         ? fromRect.top - containerRect.top // Top edge of item
         : fromRect.bottom - containerRect.top; // Bottom edge of item
       
-      // For perpendicular lines, the connection should be straight vertical
-      // So the line goes from the item edge directly to the timeline marker's Y position
+      // The line connects from the item edge to the FIXED timeline marker position
+      // This allows the line to be perpendicular when directly below/above, 
+      // or diagonal when the item is moved horizontally
       setLineCoords({ 
         fromX, 
         fromY, 
-        toX: fromX, // Keep X the same for perpendicular line
-        toY 
+        toX, // Use the actual timeline marker X position (FIXED)
+        toY  // Use the actual timeline marker Y position (FIXED)
       });
     }
   };
