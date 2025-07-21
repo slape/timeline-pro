@@ -8,6 +8,7 @@ import { format } from 'date-fns';
  * @param {Date} props.endDate - End date of the timeline
  * @param {string} props.scale - Scale of the timeline ('days', 'weeks', 'months', 'quarters', 'years', 'none')
  * @param {string} [props.position='below'] - Position of the markers relative to the line ('above' or 'below')
+ * @param {boolean} [props.flipMarkers=false] - Whether to flip markers to the opposite side of the line
  * @param {string} [props.className] - Additional CSS class names
  * @returns {JSX.Element} - ScaleMarkers component
  */
@@ -15,7 +16,7 @@ const ScaleMarkers = ({
   startDate, 
   endDate, 
   scale, 
-  position = 'below',
+  datePosition = 'below',
   className = '' 
 }) => {
   // Calculate the markers based on scale and date range
@@ -33,11 +34,11 @@ const ScaleMarkers = ({
     let current = new Date(start);
     let index = 1;
     
-    // Add start marker
+    // Add start marker (positioned at 5% to account for container padding)
     markers.push({
       date: new Date(current),
       label: getLabel(current, scale, index),
-      position: 0
+      position: 5 // 5% from left edge (matching container padding)
     });
     
     // Calculate interval based on scale
@@ -45,26 +46,33 @@ const ScaleMarkers = ({
       const next = getNextDate(current, scale);
       if (next >= end) break;
       
-      const position = ((next - start) / (end - start)) * 100;
+      // Calculate position between 5% and 95% (accounting for 5% padding on each side)
+      const position = 5 + ((next - start) / (end - start)) * 90;
       markers.push({
         date: new Date(next),
         label: getLabel(next, scale, ++index),
-        position: Math.min(100, Math.max(0, position))
+        position: Math.min(95, Math.max(5, position)) // Keep within 5-95% range
       });
       
       current = next;
     }
     
-    // Add end marker if there's enough space
-    if (markers.length > 1) {
-      const lastMarker = markers[markers.length - 1];
-      if (lastMarker.position < 95) { // Only add if not too close to the end
-        markers.push({
-          date: new Date(end),
-          label: getLabel(end, scale, 'End'),
-          position: 100
-        });
-      }
+    // Always add end marker if it's different from the last marker
+    const lastMarker = markers[markers.length - 1];
+    const endPosition = 95; // 5% from right edge (matching container padding)
+    
+    // Only add end marker if it's not the same as the last marker
+    if (lastMarker.position < endPosition - 1) { // Small threshold to avoid duplicates
+      markers.push({
+        date: new Date(end),
+        label: getLabel(end, scale, 'End'),
+        position: endPosition
+      });
+    } else {
+      // Update the last marker to be the end marker if they're close
+      lastMarker.position = endPosition;
+      lastMarker.label = getLabel(end, scale, 'End');
+      lastMarker.date = new Date(end);
     }
     
     return markers;
@@ -101,6 +109,12 @@ const ScaleMarkers = ({
       case 'days':
         return format(date, 'MMM d');
       case 'weeks':
+        // Calculate week number based on the start date
+        if (index === 'End') {
+          const start = new Date(startDate);
+          const diffInWeeks = Math.ceil((date - start) / (7 * 24 * 60 * 60 * 1000));
+          return `Week ${diffInWeeks}`;
+        }
         return `Week ${index}`;
       case 'months':
         return format(date, 'MMM yyyy');
@@ -118,25 +132,26 @@ const ScaleMarkers = ({
     return null;
   }
   
-  const isAbove = position === 'above';
+  // Determine if markers should be flipped based on datePosition
+  const shouldFlip = datePosition === 'angled below' || datePosition === 'horizontal below';
+  const isAbove = shouldFlip;
   
   return (
     <div 
       className={`scale-markers ${className}`}
       style={{
-        position: 'relative',
-        width: '100%',
-        height: '40px',
-        margin: '20px 0',
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: isAbove ? 0 : '100%',
+        height: '24px',
+        pointerEvents: 'none',
+        zIndex: 10
       }}
     >
-      {/* Main line */}
+      {/* Main line - positioned to match timeline */}
       <div 
         style={{
-          position: 'absolute',
-          top: isAbove ? '100%' : 0,
-          left: 0,
-          width: '100%',
           height: '1px',
           backgroundColor: 'var(--ui-border-color)',
         }}
@@ -153,6 +168,8 @@ const ScaleMarkers = ({
             transform: 'translateX(-50%)',
             display: 'flex',
             flexDirection: isAbove ? 'column-reverse' : 'column',
+            transform: 'translateX(-50%)',
+            padding: isAbove ? '0 0 4px' : '4px 0 0',
             alignItems: 'center',
           }}
         >
@@ -161,8 +178,7 @@ const ScaleMarkers = ({
               width: '1px',
               height: '8px',
               backgroundColor: 'var(--ui-border-color)',
-              marginBottom: isAbove ? 0 : '4px',
-              marginTop: isAbove ? '4px' : 0,
+              flexShrink: 0,
             }}
           />
           <div 
@@ -173,10 +189,12 @@ const ScaleMarkers = ({
               textAlign: 'center',
               transform: scale === 'days' ? 'rotate(-25deg)' : 'none',
               transformOrigin: isAbove ? 'center top' : 'center bottom',
+              order: shouldFlip ? -1 : 0,
               marginTop: isAbove ? 0 : '4px',
               marginBottom: isAbove ? '4px' : 0,
             }}
           >
+
             {marker.label}
           </div>
         </div>
