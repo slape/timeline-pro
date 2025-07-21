@@ -43,9 +43,26 @@ const LeaderLineConnector = ({ fromId, toId }) => {
       const fromRect = actualItemElement.getBoundingClientRect();
       const toRect = toElem.getBoundingClientRect();
       
-      // Calculate timeline marker position (center) - this is the FIXED endpoint
-      const toX = toRect.left + toRect.width / 2 - containerRect.left;
-      const toY = toRect.top + toRect.height / 2 - containerRect.top;
+      // Calculate timeline marker X position (center horizontally)
+      const markerX = toRect.left + toRect.width / 2 - containerRect.left;
+      
+      // Find the actual timeline line position within the container
+      const timelineLineElement = timelineContainer.querySelector('div[style*="height: 2px"]');
+      let timelineY;
+      
+      if (timelineLineElement) {
+        const timelineRect = timelineLineElement.getBoundingClientRect();
+        timelineY = timelineRect.top + timelineRect.height / 2 - containerRect.top;
+      } else {
+        // Fallback: calculate timeline position based on container
+        const containerHeight = containerRect.height;
+        // Assume timeline is at 50% for now (this matches the Timeline component logic)
+        timelineY = containerHeight * 0.5;
+      }
+      
+      // The connection point should be at the timeline intersection
+      const toX = markerX;
+      const toY = timelineY;
       
       // Calculate board item position relative to timeline
       const itemCenterX = fromRect.left + fromRect.width / 2 - containerRect.left;
@@ -118,21 +135,6 @@ const LeaderLineConnector = ({ fromId, toId }) => {
         zIndex: 5, // Below items but above timeline
       }}
     >
-      <defs>
-        <marker
-          id={`arrowhead-${fromId}-${toId}`}
-          markerWidth="10"
-          markerHeight="7"
-          refX="9"
-          refY="3.5"
-          orient="auto"
-        >
-          <polygon
-            points="0 0, 10 3.5, 0 7"
-            fill="#666"
-          />
-        </marker>
-      </defs>
       <line
         x1={lineCoords.fromX}
         y1={lineCoords.fromY}
@@ -140,9 +142,15 @@ const LeaderLineConnector = ({ fromId, toId }) => {
         y2={lineCoords.toY}
         stroke="#666"
         strokeWidth="2"
-        strokeDasharray="5,5"
-        markerEnd={`url(#arrowhead-${fromId}-${toId})`}
         opacity="0.7"
+      />
+      {/* Small dot at the timeline endpoint */}
+      <circle
+        cx={lineCoords.toX}
+        cy={lineCoords.toY}
+        r="4"
+        fill="#666"
+        opacity="0.8"
       />
     </svg>
   );
