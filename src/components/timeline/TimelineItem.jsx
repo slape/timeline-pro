@@ -64,14 +64,6 @@ const TimelineItem = ({ id, label, position, onLabelChange, originalItem, itemPo
         }}
       >
       </div>
-      
-      {/* The board item card
-      <div style={cardStyle}>
-        <DraggableBoardItem 
-          item={originalItem.originalItem} 
-          date={originalItem.originalItem.parsedDate || new Date()} 
-        />
-      </div> */}
     </div>
   );
 };

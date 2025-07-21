@@ -118,12 +118,15 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
         overflowY: 'hidden',
       }}
     >
-        <EditableHeading
-          type="h3"
-          value={timelineTitle}
-          onChange={handleTitleChange}
-          placeholder="Enter timeline title"
-        />
+        <Flex justify="center" width="100%" marginBottom="medium">
+          <EditableHeading
+            type="h3"
+            value={timelineTitle}
+            onChange={handleTitleChange}
+            placeholder="Enter timeline title"
+            style={{ textAlign: 'center' }}
+          />
+        </Flex>
         
         {/* Timeline component */}
         <Box 

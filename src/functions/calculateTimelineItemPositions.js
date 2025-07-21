@@ -64,16 +64,24 @@ export function calculateTimelineItemPositions(items, startDate, endDate, positi
         
         // Reduce vertical offset for alternating items to bring them closer to the timeline
         verticalOffset = itemPosition === 'above' 
-          ? -150 - (sameDateIndex * 40)  // Reduced from -150 - (sameDateIndex * 60)
-          : 100 + (sameDateIndex * 40);  // Reduced from 150 + (sameDateIndex * 60)
+          ? -170 - (sameDateIndex * 40)  // Reduced from -150 - (sameDateIndex * 60)
+          : 90 + (sameDateIndex * 40);  // Reduced from 150 + (sameDateIndex * 60)
         horizontalOffset = 0; // No horizontal offset to maintain perpendicular lines
       }
       
       // Ensure items stay within display bounds but maintain exact horizontal alignment with date marker
       // For perpendicular connector lines on initial render, keep exact datePosition with no offset
       const finalHorizontalPosition = datePosition; // Exact alignment with date position for perpendicular line
-      const maxVerticalOffset = 120; // Reduced from 200 - Maximum distance from timeline
-      const finalVerticalOffset = Math.max(-maxVerticalOffset, Math.min(maxVerticalOffset, verticalOffset));
+      
+      // Use different max offsets for above and below timeline items
+      const maxVerticalOffset = itemPosition === 'above' 
+        ? 300  // Increased max offset for items above timeline
+        : 120; // Keep smaller offset for items below timeline
+      
+      // Only apply minimum bounds check for negative offsets (above timeline)
+      const finalVerticalOffset = itemPosition === 'above'
+        ? Math.max(-maxVerticalOffset, verticalOffset) // Only cap negative values
+        : Math.min(maxVerticalOffset, verticalOffset); // Only cap positive values
       
       renderedItems.push({
         ...item,
