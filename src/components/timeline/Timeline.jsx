@@ -6,6 +6,7 @@ import calculateItemSpacing from '../../functions/calculateItemSpacing';
 import { calculateTimelineItemPositions } from '../../functions/calculateTimelineItemPositions';
 import { renderTimelineItems } from './renderTimelineItems.jsx'
 import LeaderLineConnector from './LeaderLineConnector';
+import { format } from 'date-fns';
 
 /**
  * Timeline component that displays a horizontal timeline with markers and draggable items
@@ -34,7 +35,8 @@ const Timeline = ({
   dateFormat = 'mdyy',
   datePosition = 'angled-below', // Default to angled-below
   position = 'below', // Default to below
-  shape = 'rectangle' // Default to rectangle
+  shape = 'rectangle',
+  scale = 'days', // Default to rectangle
 }) => {
   // Generate timeline markers from unique dates in board items
   const [markers, setMarkers] = useState([]);
@@ -47,6 +49,65 @@ const Timeline = ({
   
   // State to track which items are hidden (removed from view)
   const [hiddenItemIds, setHiddenItemIds] = useState(new Set());
+  
+  // Calculate the scale markers based on scale and date range
+  const scaleMarkers = useMemo(() => {
+    if (!startDate || !endDate || scale === 'none') return [];
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const scaleMarkers = [];
+    
+    // Reset time components to avoid timezone issues
+    start.setHours(12, 0, 0, 0);
+    end.setHours(12, 0, 0, 0);
+    
+    let current = new Date(start);
+    let index = 1;
+    
+    // Add start marker (positioned at 0% to match timeline line)
+    scaleMarkers.push({
+      date: new Date(current),
+      label: getScaleLabel(current, scale, index),
+      position: 0 // Match start of timeline line
+    });
+    
+    // Calculate interval based on scale
+    while (current < end) {
+      const next = getNextScaleDate(current, scale);
+      if (next >= end) break;
+      
+      // Calculate position between 0% and 100%
+      const position = ((next - start) / (end - start)) * 100;
+      scaleMarkers.push({
+        date: new Date(next),
+        label: getScaleLabel(next, scale, ++index),
+        position: Math.min(100, Math.max(0, position)) // Keep within 0-100% range
+      });
+      
+      current = next;
+    }
+    
+    // Always add end marker if it's different from the last marker
+    const lastMarker = scaleMarkers[scaleMarkers.length - 1];
+    const endPosition = 100; // Match end of timeline line
+    
+    // Only add end marker if it's not the same as the last marker
+    if (lastMarker.position < endPosition - 1) { // Small threshold to avoid duplicates
+      scaleMarkers.push({
+        date: new Date(end),
+        label: getScaleLabel(end, scale, 'End'),
+        position: endPosition
+      });
+    } else {
+      // Update the last marker to be the end marker if they're close
+      lastMarker.position = endPosition;
+      lastMarker.label = getScaleLabel(end, scale, 'End');
+      lastMarker.date = new Date(end);
+    }
+    
+    return scaleMarkers;
+  }, [startDate, endDate, scale]);
   
   // Convert dates and boardItems to strings for stable dependencies
   const startDateString = startDate.toISOString();
@@ -73,12 +134,68 @@ const Timeline = ({
     setProcessedBoardItems(result.processedBoardItems);
     setItemToMarkerMap(result.itemToMarkerMap);
   }, [boardItemsString, dateColumn, startDateString, endDateString, markers, position]);
+  
+  // Helper function to get the next date based on scale
+  function getNextScaleDate(date, scale) {
+    const next = new Date(date);
+    switch (scale) {
+      case 'days':
+        next.setDate(next.getDate() + 1);
+        break;
+      case 'weeks':
+        next.setDate(next.getDate() + 7);
+        break;
+      case 'months':
+        next.setMonth(next.getMonth() + 1);
+        break;
+      case 'quarters':
+        next.setMonth(next.getMonth() + 3);
+        break;
+      case 'years':
+        next.setFullYear(next.getFullYear() + 1);
+        break;
+      default:
+        next.setDate(next.getDate() + 1);
+    }
+    return next;
+  }
+  
+  // Helper function to format scale marker labels
+  function getScaleLabel(date, scale, index) {
+    switch (scale) {
+      case 'days':
+        return format(date, 'MMM d');
+      case 'weeks':
+        // Calculate week number based on the start date
+        if (index === 'End') {
+          const start = new Date(startDate);
+          const diffInWeeks = Math.ceil((date - start) / (7 * 24 * 60 * 60 * 1000));
+          return `Week ${diffInWeeks}`;
+        }
+        return `Week ${index}`;
+      case 'months':
+        return format(date, 'MMM yyyy');
+      case 'quarters':
+        const quarter = Math.floor(date.getMonth() / 3) + 1;
+        return `Q${quarter} ${date.getFullYear()}`;
+      case 'years':
+        return date.getFullYear().toString();
+      default:
+        return index.toString();
+    }
+  }
 
   // Calculate item spacing to prevent overlaps
   const spacedBoardItems = useMemo(() => {
     return calculateItemSpacing(processedBoardItems, position);
   }, [processedBoardItems, position]);
 
+  
+  // Determine if scale markers should be flipped based on datePosition
+  const shouldFlipScaleMarkers = !datePosition.includes('below'); // Reversed logic
+  
+  // Calculate the position for timeline and scale markers
+  const timelineTop = position === 'above' ? '75%' : position === 'below' ? '25%' : '50%';
   
   return (
     <div 
@@ -90,7 +207,8 @@ const Timeline = ({
         height: '300px', // Increased height for the timeline container
         padding: '100px 0', // Increased padding to accommodate items above and below
         display: 'flex',
-        alignItems: 'center', // Center the timeline vertically
+        flexDirection: 'column',
+        alignItems: 'stretch',
       }}
     >
       {/* Timeline line */}
@@ -106,11 +224,11 @@ const Timeline = ({
         }}
       />
 
+
       {/* Timeline markers */}
       {markers.map((marker, index) => {
         const markerStyles = getMarkerStyles(datePosition);
         const isEdgeMarker = index === 0 || index === markers.length - 1;
-        const timelineTop = position === 'above' ? '75%' : position === 'below' ? '25%' : '50%';
         const isAbove = datePosition.includes('above');
         
         // For 'none' date position, only show the marker and label for first and last markers
@@ -132,6 +250,7 @@ const Timeline = ({
               display: 'flex',
               ...markerStyles.markerContainer,
               alignItems: 'center',
+              zIndex: 2,
             }}
           >
             <div style={markerStyles.markerLine} />
@@ -141,6 +260,71 @@ const Timeline = ({
           </div>
         );
       })}
+      
+      {/* Scale markers - only show if scale is not 'none' */}
+      {scale !== 'none' && (
+        <>
+          {/* Scale marker line */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              width: '100%',
+              top: timelineTop, // Use the same top position as the timeline
+              height: '1px',
+              backgroundColor: 'var(--ui-border-color)',
+              zIndex: 1,
+            }}
+          />
+          
+          {/* Scale marker ticks and labels */}
+          {scaleMarkers.map((marker, index) => {
+            const isAbove = !shouldFlipScaleMarkers;
+            const offset = shouldFlipScaleMarkers ? 3 : -28; // -1px when flipped (below), -23px when not flipped (above)
+            
+            return (
+              <div
+                key={`scale-marker-${index}`}
+                style={{
+                  position: 'absolute',
+                  left: `${marker.position}%`,
+                  top: `calc(${timelineTop} + ${offset}px)`, // Offset from timeline position
+                  transform: 'translateX(-50%)',
+                  display: 'flex',
+                  flexDirection: isAbove ? 'column-reverse' : 'column', // column-reverse for above, column for below
+                  alignItems: 'center',
+                  zIndex: 2,
+                }}
+              >
+                <div 
+                  style={{
+                    width: '1px',
+                    height: '8px',
+                    backgroundColor: 'var(--ui-border-color)',
+                    flexShrink: 0,
+                    marginTop: isAbove ? 0 : 0, // No margin needed when using proper offsets
+                    marginBottom: isAbove ? '-1px' : 0, // Connect to timeline when above
+                  }}
+                />
+                <div 
+                  style={{
+                    fontSize: '10px',
+                    color: 'var(--secondary-text-color)',
+                    whiteSpace: 'nowrap',
+                    marginTop: isAbove ? '0px' : '8px', // Add space below the tick when markers are below
+                    marginBottom: isAbove ? '8px' : '0px', // Add space above the tick when markers are above
+                    textAlign: 'center',
+                    transform: scale === 'days' ? 'rotate(-25deg)' : 'none',
+                    transformOrigin: isAbove ? 'center bottom' : 'center top',
+                  }}
+                >
+                  {marker.label}
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
 
       {/* Board Items - Render all items chronologically with position logic */}
       {(() => {

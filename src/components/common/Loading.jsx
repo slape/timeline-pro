@@ -9,14 +9,14 @@ import { Loader } from '@vibe/core';
  * @param {string} [props.message] - Optional message to display below the loader
  * @returns {JSX.Element} - Loading component
  */
-const Loading = ({ size = 'large', color, message }) => {
+const Loading = ({ size = 'medium', color, message }) => {
   return (
     <div style={{ 
       display: 'flex', 
       flexDirection: 'column',
       justifyContent: 'center', 
       alignItems: 'center', 
-      height: '100%' 
+      height: '600px' 
     }}>
       <Loader size={size} color={color} />
       {message && <div style={{ marginTop: '16px' }}>{message}</div>}

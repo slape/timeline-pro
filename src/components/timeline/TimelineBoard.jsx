@@ -3,7 +3,6 @@ import { Box, EditableHeading, Flex, Text } from '@vibe/core';
 import { processTimelineData } from '../../functions/processTimelineData';
 import Timeline from './Timeline';
 import GroupLegend from './GroupLegend';
-import ScaleMarkers from './ScaleMarkers';
 
 /** BoardItem type * @typedef {Object} BoardItem
  * @property {string} id - Unique item ID
@@ -132,54 +131,44 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
         </Flex>
       )}
       
-      {/* Scale Markers */}
-      <Box marginLeft="10%" marginRight="10%" marginBottom={4}>
-        <ScaleMarkers 
-          startDate={timelineParams.startDate}
-          endDate={timelineParams.endDate}
-          scale={settings.scale || 'weeks'}
-          position="below"
-        />
+      {/* Timeline container */}
+      <Box 
+        style={{
+          marginTop: settings.title ? '40px' : '0',
+          padding: '16px',
+          minHeight: '200px'
+        }}
+      >
+        {timelineItems.length > 0 ? (
+          <Timeline 
+            startDate={timelineParams.startDate}
+            endDate={timelineParams.endDate}
+            scale={timelineParams.scale}
+            items={timelineItems}
+            boardItems={boardItems}
+            dateColumn={Object.keys(settings.date || {})[0]}
+            dateFormat={dateFormat}
+            datePosition={datePosition}
+            onItemMove={handleTimelineItemMove}
+            onLabelChange={handleLabelChange}
+            position={position}
+            shape={shape}
+          />
+        ) : (
+          <Flex 
+            justify="center" 
+            align="center" 
+            style={{ 
+              height: '100px',
+              color: 'var(--secondary-text-color)'
+            }}
+          >
+            <Text>No timeline items to display</Text>
+          </Flex>
+        )}
       </Box>
-
-        {/* Timeline component */}
-        <Box 
-          marginTop="medium"
-          style={{
-            padding: '16px',
-            minHeight: '200px',
-          }}
-        >
-          {timelineItems.length > 0 ? (
-            <Timeline 
-              startDate={timelineParams.startDate}
-              endDate={timelineParams.endDate}
-              scale={timelineParams.scale}
-              items={timelineItems}
-              boardItems={boardItems}
-              dateColumn={Object.keys(settings.date || {})[0]}
-              dateFormat={dateFormat}
-              datePosition={datePosition}
-              onItemMove={handleTimelineItemMove}
-              onLabelChange={handleLabelChange}
-              position={position}
-              shape={shape}
-            />
-          ) : (
-            <Flex 
-              justify="center" 
-              align="center" 
-              style={{ 
-                height: '100px',
-                color: 'var(--secondary-text-color)'
-              }}
-            >
-              <Text>No timeline items to display</Text>
-            </Flex>
-          )}
-        </Box>
-        {/* Group Legend - only show if ledger setting is true */}
-        {showLedger && <GroupLegend boardItems={boardItems} />}
+      {/* Group Legend - only show if ledger setting is true */}
+      {showLedger && <GroupLegend boardItems={boardItems} />}
     </Box>
   );
 };
