@@ -38,7 +38,12 @@ export const getUniqueDates = (boardItems = [], dateColumn) => {
 
   // Convert Set back to array of Date objects and sort chronologically
   return Array.from(dates)
-    .map(dateString => new Date(dateString))
+    .map(dateString => {
+      // Parse the date string directly to avoid timezone issues
+      const [year, month, day] = dateString.split('-').map(Number);
+      // Create date in local timezone (time set to noon to avoid DST issues)
+      return new Date(year, month - 1, day, 12, 0, 0);
+    })
     .sort((a, b) => a.getTime() - b.getTime());
 };
 

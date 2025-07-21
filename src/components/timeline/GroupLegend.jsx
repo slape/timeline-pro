@@ -41,7 +41,6 @@ const GroupLegend = ({ boardItems = [] }) => {
 
   return (
     <Box 
-      marginTop="large"
       padding="medium"
       style={{
         borderTop: '1px solid var(--ui-border-color)',

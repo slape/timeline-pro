@@ -18,20 +18,30 @@ const generateTimelineMarkers = (boardItems, dateColumn, startDate, endDate, dat
     const uniqueDates = getUniqueDates(boardItems, dateColumn);
     
     if (uniqueDates.length > 0) {
-      // Find the actual date range from the board items
-      const actualStartDate = new Date(Math.min(...uniqueDates.map(d => d.getTime())));
-      const actualEndDate = new Date(Math.max(...uniqueDates.map(d => d.getTime())));
+      // Create date-only versions to avoid timezone issues when comparing
+      const toDateOnly = (date) => {
+        const d = new Date(date);
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      };
+      
+      // Find the actual date range from the board items using date-only comparison
+      const actualStartDate = toDateOnly(new Date(Math.min(...uniqueDates.map(d => d.getTime()))));
+      const actualEndDate = toDateOnly(new Date(Math.max(...uniqueDates.map(d => d.getTime()))));
       
       // Use the actual date range from board items, or fall back to provided start/end dates
       const timelineStart = actualStartDate < startDate ? actualStartDate : startDate;
       const timelineEnd = actualEndDate > endDate ? actualEndDate : endDate;
       
       // Create markers for each unique date using the expanded timeline range
-      const dateMarkers = uniqueDates.map(date => ({
-        date,
-        label: formatDate(date, dateFormat),
-        position: calculateItemPosition(date, timelineStart, timelineEnd)
-      }));
+      const dateMarkers = uniqueDates.map(date => {
+        // Use date-only for consistent positioning
+        const dateOnly = toDateOnly(date);
+        return {
+          date: dateOnly,
+          label: formatDate(dateOnly, dateFormat),
+          position: calculateItemPosition(dateOnly, timelineStart, timelineEnd)
+        };
+      });
       
       // Add start and end markers only if they're not already covered by the data
       const allMarkers = [...dateMarkers];

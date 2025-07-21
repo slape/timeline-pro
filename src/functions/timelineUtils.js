@@ -101,6 +101,12 @@ const generateTimelineMarkers = (startDate, endDate, scale, maxMarkers = 10) => 
   return markers;
 };
 
+// Helper function to create date-only Date objects for consistent comparison
+const toDateOnly = (date) => {
+  const d = new Date(date);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+};
+
 /**
  * Calculates the position of an item on the timeline
  * 
@@ -116,13 +122,18 @@ const calculateItemPosition = (itemDate, startDate, endDate) => {
     return 0;
   }
   
-  const totalDuration = endDate - startDate;
-  const itemDuration = itemDate - startDate;
+  // Convert all dates to date-only for consistent comparison
+  const itemDateOnly = toDateOnly(itemDate);
+  const startDateOnly = toDateOnly(startDate);
+  const endDateOnly = toDateOnly(endDate);
+  
+  const totalDuration = endDateOnly - startDateOnly;
+  const itemDuration = itemDateOnly - startDateOnly;
   
   // Handle edge cases
   if (totalDuration <= 0) return 0;
-  if (itemDate < startDate) return 0;
-  if (itemDate > endDate) return 100;
+  if (itemDateOnly < startDateOnly) return 0;
+  if (itemDateOnly > endDateOnly) return 100;
   
   // Calculate position as percentage
   return (itemDuration / totalDuration) * 100;
