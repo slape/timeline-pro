@@ -64,7 +64,7 @@ export function calculateTimelineItemPositions(items, startDate, endDate, positi
         
         // Reduce vertical offset for alternating items to bring them closer to the timeline
         verticalOffset = itemPosition === 'above' 
-          ? -170 - (sameDateIndex * 40)  // Reduced from -150 - (sameDateIndex * 60)
+          ? -160 - (sameDateIndex * 40)  // Reduced from -150 - (sameDateIndex * 60)
           : 90 + (sameDateIndex * 40);  // Reduced from 150 + (sameDateIndex * 60)
         horizontalOffset = 0; // No horizontal offset to maintain perpendicular lines
       }
