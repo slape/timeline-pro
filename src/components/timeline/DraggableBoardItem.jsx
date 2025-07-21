@@ -31,7 +31,7 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
     const baseOffset = -(currentWidth / 2);
     // Fine-tune offset for pixel-perfect alignment
     // This accounts for any padding/margin/border that might affect the visual center
-    const fineTuneOffset = shape === 'circle' ? -4 : -4;
+    const fineTuneOffset = shape === 'circle' ? 0 : 0;
     return { x: baseOffset + fineTuneOffset, y: 0 };
   };
   
