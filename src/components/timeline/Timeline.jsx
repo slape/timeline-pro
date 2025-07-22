@@ -87,7 +87,8 @@ const Timeline = ({
   }, [processedBoardItems, position]);
 
   // Determine if scale markers should be flipped based on datePosition
-  const shouldFlipScaleMarkers = !datePosition.includes('below'); // Reversed logic
+  // When position is 'none', markers should be above (no flipping)
+  const shouldFlipScaleMarkers = datePosition === 'none' ? false : !datePosition.includes('below');
   
   // Calculate the position for timeline and scale markers
   const timelineTop = position === 'above' ? '75%' : position === 'below' ? '25%' : '50%';
