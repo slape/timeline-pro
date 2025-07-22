@@ -77,7 +77,7 @@ const App = () => {
         itemDates: false,
         scale: 'weeks',
         position: 'above',
-        dateFormat: 'mdyy',
+        dateFormat: 'md',
         datePosition: 'angled-below',
         shape: 'circle',
       }).then(res => {
