@@ -26,6 +26,7 @@ import calculateScaleMarkers from '../../functions/calculateScaleMarkers';
  * @param {Set} props.hiddenItemIds - Set of hidden item IDs
  * @param {string} props.position - Position of timeline items ('above', 'below', or 'alternate')
  * @param {string} props.shape - Shape of timeline items ('rectangle', 'circle', 'diamond')
+ * @param {boolean} props.showItemDates - Whether to show editable dates on timeline items
  * @returns {JSX.Element} - Timeline component
  */
 const Timeline = ({
@@ -36,14 +37,12 @@ const Timeline = ({
   dateColumn,
   dateFormat = 'mdy',
   datePosition = 'angled-above',
-  onRangeChange = () => {},
-  onItemMove = () => {},
-  onLabelChange = () => {},
   onHideItem = () => {},
   hiddenItemIds = new Set(),
   position = 'below',
   shape = 'rectangle',
   scale = 'auto',
+  showItemDates = false,
 }) => {
   // Generate timeline markers from unique dates in board items
   const [markers, setMarkers] = useState([]);
@@ -270,18 +269,19 @@ const Timeline = ({
         // Render items using extracted function
         return renderTimelineItems(
           itemsWithPositions,
-          (item) => console.log('Board item clicked:', item),
+          (item) => {/* console.log('Board item clicked:', item) */},
           (itemId, newLabel) => {
-            console.log('Label changed:', itemId, newLabel);
+            // console.log('Label changed:', itemId, newLabel);
             // TODO: Implement label change handler
           },
           (itemId) => {
-            console.log('Remove item:', itemId);
+            // console.log('Remove item:', itemId);
             // Use the onHideItem prop callback instead of internal state
             onHideItem(itemId);
           },
           shape,
-          hiddenItemIds
+          hiddenItemIds,
+          showItemDates
         );
       })()}
       

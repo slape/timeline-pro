@@ -10,7 +10,7 @@ import { getItemsWithDates } from './getItemsWithDates';
  */
 export function processTimelineData(boardItems, settings, scale) {
   if (!boardItems || boardItems.length === 0) {
-    console.log('No board items available');
+    // console.log('No board items available');
     return null;
   }
 

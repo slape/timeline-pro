@@ -36,6 +36,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
   const [hiddenItemIds, setHiddenItemIds] = useState(new Set());
   const [titleSetting, setTitleSetting] = useState(settings.title !== undefined ? settings.title : true);
   const [showLedger, setShowLedger] = useState(settings.ledger !== undefined ? settings.ledger : true);
+  const [showItemDates, setShowItemDates] = useState(settings.itemDates !== undefined ? settings.itemDates : false);
   // State for timeline parameters
   const [timelineParams, setTimelineParams] = useState({
     startDate: new Date(),
@@ -58,16 +59,25 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
     } else {
       setShowLedger(true); // Default to true if not specified
     }
-  }, [settings.title, settings.ledger]);
+    
+    // Sync itemDates setting
+    if (settings.itemDates !== undefined) {
+      setShowItemDates(settings.itemDates);
+    } else {
+      setShowItemDates(false); // Default to false if not specified
+    }
+  }, [settings.title, settings.ledger, settings.itemDates]);
 
   // Destructure settings with defaults
   const {
-    title = titleSetting, // Use the state value as default
-    scale = 'auto',
-    position = 'alternate', // Default position for timeline items
+    scale = 'weeks',
+    position = 'above', // Default position for timeline items
     dateFormat = 'mdyy', // Default date format
     datePosition = 'angled-below', // Default date position
-    shape = 'rectangle' // Default shape for timeline items
+    shape = 'circle',
+    title = true,
+    ledger = true,
+    itemDates = false,
   } = settings;
 
   // Always use transparent background
@@ -75,7 +85,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
 
   // Handle timeline item move
   const handleTimelineItemMove = (itemId, newPosition) => {
-    console.log(`Item ${itemId} moved to position ${newPosition}`);
+    // console.log(`Item ${itemId} moved to position ${newPosition}`);
     
     setTimelineItems(prevItems => 
       prevItems.map(item => 
@@ -88,7 +98,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
   
   // Handle timeline item label change
   const handleLabelChange = (itemId, newLabel) => {
-    console.log(`Item ${itemId} label changed to ${newLabel}`);
+    // console.log(`Item ${itemId} label changed to ${newLabel}`);
     
     setTimelineItems(prevItems => 
       prevItems.map(item => 
@@ -101,7 +111,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
   
   // Handle item hide/removal
   const handleHideItem = (itemId) => {
-    console.log(`Item ${itemId} hidden`);
+    // console.log(`Item ${itemId} hidden`);
     setHiddenItemIds(prev => new Set([...prev, itemId]));
   };
 
@@ -156,6 +166,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
             hiddenItemIds={hiddenItemIds}
             position={position}
             shape={shape}
+            showItemDates={showItemDates}
           />
         ) : (
           <Flex 

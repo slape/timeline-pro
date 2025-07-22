@@ -56,8 +56,8 @@ const processBoardItemsWithMarkers = (boardItems, dateColumn, startDate, endDate
       }
     });
 
-    console.log('Processed board items:', processedItems);
-    console.log('Item-to-marker mapping:', itemMarkerMap);
+    // console.log('Processed board items:', processedItems);
+    // console.log('Item-to-marker mapping:', itemMarkerMap);
     
     return {
       processedBoardItems: processedItems,
