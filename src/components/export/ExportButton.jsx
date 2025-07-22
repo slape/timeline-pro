@@ -20,6 +20,14 @@ const ExportButton = ({ theme }) => {
 
   // State to track export status
   const [isExporting, setIsExporting] = useState(false);
+
+  // State to track light text option
+  const [lightText, setLightText] = useState(false);
+
+  // Handler for light text toggle
+  const handleLightTextToggle = () => {
+    setLightText(!lightText);
+  };
   
   // Reference to access the theme context
   const themeContextRef = useRef();
@@ -151,6 +159,12 @@ const ExportButton = ({ theme }) => {
               label="Include background"
               checked={includeBackground}
               onChange={handleBackgroundToggle}
+            />
+
+            <Checkbox
+              label="Light Text"
+              checked={lightText}
+              onChange={handleLightTextToggle}
             />
             
             <Flex justify="end" style={{ width: '100%', marginTop: '16px' }} gap={8}>

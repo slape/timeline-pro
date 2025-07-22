@@ -87,7 +87,7 @@ const App = () => {
     }
   }, [settings]);
   
-  // console.log("itemIds in view", itemIds);
+  //console.log("itemIds in view", itemIds);
   
   // Fetch board items when context changes and has a boardId, and itemIds are available
   useEffect(() => {

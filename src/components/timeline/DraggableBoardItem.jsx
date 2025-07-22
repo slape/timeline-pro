@@ -105,10 +105,10 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
       onMouseLeave={() => setIsHovered(false)}
     >
       <Box
+        className={shape === 'circle' ? 'circle-shape' : ''}
         style={{
           opacity: isDragging ? 0.8 : 1,
           cursor: 'grab',
-          padding: '8px',
           backgroundColor: itemColor,
           ...shapeStyles,
           boxShadow: isDragging ? '0 5px 15px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
@@ -117,11 +117,7 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
           width: '100%',
           height: '100%',
           boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: shape === 'circle' ? 'center' : 'space-between',
-          alignItems: shape === 'circle' ? 'center' : 'stretch',
-          overflow: 'visible',
+          position: 'relative',
         }}
         onClick={onClick}
       >
@@ -184,35 +180,40 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
           </div>
         )}
         
-        <div style={{ 
-          fontSize: '0.75em', 
-          fontWeight: '500',
-          lineHeight: '1.3',
-          wordWrap: 'break-word',
-          overflowWrap: 'break-word',
-          hyphens: 'auto',
-          flex: shape === 'circle' ? 'none' : 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textAlign: 'center',
-          width: shape === 'circle' ? '100%' : 'auto',
-          height: shape === 'circle' ? '100%' : 'auto',
-          transform: 'none',
-        }}>
-          <EditableText
-            className='text-center'
-            value={item.originalItem.name}
-            multiline
-          />
+        <div className="text-center" style={{ width: '100%', height: '100%' }}>
+          <div style={{
+            width: '100%',
+            fontSize: '0.75em',
+            fontWeight: '500',
+            wordBreak: 'break-word',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical'
+          }}>
+            <EditableText
+              value={item.originalItem.name}
+              style={{
+                width: '100%',
+                textAlign: 'center',
+                display: 'inline-block'
+              }}
+              multiline
+            />
+          </div>
           
-          {/* Editable date display */}
           {showItemDates && (
             <div style={{
               width: '100%',
               marginTop: '4px',
-              textAlign: 'center'
+              textAlign: 'center',
+              fontSize: '0.7em',
+              lineHeight: '1.1',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              padding: '0 2px'
             }}>
               <EditableText
                 className='text-center'

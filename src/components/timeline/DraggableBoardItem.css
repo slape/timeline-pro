@@ -1,23 +1,58 @@
 /* DraggableBoardItem styles */
 
+/* Base text centering */
 .text-center {
   text-align: center !important;
-  width: 100%;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 10px !important;
+  box-sizing: border-box !important;
 }
 
+/* Override Rnd container styles */
+.react-draggable {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+
+/* Ensure all text elements are centered */
 .text-center input,
 .text-center textarea,
 .text-center div {
   text-align: center !important;
-  width: 100%;
+  width: 100% !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
 }
 
-/* Ensure EditableText component content is centered */
+/* Force EditableText component centering */
 .text-center .editable-text-input,
-.text-center .editable-text-display {
+.text-center .editable-text-display,
+.text-center .editable-text-input div,
+.text-center .editable-text-display div {
   text-align: center !important;
-  justify-content: center;
-  align-items: center;
-  display: flex;
-  flex-direction: column;
+  justify-content: center !important;
+  align-items: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.2 !important;
+}
+
+/* Fix for Rnd content container */
+.rnd-content {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  height: 100% !important;
+  width: 100% !important;
 }
