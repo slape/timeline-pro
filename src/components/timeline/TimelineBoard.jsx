@@ -113,13 +113,6 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
       padding="medium"
       rounded="medium"
       border="true"
-      style={{
-        width: '100%',
-        height: '100%',
-        padding: '20px',
-        overflowX: 'auto',
-        overflowY: 'hidden',
-      }}
     > 
       {/* Timeline Title */}
       {titleSetting && (
@@ -135,8 +128,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
       {/* Timeline container */}
       <Box 
         style={{
-          marginTop: settings.title ? '40px' : '0',
-          padding: '16px',
+          marginTop: settings.title ? '10px' : '0',
           minHeight: '200px'
         }}
       >

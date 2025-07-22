@@ -5,6 +5,12 @@
  * @returns {string} - Formatted date string
  */
 const formatDate = (date, format = 'mdyy') => {
+  // Validate that date is defined and is a valid Date object
+  if (!date || isNaN(date.getTime())) {
+    console.warn('Invalid date provided to formatDate:', date);
+    return 'Invalid date';
+  }
+  
   switch (format) {
     case 'mdyy':
       return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear().toString().slice(-2)}`;

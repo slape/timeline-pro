@@ -20,6 +20,11 @@ const generateTimelineMarkers = (boardItems, dateColumn, startDate, endDate, dat
     if (uniqueDates.length > 0) {
       // Create date-only versions to avoid timezone issues when comparing
       const toDateOnly = (date) => {
+        // Validate the date
+        if (!date || isNaN(new Date(date).getTime())) {
+          console.warn('Invalid date provided to toDateOnly:', date);
+          return null;
+        }
         const d = new Date(date);
         return new Date(d.getFullYear(), d.getMonth(), d.getDate());
       };
