@@ -49,7 +49,7 @@ const fetchBoardItems = async (context, itemIds, setBoardItems, setIsLoading, se
       // Handle response for specific items query
       if (response.data && response.data.items) {
         setBoardItems(response.data.items);
-        console.log('Specific board items fetched:', response.data.items);
+        // console.log('Specific board items fetched:', response.data.items);
       } else {
         console.warn('No items found for the specified IDs');
         setBoardItems([]);
@@ -58,7 +58,7 @@ const fetchBoardItems = async (context, itemIds, setBoardItems, setIsLoading, se
       // Handle response for all items query
       if (response.data && response.data.boards && response.data.boards.length > 0) {
         setBoardItems(response.data.boards[0].items_page.items);
-        console.log('Board items fetched:', response.data.boards[0].items_page.items);
+        // console.log('Board items fetched:', response.data.boards[0].items_page.items);
       } else {
         console.warn('No board data found');
         setBoardItems([]);

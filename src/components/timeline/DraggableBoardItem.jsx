@@ -13,17 +13,19 @@ import './DraggableBoardItem.css';
  * @param {string} props.item.name - Name/title of the item
  * @param {Object} props.item.group - Group information for the item
  * @param {string} props.item.group.color - Color associated with the group
+ * @param {Date} props.date - Date associated with the item
  * @param {string} props.shape - Shape of the item ('rectangle', 'circle')
  * @param {Function} props.onClick - Optional click handler
  * @param {Function} props.onLabelChange - Handler for label changes
  * @param {Function} props.onRemove - Handler for removing the item
+ * @param {boolean} props.showItemDates - Whether to show editable date text
  * @returns {JSX.Element} - Draggable board item component
  */
-const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelChange, onRemove }) => {
+const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelChange, onRemove, showItemDates = false }) => {
   // Initialize size based on shape - circles should be square, ovals can be flexible
   const [size, setSize] = useState(() => ({
     width: shape === 'circle' ? 100 : 140,
-    height: shape === 'circle' ? 100 : 30
+    height: shape === 'circle' ? 100 : (showItemDates ? 50 : 30)
   }));
   
   // Calculate position based on center alignment with fine-tuned offset
@@ -43,15 +45,15 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
 
   // Format date as needed, e.g., "Jul 18, 2025"
   const formattedDate = date 
-    ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(date)
+    ? new Intl.DateTimeFormat('en-US', { dateStyle: 'short'}).format(date)
     : null;
 
   const shapeStyles = getShapeStyles(shape);
 
-  // Update position and size when shape changes
+  // Update position and size when shape or showItemDates changes
   useEffect(() => {
     const newWidth = shape === 'circle' ? 100 : 140;
-    const newHeight = shape === 'circle' ? 100 : 30;
+    const newHeight = shape === 'circle' ? 100 : (showItemDates ? 50 : 30);
     
     setSize({
       width: newWidth,
@@ -59,7 +61,7 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
     });
     
     setPosition(calculateCenterOffset(newWidth));
-  }, [shape]);
+  }, [shape, showItemDates]);
 
   const handleDragStart = () => {
     setIsDragging(true);
@@ -96,7 +98,7 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
       onDragStop={handleDragStop}
       onResize={handleResize}
       minWidth={shape === 'circle' ? 80 : 120}
-      minHeight={shape === 'circle' ? 80 : 70}
+      minHeight={shape === 'circle' ? 80 : 80}
       maxWidth={shape === 'circle' ? 120 : 200}
       maxHeight={shape === 'circle' ? 120 : 120}
       onMouseEnter={() => setIsHovered(true)}
@@ -133,7 +135,7 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
             onClick={(e) => {
               e.stopPropagation(); // Prevent triggering the item's onClick
               e.preventDefault(); // Prevent default behavior
-              console.log('Remove button clicked for item:', item.id);
+              // console.log('Remove button clicked for item:', item.id);
               onRemove(item.id);
             }}
             onPointerDown={(e) => {
@@ -191,6 +193,7 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
           hyphens: 'auto',
           flex: shape === 'circle' ? 'none' : 1,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           textAlign: 'center',
@@ -201,9 +204,28 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
           <EditableText
             className='text-center'
             value={item.originalItem.name}
-            onChange={(e) => onLabelChange?.(item.id, e.target.value)}
             multiline
           />
+          
+          {/* Editable date display */}
+          {showItemDates && (
+            <div style={{
+              width: '100%',
+              marginTop: '4px',
+              textAlign: 'center'
+            }}>
+              <EditableText
+                className='text-center'
+                value={formattedDate}
+                style={{
+                  width: '100%',
+                  whiteSpace: 'normal',
+                  overflow: 'visible',
+                  textOverflow: 'clip'
+                }}
+              />
+            </div>
+          )}
         </div>
       </Box>
     </Rnd>

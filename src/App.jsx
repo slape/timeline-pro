@@ -66,10 +66,28 @@ const App = () => {
       setItemIds(res.data);
     });
   }, []);
-  //monday.set("settings", {"text":"the new updated value", "numbers": 10}).then(res => ...);
-  console.log("context", context);
-  console.log("settings", settings);
-  console.log("itemIds", itemIds);
+
+  // check if settings are available
+  // if not, set default settings
+  useEffect(() => {
+    if (!settings) {
+      monday.set("settings", {
+        title: true,
+        ledger: true,
+        itemDates: false,
+        scale: 'weeks',
+        position: 'above',
+        dateFormat: 'mdyy',
+        datePosition: 'angled-below',
+        shape: 'circle',
+      }).then(res => {
+        // console.log(res);
+        setSettings(res.data);
+      });
+    }
+  }, [settings]);
+  
+  // console.log("itemIds in view", itemIds);
   
   // Fetch board items when context changes and has a boardId, and itemIds are available
   useEffect(() => {

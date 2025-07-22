@@ -9,9 +9,10 @@ import DraggableBoardItem from './DraggableBoardItem';
  * @param {Function} onRemove - Callback for removing items
  * @param {string} shape - Shape of timeline items ('rectangle', 'circle')
  * @param {Set} hiddenItemIds - Set of item IDs that should be hidden from view
+ * @param {boolean} showItemDates - Whether to show editable dates on timeline items
  * @returns {Array} Array of JSX elements for timeline items
  */
-export function renderTimelineItems(itemsWithPositions, onItemClick, onLabelChange, onRemove, shape = 'rectangle', hiddenItemIds = new Set()) {
+export function renderTimelineItems(itemsWithPositions, onItemClick, onLabelChange, onRemove, shape = 'rectangle', hiddenItemIds = new Set(), showItemDates = false) {
   return itemsWithPositions.map((item, index) => {
     const itemDate = new Date(item.date);
     
@@ -39,6 +40,7 @@ export function renderTimelineItems(itemsWithPositions, onItemClick, onLabelChan
           onClick={() => onItemClick?.(item)}
           onLabelChange={(itemId, newLabel) => onLabelChange?.(itemId, newLabel)}
           onRemove={onRemove}
+          showItemDates={showItemDates}
         />
       </div>
     );

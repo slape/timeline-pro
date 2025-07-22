@@ -37,12 +37,12 @@ const ExportButton = ({ theme }) => {
   // Export the TimelineBoard as a PNG
   const handleExport = () => {
     setIsExporting(true);
-    console.log('Export initiated');
+    // console.log('Export initiated');
     
     try {
       // Get all elements with the timeline-board class
       const timelineBoardElements = document.querySelectorAll('.timeline-board');
-      console.log('Timeline board elements found:', timelineBoardElements.length);
+      // console.log('Timeline board elements found:', timelineBoardElements.length);
       
       // Get the TimelineBoard element
       const timelineBoardElement = timelineBoardElements[0];
@@ -54,16 +54,16 @@ const ExportButton = ({ theme }) => {
         return;
       }
       
-      console.log('Timeline board dimensions:', {
-        offsetWidth: timelineBoardElement.offsetWidth,
-        offsetHeight: timelineBoardElement.offsetHeight,
-        scrollWidth: timelineBoardElement.scrollWidth,
-        scrollHeight: timelineBoardElement.scrollHeight
-      });
+      // console.log('Timeline board dimensions:', {
+      //   offsetWidth: timelineBoardElement.offsetWidth,
+      //   offsetHeight: timelineBoardElement.offsetHeight,
+      //   scrollWidth: timelineBoardElement.scrollWidth,
+      //   scrollHeight: timelineBoardElement.scrollHeight
+      // });
       
       // Use the theme prop passed from App.jsx
       const currentTheme = theme || 'light';
-      console.log('Using theme for background:', currentTheme);
+      // console.log('Using theme for background:', currentTheme);
       
       // Set background color based on theme if includeBackground is true
       const backgroundColor = includeBackground 
@@ -82,28 +82,28 @@ const ExportButton = ({ theme }) => {
         skipAutoScale: true // Don't scale the DOM
       };
       
-      console.log('Starting PNG conversion with options:', options);
+      // console.log('Starting PNG conversion with options:', options);
       
       // Convert the element to PNG
       toPng(timelineBoardElement, options)
         .then(dataUrl => {
-          console.log('PNG conversion successful, data URL length:', dataUrl.length);
+          // console.log('PNG conversion successful, data URL length:', dataUrl.length);
           
           // Create a download link
           const link = document.createElement('a');
           link.download = 'timeline-export.png';
           link.href = dataUrl;
           document.body.appendChild(link); // Add link to document to ensure it triggers in all browsers
-          console.log('Download link created and appended to body');
+          // console.log('Download link created and appended to body');
           
           // Trigger click event
           link.click();
-          console.log('Click triggered on download link');
+          // console.log('Click triggered on download link');
           
           // Clean up - remove the link
           setTimeout(() => {
             document.body.removeChild(link);
-            console.log('Download link removed');
+            // console.log('Download link removed');
             setIsExporting(false);
             toggleModal();
           }, 100);

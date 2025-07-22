@@ -9,7 +9,7 @@ export const getItemsWithDates = (boardItems, dateColumn) => {
     .map(item => {
       const column = item.column_values?.find(col => col.id === dateColumn);
       let itemDate = null;
-      console.log('Column value:', column?.value);
+      // console.log('Column value:', column?.value);
       if (column?.value) {
         try {
           const columnValue = JSON.parse(column.value);
@@ -22,7 +22,7 @@ export const getItemsWithDates = (boardItems, dateColumn) => {
             const [hours, minutes, seconds] = timeStr.split(':').map(Number);
             // Create date in local timezone
             itemDate = new Date(year, month - 1, day, hours || 0, minutes || 0, seconds || 0);
-            console.log('Parsed date:', { dateStr, timeStr, localDate: itemDate });
+            // console.log('Parsed date:', { dateStr, timeStr, localDate: itemDate });
           }
         } catch (e) {
           console.error('Error parsing date value:', e);
