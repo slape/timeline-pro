@@ -6,19 +6,21 @@ import { Flex, Text, Box } from '@vibe/core';
  * 
  * @param {Object} props - Component props
  * @param {Array} props.boardItems - Array of board items with group information
+ * @param {Set} props.hiddenItemIds - Set of hidden item IDs to filter out
  * @returns {JSX.Element} - Group legend component
  */
-const GroupLegend = ({ boardItems = [] }) => {
-  // Get unique groups from boardItems
+const GroupLegend = ({ boardItems = [], hiddenItemIds = new Set() }) => {
+  // Get unique groups from visible boardItems
   const uniqueGroups = React.useMemo(() => {
     const groupsMap = new Map();
-    console.log('Processing board items for groups:', boardItems);
     
-    boardItems.forEach(item => {
-      console.log('Processing item:', item.id, 'with group:', item.group);
+    // Filter out hidden items first
+    const visibleItems = boardItems.filter(item => !hiddenItemIds.has(item.id));
+    
+    // Only process visible items
+    visibleItems.forEach(item => {
       if (item.group && item.group.id) {
         const groupColor = item.group.color || '#CCCCCC';
-        console.log(`Group ${item.group.id} (${item.group.title}) color:`, groupColor);
         
         if (!groupsMap.has(item.group.id)) {
           groupsMap.set(item.group.id, {
@@ -31,9 +33,8 @@ const GroupLegend = ({ boardItems = [] }) => {
     });
     
     const groups = Array.from(groupsMap.values());
-    console.log('Unique groups found:', groups);
     return groups;
-  }, [boardItems]);
+  }, [boardItems, hiddenItemIds]); // Add hiddenItemIds as dependency
 
   if (uniqueGroups.length === 0) {
     return null; // Don't render if no groups
