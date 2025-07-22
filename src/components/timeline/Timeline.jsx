@@ -130,8 +130,24 @@ const Timeline = ({
         // For 'none' date position, only show the marker and label for first and last markers
         const showMarker = datePosition !== 'none' || isEdgeMarker;
         
+        // Always render a hidden anchor point for connector lines
         if (!showMarker) {
-          return null; // Don't render non-edge markers when datePosition is 'none'
+          return (
+            <div
+              key={`marker-${index}`}
+              id={`timeline-marker-${index}`}
+              style={{
+                position: 'absolute',
+                left: `${marker.position}%`,
+                top: timelineTop,
+                width: '1px',
+                height: '1px',
+                pointerEvents: 'none',
+                opacity: 0,
+                zIndex: -1
+              }}
+            />
+          );
         }
         
         return (
