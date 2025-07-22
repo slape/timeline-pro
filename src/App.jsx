@@ -66,6 +66,7 @@ const App = () => {
       setItemIds(res.data);
     });
   }, []);
+  //monday.set("settings", {"text":"the new updated value", "numbers": 10}).then(res => ...);
   console.log("context", context);
   console.log("settings", settings);
   console.log("itemIds", itemIds);
