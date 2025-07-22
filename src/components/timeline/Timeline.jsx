@@ -37,6 +37,7 @@ const Timeline = ({
   position = 'below', // Default to below
   shape = 'rectangle',
   scale = 'days', // Default to rectangle
+  onRangeChange, // Callback when timeline range changes due to item removal
 }) => {
   // Generate timeline markers from unique dates in board items
   const [markers, setMarkers] = useState([]);
@@ -60,12 +61,32 @@ const Timeline = ({
   const endDateString = endDate.toISOString();
   const boardItemsString = JSON.stringify(boardItems);
   
-  // Generate timeline markers when board items, date column, or date range changes
+  // Generate timeline markers when board items, date column, date range, or hidden items change
   useEffect(() => {
-    const markers = generateTimelineMarkersFunction(boardItems, dateColumn, startDate, endDate, dateFormat);
+    // If there are no board items, skip marker generation
+    if (!boardItems || boardItems.length === 0) return;
+    
+    // Filter board items to only include visible ones
+    const visibleBoardItems = boardItems.filter(item => !hiddenItemIds.has(item.id));
+    
+    // Generate markers using only visible items
+    const markers = generateTimelineMarkersFunction(
+      visibleBoardItems, 
+      dateColumn, 
+      startDate, 
+      endDate, 
+      dateFormat
+    );
+    
     setMarkers(markers);
-  }, [boardItemsString, dateColumn, startDateString, endDateString, dateFormat]);
+  }, [boardItemsString, dateColumn, startDateString, endDateString, dateFormat, hiddenItemIds]);
   
+  // Handle item removal
+  const handleItemRemove = (itemId) => {
+    // Simply hide the item - we'll use the rendering logic to handle visibility
+    setHiddenItemIds(prev => new Set([...prev, itemId]));
+  };
+
   // Process board items with dates and calculate positions
   useEffect(() => {
     const result = processBoardItemsWithMarkers(
@@ -253,8 +274,13 @@ const Timeline = ({
           },
           (itemId) => {
             console.log('Remove item:', itemId);
-            // Hide the item by adding its ID to hiddenItemIds
-            setHiddenItemIds(prev => new Set([...prev, itemId]));
+            // Simply hide the item - don't perform timeline/marker operations here
+            // as they may interfere with Rnd library state management
+            setHiddenItemIds(prev => {
+              const newSet = new Set(prev);
+              newSet.add(itemId);
+              return newSet;
+            });
           },
           shape,
           hiddenItemIds
