@@ -22,6 +22,8 @@ import calculateScaleMarkers from '../../functions/calculateScaleMarkers';
  * @param {string} props.datePosition - Position and style of date markers ('angled-above', 'horizontal-above', 'angled-below', 'horizontal-below')
  * @param {Function} props.onItemMove - Callback when an item is moved
  * @param {Function} props.onLabelChange - Callback when an item label is changed
+ * @param {Function} props.onHideItem - Callback when an item is hidden/removed
+ * @param {Set} props.hiddenItemIds - Set of hidden item IDs
  * @param {string} props.position - Position of timeline items ('above', 'below', or 'alternate')
  * @param {string} props.shape - Shape of timeline items ('rectangle', 'circle', 'diamond')
  * @returns {JSX.Element} - Timeline component
@@ -32,12 +34,16 @@ const Timeline = ({
   items = [],
   boardItems = [],
   dateColumn,
-  dateFormat = 'mdyy',
-  datePosition = 'angled-below', // Default to angled-below
-  position = 'below', // Default to below
+  dateFormat = 'mdy',
+  datePosition = 'angled-above',
+  onRangeChange = () => {},
+  onItemMove = () => {},
+  onLabelChange = () => {},
+  onHideItem = () => {},
+  hiddenItemIds = new Set(),
+  position = 'below',
   shape = 'rectangle',
-  scale = 'days', // Default to rectangle
-  onRangeChange, // Callback when timeline range changes due to item removal
+  scale = 'auto',
 }) => {
   // Generate timeline markers from unique dates in board items
   const [markers, setMarkers] = useState([]);
@@ -47,9 +53,6 @@ const Timeline = ({
   
   // State for item-to-marker mapping
   const [itemToMarkerMap, setItemToMarkerMap] = useState(new Map());
-  
-  // State to track which items are hidden (removed from view)
-  const [hiddenItemIds, setHiddenItemIds] = useState(new Set());
   
   // Calculate the scale markers based on scale and date range
   const scaleMarkers = useMemo(() => {
@@ -83,8 +86,8 @@ const Timeline = ({
   
   // Handle item removal
   const handleItemRemove = (itemId) => {
-    // Simply hide the item - we'll use the rendering logic to handle visibility
-    setHiddenItemIds(prev => new Set([...prev, itemId]));
+    // Call the parent component's onHideItem function
+    onHideItem(itemId);
   };
 
   // Process board items with dates and calculate positions
@@ -274,13 +277,8 @@ const Timeline = ({
           },
           (itemId) => {
             console.log('Remove item:', itemId);
-            // Simply hide the item - don't perform timeline/marker operations here
-            // as they may interfere with Rnd library state management
-            setHiddenItemIds(prev => {
-              const newSet = new Set(prev);
-              newSet.add(itemId);
-              return newSet;
-            });
+            // Use the onHideItem prop callback instead of internal state
+            onHideItem(itemId);
           },
           shape,
           hiddenItemIds

@@ -32,6 +32,8 @@ import GroupLegend from './GroupLegend';
 const TimelineBoard = ({ boardItems = [], settings = {} }) => {
   // State for timeline items
   const [timelineItems, setTimelineItems] = useState([]);
+  // State to track hidden items
+  const [hiddenItemIds, setHiddenItemIds] = useState(new Set());
   const [titleSetting, setTitleSetting] = useState(settings.title !== undefined ? settings.title : true);
   const [showLedger, setShowLedger] = useState(settings.ledger !== undefined ? settings.ledger : true);
   // State for timeline parameters
@@ -96,6 +98,12 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
       )
     );
   };
+  
+  // Handle item hide/removal
+  const handleHideItem = (itemId) => {
+    console.log(`Item ${itemId} hidden`);
+    setHiddenItemIds(prev => new Set([...prev, itemId]));
+  };
 
   // Extract dates from board items and determine timeline parameters
   useEffect(() => {
@@ -144,6 +152,8 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
             datePosition={datePosition}
             onItemMove={handleTimelineItemMove}
             onLabelChange={handleLabelChange}
+            onHideItem={handleHideItem}
+            hiddenItemIds={hiddenItemIds}
             position={position}
             shape={shape}
           />
@@ -161,7 +171,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
         )}
       </Box>
       {/* Group Legend - only show if ledger setting is true */}
-      {showLedger && <GroupLegend boardItems={boardItems} />}
+      {showLedger && <GroupLegend boardItems={boardItems} hiddenItemIds={hiddenItemIds} />}
     </Box>
   );
 };
