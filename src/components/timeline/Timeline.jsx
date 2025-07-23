@@ -83,6 +83,35 @@ const Timeline = ({
     setMarkers(markers);
   }, [boardItemsString, dateColumn, startDateString, endDateString, dateFormat, hiddenItemIds]);
   
+  // Handle item position changes during drag
+  const handleItemPositionChange = (itemId, newPosition) => {
+    // Update the item's position in the items array
+    const updatedItems = items.map(item => {
+      if (item.id === itemId) {
+        // Calculate the new date based on the X position percentage
+        const timeRange = endDate - startDate;
+        const newDate = new Date(startDate.getTime() + (newPosition.x / 100) * timeRange);
+        
+        return {
+          ...item,
+          date: newDate,
+          // Update the render position to match the dragged position
+          renderPosition: {
+            ...(item.renderPosition || {}),
+            x: newPosition.x,
+            y: newPosition.y
+          }
+        };
+      }
+      return item;
+    });
+
+    // If there's an onItemMove callback, call it with the updated items
+    if (onItemMove) {
+      onItemMove(updatedItems);
+    }
+  };
+
   // Handle item removal
   const handleItemRemove = (itemId) => {
     // Call the parent component's onHideItem function
@@ -281,7 +310,8 @@ const Timeline = ({
           },
           shape,
           hiddenItemIds,
-          showItemDates
+          showItemDates,
+          handleItemPositionChange // Pass the position change handler
         );
       })()}
       

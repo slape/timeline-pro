@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Rnd } from 'react-rnd';
-import { EditableText, Box, Flex, IconButton, Icon } from '@vibe/core';
+import React, { useState, useEffect, useRef } from 'react';
+import { EditableText, Box } from '@vibe/core';
 import { getShapeStyles } from '../../functions/getShapeStyles';
 import './DraggableBoardItem.css';
 
@@ -19,27 +18,47 @@ import './DraggableBoardItem.css';
  * @param {Function} props.onLabelChange - Handler for label changes
  * @param {Function} props.onRemove - Handler for removing the item
  * @param {boolean} props.showItemDates - Whether to show editable date text
+ * @param {Function} props.onPositionChange - Callback when item position changes (id, {x, y})
  * @returns {JSX.Element} - Draggable board item component
  */
-const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelChange, onRemove, showItemDates = false }) => {
+const DraggableBoardItem = ({ 
+  item, 
+  date, 
+  shape = 'rectangle', 
+  onClick, 
+  onLabelChange, 
+  onRemove, 
+  showItemDates = false,
+  onPositionChange // New prop for notifying position changes
+}) => {
   // Initialize size based on shape - circles should be square, ovals can be flexible
   const [size, setSize] = useState(() => ({
     width: shape === 'circle' ? 100 : 140,
     height: shape === 'circle' ? 100 : (showItemDates ? 50 : 30)
   }));
   
-  // Calculate position based on center alignment with fine-tuned offset
-  const calculateCenterOffset = (currentWidth) => {
-    const baseOffset = -(currentWidth / 2);
-    // Fine-tune offset for pixel-perfect alignment
-    // This accounts for any padding/margin/border that might affect the visual center
-    const fineTuneOffset = shape === 'circle' ? 0 : 0;
-    return { x: baseOffset + fineTuneOffset, y: 0 };
-  };
-  
-  const [position, setPosition] = useState(() => calculateCenterOffset(shape === 'circle' ? 100 : 140));
+  // Position and drag state
+  const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const dragStartPos = useRef({ x: 0, y: 0 });
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const startSize = useRef({ width: 0, height: 0 });
+  const itemRef = useRef(null);
+  const containerRef = useRef(null); // Ref to the timeline container
+  
+  // Calculate initial position based on the item's date
+  useEffect(() => {
+    if (itemRef.current && containerRef.current) {
+      // Center the item horizontally by default (50% of the container)
+      const initialX = 50;
+      setPosition(prev => ({
+        x: initialX,
+        y: prev.y
+      }));
+    }
+  }, [size.width]);
 
   const itemColor = item.originalItem.group?.color || 'primary';
 
@@ -50,137 +69,279 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
 
   const shapeStyles = getShapeStyles(shape);
 
-  // Update position and size when shape or showItemDates changes
+  // Update size when shape or showItemDates changes
   useEffect(() => {
-    const newWidth = shape === 'circle' ? 100 : 140;
-    const newHeight = shape === 'circle' ? 100 : (showItemDates ? 50 : 30);
+    const newWidth = shape === 'circle' ? 100 : 140; // Doubled rectangle width from 140 to 280
+    const newHeight = shape === 'circle' ? 100 : (showItemDates ? 80 : 60);
     
     setSize({
       width: newWidth,
       height: newHeight
     });
-    
-    setPosition(calculateCenterOffset(newWidth));
   }, [shape, showItemDates]);
 
-  const handleDragStart = () => {
+  const handleMouseDown = (e) => {
+    // Only start drag on primary mouse button
+    if (e.button !== 0) return;
+    
+    // Prevent text selection during drag
+    e.preventDefault();
+    
+    // Save initial position
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    dragOffset.current = { ...position };
+    
+    // Set up event listeners for drag
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp, { once: true });
+    
     setIsDragging(true);
   };
-
-  const handleDragStop = (e, d) => {
-    setPosition({ x: d.x, y: d.y });
-    setIsDragging(false);
-  };
-
-  const handleResize = (e, direction, ref, delta, position) => {
-    let newWidth = ref.offsetWidth;
-    let newHeight = ref.offsetHeight;
+  
+  const handleMouseMove = (e) => {
+    if (!containerRef.current) return;
     
-    // For circle shapes, maintain square dimensions
-    if (shape === 'circle') {
-      const size = Math.min(newWidth, newHeight);
-      newWidth = size;
-      newHeight = size;
+    // Get container bounds to calculate relative position
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const containerLeft = containerRect.left;
+    const containerWidth = containerRect.width;
+    
+    // Calculate new position based on mouse movement
+    const dx = e.clientX - dragStartPos.current.x;
+    const dy = e.clientY - dragStartPos.current.y;
+    
+    // Calculate new X position as a percentage of container width
+    // Clamp the position to stay within the container bounds (with 10% padding on each side)
+    const minX = (10 / 100) * containerWidth; // 10% from left
+    const maxX = containerWidth - minX; // 10% from right
+    const containerX = Math.max(minX, Math.min(e.clientX - containerLeft, maxX));
+    const newX = ((containerX - minX) / (maxX - minX)) * 100; // Convert to 0-100% range within bounds
+    
+    // Calculate the new Y position with bounds checking
+    const newY = dragOffset.current.y + dy;
+    
+    // Update position with both X and Y changes
+    setPosition({
+      x: newX, // Now using 0-100% range
+      y: newY
+    });
+    
+    // Notify parent of position change if callback is provided
+    if (onPositionChange) {
+      onPositionChange(item.id, {
+        x: newX, // Absolute percentage position (0-100%)
+        y: newY
+      });
     }
+  };
+  
+  const handleResizeMouseDown = (e) => {
+    // Only start resize on primary mouse button
+    if (e.button !== 0) return;
+    
+    e.stopPropagation();
+    
+    // Save initial position and size
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    startSize.current = { width: size.width, height: size.height };
+    
+    // Set up event listeners for resize
+    document.addEventListener('mousemove', handleResizeMouseMove);
+    document.addEventListener('mouseup', handleResizeMouseUp, { once: true });
+    
+    setIsResizing(true);
+  };
+  
+  const handleResizeMouseMove = (e) => {
+    // Calculate new size based on mouse movement
+    const dx = e.clientX - dragStartPos.current.x;
+    const dy = e.clientY - dragStartPos.current.y;
+    
+    // Minimum size constraints
+    const minSize = 50;
+    const newWidth = Math.max(minSize, startSize.current.width + dx);
+    const newHeight = Math.max(minSize, startSize.current.height + dy);
     
     setSize({
       width: newWidth,
-      height: newHeight,
+      height: newHeight
     });
-    setPosition(position);
+  };
+  
+  const handleResizeMouseUp = () => {
+    // Clean up event listeners
+    document.removeEventListener('mousemove', handleResizeMouseMove);
+    document.removeEventListener('mouseup', handleResizeMouseUp);
+    
+    setIsResizing(false);
   };
 
+  const handleMouseUp = () => {
+    // Clean up event listeners
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+    document.removeEventListener('mousemove', handleResizeMouseMove);
+    document.removeEventListener('mouseup', handleResizeMouseUp);
+    
+    setIsDragging(false);
+  };
+  
+  // Clean up event listeners on unmount
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
   return (
-    <Rnd
-      size={size}
-      position={position}
-      onDragStart={handleDragStart}
-      onDragStop={handleDragStop}
-      onResize={handleResize}
-      minWidth={shape === 'circle' ? 80 : 120}
-      minHeight={shape === 'circle' ? 80 : 80}
-      maxWidth={shape === 'circle' ? 120 : 200}
-      maxHeight={shape === 'circle' ? 120 : 120}
+    <div
+      ref={el => {
+        itemRef.current = el;
+        // Also set the container ref when the element mounts/updates
+        if (el) {
+          containerRef.current = el.closest('.timeline-container');
+        }
+      }}
+      style={{
+        position: 'absolute',
+        left: `${position.x}%`,
+        top: `${position.y}px`,
+        width: `${size.width}px`,
+        height: `${size.height}px`,
+        cursor: isDragging ? 'grabbing' : 'grab',
+        zIndex: isDragging ? 1000 : 'auto',
+        transform: 'translateX(-50%)', // Center the item horizontally
+        transition: isDragging ? 'none' : 'transform 0.2s ease, box-shadow 0.2s ease, left 0.2s ease',
+      }}
+      onMouseDown={handleMouseDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Box
-        className={shape === 'circle' ? 'circle-shape' : ''}
-        style={{
-          opacity: isDragging ? 0.8 : 1,
-          cursor: 'grab',
-          backgroundColor: itemColor,
-          ...shapeStyles,
-          boxShadow: isDragging ? '0 5px 15px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
-          transition: 'box-shadow 0.2s, opacity 0.2s',
-          userSelect: 'none',
-          width: '100%',
-          height: '100%',
-          boxSizing: 'border-box',
-          position: 'relative',
-        }}
-        onClick={onClick}
-      >
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+      }}>
+        <Box
+          className={shape === 'circle' ? 'circle-shape' : ''}
+          style={{
+            opacity: isDragging ? 0.8 : 1,
+            cursor: 'grab',
+            backgroundColor: itemColor,
+            ...shapeStyles,
+            border: '1px solid rgba(0, 0, 0, 0.1)',
+            boxShadow: isDragging 
+              ? '0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05)' 
+              : '0 2px 6px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.03)',
+            transition: 'box-shadow 0.2s, opacity 0.2s, border-color 0.2s',
+            userSelect: 'none',
+            width: '100%',
+            height: '100%',
+            boxSizing: 'border-box',
+            position: 'relative',
+            overflow: 'visible' // Allow button to overflow
+          }}
+          onClick={onClick}
+        >
 
-        {isHovered && onRemove && (
-          <div
-            onMouseDown={(e) => {
-              e.stopPropagation(); // Prevent Rnd from capturing the event
-              e.preventDefault();
-            }}
+        {/* Remove button container - positioned outside the main shape */}
+        <div style={{
+          position: 'absolute',
+          top: '-6px',
+          right: '-6px',
+          width: '20px',
+          height: '20px',
+          display: isHovered && onRemove ? 'flex' : 'none',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1001,
+          pointerEvents: 'auto',
+          transform: 'translateZ(0)' // Force hardware acceleration
+        }}>
+          <button
             onClick={(e) => {
-              e.stopPropagation(); // Prevent triggering the item's onClick
-              e.preventDefault(); // Prevent default behavior
-              // console.log('Remove button clicked for item:', item.id);
-              onRemove(item.id);
-            }}
-            onPointerDown={(e) => {
-              e.stopPropagation(); // Additional event prevention for touch devices
+              e.stopPropagation();
+              onRemove?.(item.id);
             }}
             style={{
-              position: 'absolute',
-              top: '-5px',
-              right: '-5px',
-              width: '16px',
-              height: '16px',
-              backgroundColor: 'rgba(200, 200, 200, 0.85)', // Light gray
+              width: '20px',
+              height: '20px',
               borderRadius: '50%',
+              background: '#fff',
+              border: '1px solid #ccc',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              padding: 0,
+              margin: 0,
               cursor: 'pointer',
-              zIndex: 1001, // Higher z-index for diamond shapes
-              border: '1px solid rgba(180, 180, 180, 0.9)',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-              transition: 'all 0.2s ease',
-              pointerEvents: 'auto', // Ensure pointer events are enabled
+              boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+              outline: 'none',
+              position: 'relative',
+              zIndex: 1002
             }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = 'rgba(200, 200, 200, 0.95)';
-              e.target.style.transform = 'scale(1.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'rgba(200, 200, 200, 0.85)';
-              e.target.style.transform = 'scale(1)';
-            }}
+            onMouseDown={e => e.stopPropagation()}
           >
-            <span
-              style={{
-                fontSize: '15px',
-                color: '#333', // Dark X for contrast against light gray
-                fontWeight: 'bold',
-                pointerEvents: 'none',
-                lineHeight: 1,
-                fontFamily: 'Arial, sans-serif',
-                userSelect: 'none',
-              }}
-            >
-              ×
+            <span style={{
+              display: 'block',
+              width: '12px',
+              height: '12px',
+              position: 'relative',
+              pointerEvents: 'none'
+            }}>
+              <span style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                width: '12px',
+                height: '2px',
+                background: '#333',
+                margin: '-1px -6px',
+                transform: 'rotate(45deg)'
+              }} />
+              <span style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                width: '12px',
+                height: '2px',
+                background: '#333',
+                margin: '-1px -6px',
+                transform: 'rotate(-45deg)'
+              }} />
             </span>
-          </div>
-        )}
+          </button>
+        </div>
         
-        <div className="text-center" style={{ width: '100%', height: '100%' }}>
+        {/* Resize Handle */}
+        <div 
+          onMouseDown={handleResizeMouseDown}
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            right: 0,
+            width: '16px',
+            height: '16px',
+            cursor: 'nwse-resize',
+            zIndex: 1001,
+            pointerEvents: 'auto',
+            background: 'transparent',
+            opacity: 0
+          }}
+        />
+        
+        <div 
+          className="text-center"
+          style={{ 
+            width: '100%', 
+            height: '100%',
+            position: 'relative',
+            zIndex: 1,
+            userSelect: 'none' // Prevent text selection during drag
+          }}
+          onMouseDown={handleMouseDown}
+        >
           <div style={{
             width: '100%',
             fontSize: '0.75em',
@@ -228,8 +389,9 @@ const DraggableBoardItem = ({ item, date, shape = 'rectangle', onClick, onLabelC
             </div>
           )}
         </div>
-      </Box>
-    </Rnd>
+        </Box>
+      </div>
+    </div>
   );
 };
 
