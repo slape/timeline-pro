@@ -6,6 +6,7 @@ import TimelineBoard from './components/timeline/TimelineBoard';
 import { Box, Loader, ThemeProvider } from "@vibe/core";
 import fetchBoardItems from './functions/fetchBoardItems';
 import ExportButton from './components/export/ExportButton';
+import TimelineLogger from './utils/logger';
 
 // Usage of mondaySDK example, for more information visit here: https://developer.monday.com/apps/docs/introduction-to-the-sdk/
 const monday = mondaySdk();
@@ -52,17 +53,24 @@ const App = () => {
 
   // Set up context listener
   useEffect(() => {
+    TimelineLogger.info('Setting up monday.com context listeners');
+    
     // Notice this method notifies the monday platform that user gains a first value in an app.
     // Read more about it here: https://developer.monday.com/apps/docs/mondayexecute#value-created-for-user/
     monday.execute("valueCreatedForUser");
+    
     // Set up event listeners for context changes
     monday.listen("context", (res) => {
+      TimelineLogger.info('Context updated', { context: res.data });
+      TimelineLogger.appInitialized(res.data);
       setContext(res.data);
     });
     monday.listen("settings", (res) => {
+      TimelineLogger.info('Settings updated', { settings: res.data });
       setSettings(res.data);
     });
     monday.listen("itemIds", (res) => {
+      TimelineLogger.info('Item IDs received', { count: res.data?.length || 0 });
       setItemIds(res.data);
     });
   }, []);
@@ -71,6 +79,7 @@ const App = () => {
   // if not, set default settings
   useEffect(() => {
     if (!settings) {
+      TimelineLogger.info('No settings found, setting default settings');
       monday.set("settings", {
         title: true,
         ledger: true,
@@ -81,8 +90,10 @@ const App = () => {
         datePosition: 'angled-below',
         shape: 'circle',
       }).then(res => {
-        // console.log(res);
+        TimelineLogger.info('Default settings applied', { settings: res.data });
         setSettings(res.data);
+      }).catch(error => {
+        TimelineLogger.error('Failed to set default settings', error);
       });
     }
   }, [settings]);
@@ -94,7 +105,17 @@ const App = () => {
     // Call the imported fetchBoardItems function
     // Wait for both boardId and itemIds to be available before fetching
     if (context?.boardId && itemIds && itemIds.length > 0) {
+      TimelineLogger.dataOperation('fetchBoardItems', {
+        boardId: context.boardId,
+        itemCount: itemIds.length
+      });
       fetchBoardItems(context, itemIds, setBoardItems, setIsLoading, setError);
+    } else {
+      TimelineLogger.debug('Skipping fetch - missing context or itemIds', {
+        hasBoardId: !!context?.boardId,
+        hasItemIds: !!itemIds,
+        itemCount: itemIds?.length || 0
+      });
     }
   }, [context?.boardId, itemIds]); // Re-run when boardId or itemIds change
 

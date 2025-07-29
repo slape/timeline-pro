@@ -1,4 +1,5 @@
 import mondaySdk from "monday-sdk-js";
+import TimelineLogger from '../utils/logger';
 
 // Initialize monday SDK
 const monday = mondaySdk();
@@ -14,7 +15,18 @@ const monday = mondaySdk();
  */
 
 const fetchBoardItems = async (context, itemIds, setBoardItems, setIsLoading, setError) => {
-  if (!context || !context.boardId) return;
+  const startTime = Date.now();
+  
+  if (!context || !context.boardId) {
+    TimelineLogger.warn('Invalid context provided to fetchBoardItems', { context });
+    return;
+  }
+  
+  TimelineLogger.dataOperation('fetchBoardItems.start', {
+    boardId: context.boardId,
+    itemCount: itemIds?.length || 0,
+    hasSpecificItems: !!(itemIds && itemIds.length > 0)
+  });
   
   setIsLoading(true);
   setError(null);
@@ -42,29 +54,54 @@ const fetchBoardItems = async (context, itemIds, setBoardItems, setIsLoading, se
         }
       }
     }`;
-            
-    const response = await monday.api(query);
     
-    if (itemIds && itemIds.length > 0) {
-      // Handle response for specific items query
-      if (response.data && response.data.items) {
-        setBoardItems(response.data.items);
-        // console.log('Specific board items fetched:', response.data.items);
+    TimelineLogger.debug('GraphQL query constructed', { 
+      queryType: 'specific_items',
+      itemCount: itemIds.length 
+    });
+            
+    try {
+      const response = await monday.api(query);
+      const duration = Date.now() - startTime;
+      
+      TimelineLogger.performance('fetchBoardItems.apiCall', duration);
+      
+      if (itemIds && itemIds.length > 0) {
+        // Handle response for specific items query
+        if (response.data && response.data.items) {
+          TimelineLogger.dataOperation('fetchBoardItems.success', {
+            itemCount: response.data.items.length,
+            queryType: 'specific_items'
+          });
+          setBoardItems(response.data.items);
+        } else {
+          TimelineLogger.warn('No items found for the specified IDs', { itemIds });
+          setBoardItems([]);
+        }
       } else {
-        console.warn('No items found for the specified IDs');
-        setBoardItems([]);
+        // Handle response for all items query
+        if (response.data && response.data.boards && response.data.boards.length > 0) {
+          TimelineLogger.dataOperation('fetchBoardItems.success', {
+            itemCount: response.data.boards[0].items_page.items.length,
+            queryType: 'all_items'
+          });
+          setBoardItems(response.data.boards[0].items_page.items);
+        } else {
+          TimelineLogger.warn('No board data found');
+          setBoardItems([]);
+        }
       }
-    } else {
-      // Handle response for all items query
-      if (response.data && response.data.boards && response.data.boards.length > 0) {
-        setBoardItems(response.data.boards[0].items_page.items);
-        // console.log('Board items fetched:', response.data.boards[0].items_page.items);
-      } else {
-        console.warn('No board data found');
-        setBoardItems([]);
-      }
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      TimelineLogger.error('fetchBoardItems.failed', error, {
+        boardId: context.boardId,
+        itemCount: itemIds?.length || 0,
+        duration: `${duration}ms`
+      });
+      setError('Failed to fetch board items');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }
 };
 

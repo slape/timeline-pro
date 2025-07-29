@@ -14,8 +14,59 @@ import { calculateItemPosition } from './timelineUtils';
  */
 const generateTimelineMarkers = (boardItems, dateColumn, startDate, endDate, dateFormat) => {
   if (boardItems.length > 0 && dateColumn) {
-    // Get unique dates from board items
-    const uniqueDates = getUniqueDates(boardItems, dateColumn);
+    // Enhanced field detection - automatically detect field type from data structure
+    const dates = new Set();
+    
+    boardItems.forEach(item => {
+      const column = item.column_values?.find(col => col.id === dateColumn);
+      
+      if (column?.value) {
+        try {
+          const columnValue = JSON.parse(column.value);
+          let dateStr = null;
+          
+          // Check if this is a timeline/range field by looking at the data structure
+          const hasTimelineFields = columnValue.to || columnValue.end || columnValue.from;
+          const hasStandardDate = columnValue.date;
+          
+          // Determine which type of field this is based on available data
+          if (hasTimelineFields) {
+            // Timeline/range field - use the end date
+            if (columnValue.to) {
+              dateStr = columnValue.to;
+            } else if (columnValue.end) {
+              dateStr = columnValue.end;
+            } else if (columnValue.from) {
+              dateStr = columnValue.from;
+            }
+          } else if (hasStandardDate) {
+            // Standard date field
+            dateStr = columnValue.date;
+          }
+          
+          if (dateStr) {
+            // Normalize to consistent format (YYYY-MM-DD)
+            const [year, month, day] = dateStr.split('-').map(Number);
+            const normalizedDate = new Date(year, month - 1, day, 12, 0, 0);
+            
+            if (normalizedDate instanceof Date && !isNaN(normalizedDate)) {
+              // Use ISO string to ensure uniqueness (removes time differences)
+              dates.add(normalizedDate.toISOString().split('T')[0]);
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing date value:', error);
+        }
+      }
+    });
+    
+    // Convert Set back to array of Date objects and sort chronologically
+    const uniqueDates = Array.from(dates)
+      .map(dateString => {
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day, 12, 0, 0);
+      })
+      .sort((a, b) => a.getTime() - b.getTime());
     
     if (uniqueDates.length > 0) {
       // Create date-only versions to avoid timezone issues when comparing
@@ -77,6 +128,7 @@ const generateTimelineMarkers = (boardItems, dateColumn, startDate, endDate, dat
       const sortedMarkers = uniqueMarkers.sort((a, b) => a.position - b.position);
       return sortedMarkers;
     } else {
+      console.log('No dates found, using default markers');
       // No dates found in board items, use default markers
       return [
         {
@@ -92,6 +144,7 @@ const generateTimelineMarkers = (boardItems, dateColumn, startDate, endDate, dat
       ];
     }
   } else {
+    console.log('No board items or date column, using fallback markers');
     // Fallback to default start/end markers if no board items or date column
     return [
       {

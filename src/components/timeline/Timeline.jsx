@@ -7,6 +7,7 @@ import { calculateTimelineItemPositions } from '../../functions/calculateTimelin
 import { renderTimelineItems } from './renderTimelineItems.jsx'
 import LeaderLineConnector from './LeaderLineConnector';
 import calculateScaleMarkers from '../../functions/calculateScaleMarkers';
+import TimelineLogger from '../../utils/logger';
 
 /**
  * Timeline component that displays a horizontal timeline with markers and draggable items
@@ -55,7 +56,19 @@ const Timeline = ({
   
   // Calculate the scale markers based on scale and date range
   const scaleMarkers = useMemo(() => {
-    return calculateScaleMarkers(startDate, endDate, scale);
+    const startTime = Date.now();
+    const markers = calculateScaleMarkers(startDate, endDate, scale);
+    
+    if (markers.length > 0) {
+      const duration = Date.now() - startTime;
+      TimelineLogger.performance('calculateScaleMarkers', duration, {
+        markerCount: markers.length,
+        scale,
+        dateRangeDays: Math.round((endDate - startDate) / (1000 * 60 * 60 * 24))
+      });
+    }
+    
+    return markers;
   }, [startDate, endDate, scale]);
   
   // Convert dates and boardItems to strings for stable dependencies
@@ -65,8 +78,20 @@ const Timeline = ({
   
   // Generate timeline markers when board items, date column, date range, or hidden items change
   useEffect(() => {
+    TimelineLogger.debug('Timeline: Generating markers', {
+      boardItemCount: boardItems?.length || 0,
+      dateColumn,
+      hiddenItemCount: hiddenItemIds.size,
+      visibleItemCount: boardItems?.filter(item => !hiddenItemIds.has(item.id)).length || 0
+    });
+    
     // If there are no board items, skip marker generation
-    if (!boardItems || boardItems.length === 0) return;
+    if (!boardItems || boardItems.length === 0) {
+      TimelineLogger.debug('Timeline: No board items, skipping marker generation');
+      return;
+    }
+    
+    const startTime = Date.now();
     
     // Filter board items to only include visible ones
     const visibleBoardItems = boardItems.filter(item => !hiddenItemIds.has(item.id));
@@ -80,11 +105,18 @@ const Timeline = ({
       dateFormat
     );
     
+    const duration = Date.now() - startTime;
+    TimelineLogger.performance('generateTimelineMarkers', duration, {
+      markerCount: markers.length,
+      visibleBoardItemCount: visibleBoardItems.length
+    });
+    
     setMarkers(markers);
   }, [boardItemsString, dateColumn, startDateString, endDateString, dateFormat, hiddenItemIds]);
   
   // Handle item position changes during drag
   const handleItemPositionChange = (itemId, newPosition) => {
+    TimelineLogger.userAction('timelineItemDragged', { itemId, newPosition });
     // Update the item's position in the items array
     const updatedItems = items.map(item => {
       if (item.id === itemId) {
