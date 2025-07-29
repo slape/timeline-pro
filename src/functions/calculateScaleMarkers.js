@@ -129,14 +129,43 @@ const calculateScaleMarkers = (startDate, endDate, scale) => {
     lastMarker.isEndMarker = true;
   }
   
+  // Ensure minimum spacing between markers
+  if (scaleMarkers.length > 2) {
+    const MIN_SPACING_PERCENT = 12; // Minimum percentage of width between markers
+    
+    // Always keep first and last markers visible
+    const visibleMarkers = [0];
+    
+    // Simple greedy algorithm to select markers with minimum spacing
+    let lastVisibleIndex = 0;
+    for (let i = 1; i < scaleMarkers.length - 1; i++) {
+      const distance = scaleMarkers[i].position - scaleMarkers[lastVisibleIndex].position;
+      if (distance >= MIN_SPACING_PERCENT) {
+        visibleMarkers.push(i);
+        lastVisibleIndex = i;
+      }
+    }
+    
+    // Always include the last marker if it's not already included
+    if (lastVisibleIndex !== scaleMarkers.length - 1) {
+      visibleMarkers.push(scaleMarkers.length - 1);
+    }
+    
+    // Hide all markers except the selected ones
+    for (let i = 1; i < scaleMarkers.length - 1; i++) {
+      if (!visibleMarkers.includes(i)) {
+        scaleMarkers[i].hidden = true;
+      }
+    }
+  }
+  
   // Remove the second-to-last marker if it has the same label as the last marker
   if (scaleMarkers.length >= 2) {
     const last = scaleMarkers[scaleMarkers.length - 1];
     const secondToLast = scaleMarkers[scaleMarkers.length - 2];
     
-    // If the last two markers have the same label, remove the second-to-last one
+    // If the last two markers have the same label, hide the second-to-last one
     if (secondToLast.label === last.label) {
-      // Instead of removing, we'll mark it as hidden so the timeline can handle it appropriately
       secondToLast.hidden = true;
     }
   }
