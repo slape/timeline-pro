@@ -118,13 +118,27 @@ const calculateScaleMarkers = (startDate, endDate, scale) => {
     scaleMarkers.push({
       date: new Date(end),
       label: getScaleLabel(end, scale, 'End', startDate),
-      position: endPosition
+      position: endPosition,
+      isEndMarker: true
     });
   } else {
     // Update the last marker to be the end marker if they're close
     lastMarker.position = endPosition;
     lastMarker.label = getScaleLabel(end, scale, 'End', startDate);
     lastMarker.date = new Date(end);
+    lastMarker.isEndMarker = true;
+  }
+  
+  // Remove the second-to-last marker if it has the same label as the last marker
+  if (scaleMarkers.length >= 2) {
+    const last = scaleMarkers[scaleMarkers.length - 1];
+    const secondToLast = scaleMarkers[scaleMarkers.length - 2];
+    
+    // If the last two markers have the same label, remove the second-to-last one
+    if (secondToLast.label === last.label) {
+      // Instead of removing, we'll mark it as hidden so the timeline can handle it appropriately
+      secondToLast.hidden = true;
+    }
   }
   
   return scaleMarkers;

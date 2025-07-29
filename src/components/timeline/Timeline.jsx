@@ -276,6 +276,9 @@ const Timeline = ({
           
           {/* Scale marker ticks and labels */}
           {scaleMarkers.map((marker, index) => {
+            // Skip rendering hidden markers (like the second-to-last marker if it matches the last one)
+            if (marker.hidden) return null;
+            
             const isAbove = !shouldFlipScaleMarkers;
             const offset = shouldFlipScaleMarkers ? 3 : -28; // -1px when flipped (below), -23px when not flipped (above)
             
