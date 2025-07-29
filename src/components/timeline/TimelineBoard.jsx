@@ -3,6 +3,7 @@ import { Box, EditableHeading, Flex, Text } from '@vibe/core';
 import { processTimelineData } from '../../functions/processTimelineData';
 import Timeline from './Timeline';
 import GroupLegend from './GroupLegend';
+import TimelineLogger from '../../utils/logger';
 
 /** BoardItem type * @typedef {Object} BoardItem
  * @property {string} id - Unique item ID
@@ -46,6 +47,12 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
 
   // Sync settings with local state
   useEffect(() => {
+    TimelineLogger.debug('TimelineBoard: Syncing settings', {
+      title: settings.title,
+      ledger: settings.ledger,
+      itemDates: settings.itemDates
+    });
+    
     // Sync title setting
     if (settings.title !== undefined) {
       setTitleSetting(settings.title);
@@ -85,7 +92,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
 
   // Handle timeline item move
   const handleTimelineItemMove = (itemId, newPosition) => {
-    // console.log(`Item ${itemId} moved to position ${newPosition}`);
+    TimelineLogger.userAction('timelineItemMoved', { itemId, newPosition });
     
     setTimelineItems(prevItems => 
       prevItems.map(item => 
@@ -98,7 +105,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
   
   // Handle timeline item label change
   const handleLabelChange = (itemId, newLabel) => {
-    // console.log(`Item ${itemId} label changed to ${newLabel}`);
+    TimelineLogger.userAction('timelineItemLabelChanged', { itemId, newLabel });
     
     setTimelineItems(prevItems => 
       prevItems.map(item => 
@@ -111,17 +118,36 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
   
   // Handle item hide/removal
   const handleHideItem = (itemId) => {
-    // console.log(`Item ${itemId} hidden`);
+    TimelineLogger.userAction('timelineItemHidden', { itemId });
     setHiddenItemIds(prev => new Set([...prev, itemId]));
   };
 
   // Extract dates from board items and determine timeline parameters
   useEffect(() => {
+    TimelineLogger.debug('TimelineBoard: Processing timeline data', {
+      boardItemCount: boardItems?.length || 0,
+      hasSettings: !!settings,
+      scale
+    });
+    
+    const startTime = Date.now();
     const result = processTimelineData(boardItems, settings, scale);
     
     if (result) {
+      const duration = Date.now() - startTime;
+      TimelineLogger.performance('processTimelineData', duration, {
+        itemCount: result.timelineItems?.length || 0,
+        startDate: result.timelineParams?.startDate?.toISOString(),
+        endDate: result.timelineParams?.endDate?.toISOString()
+      });
+      
       setTimelineParams(result.timelineParams);
       setTimelineItems(result.timelineItems);
+    } else {
+      TimelineLogger.warn('processTimelineData returned no result', {
+        boardItemCount: boardItems?.length || 0,
+        hasSettings: !!settings
+      });
     }
   }, [boardItems, settings]);
 
@@ -177,7 +203,7 @@ const TimelineBoard = ({ boardItems = [], settings = {} }) => {
               color: 'var(--secondary-text-color)'
             }}
           >
-            <Text>No timeline items to display</Text>
+            <Text>No date column selected. Check the 'Date Field to Display' setting.</Text>
           </Flex>
         )}
       </Box>

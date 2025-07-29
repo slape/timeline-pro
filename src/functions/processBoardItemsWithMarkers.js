@@ -23,7 +23,26 @@ const processBoardItemsWithMarkers = (boardItems, dateColumn, startDate, endDate
 
   try {
     // Subtask 1: Extract board items with dates
-    const itemsWithDates = getItemsWithDates(boardItems, dateColumn);
+    // First, determine if this is a timeline field by examining the data structure
+    let isTimelineField = false;
+    if (boardItems && boardItems.length > 0 && dateColumn) {
+      const sampleItem = boardItems.find(item => 
+        item.column_values?.some(col => col.id === dateColumn && col.value)
+      );
+      
+      if (sampleItem) {
+        const column = sampleItem.column_values.find(col => col.id === dateColumn);
+        try {
+          const columnValue = JSON.parse(column.value);
+          // Check if this has timeline field structure
+          isTimelineField = !!(columnValue.to || columnValue.end || columnValue.from);
+        } catch (e) {
+          isTimelineField = false;
+        }
+      }
+    }
+    
+    const itemsWithDates = getItemsWithDates(boardItems, dateColumn, isTimelineField);
     
     if (itemsWithDates.length === 0) {
       return {

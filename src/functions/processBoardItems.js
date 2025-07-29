@@ -1,4 +1,5 @@
 import { calculateItemPosition } from './timelineUtils';
+import TimelineLogger from '../utils/logger';
 
 // Helper function to create date-only Date objects for consistent comparison
 const toDateOnly = (date) => {
@@ -16,6 +17,20 @@ const toDateOnly = (date) => {
  * @returns {Array} Array of processed items with timeline and visual positions
  */
 export default function processBoardItems(itemsWithDates, startDate, endDate, position) {
+  const startTime = Date.now();
+  
+  TimelineLogger.debug('processBoardItems.start', {
+    itemCount: itemsWithDates?.length || 0,
+    startDate: startDate?.toISOString(),
+    endDate: endDate?.toISOString(),
+    position
+  });
+  
+  if (!itemsWithDates || itemsWithDates.length === 0) {
+    TimelineLogger.warn('processBoardItems: No items with dates provided');
+    return [];
+  }
+  
   // Convert start and end dates to date-only for consistent comparison
   const startDateOnly = toDateOnly(startDate);
   const endDateOnly = toDateOnly(endDate);
@@ -23,7 +38,15 @@ export default function processBoardItems(itemsWithDates, startDate, endDate, po
   // Calculate the total time span in milliseconds
   const totalTime = endDateOnly - startDateOnly;
   
-  return itemsWithDates.map((item, index) => {
+  if (totalTime <= 0) {
+    TimelineLogger.warn('processBoardItems: Invalid date range', {
+      startDate: startDateOnly.toISOString(),
+      endDate: endDateOnly.toISOString(),
+      totalTime
+    });
+  }
+  
+  const processedItems = itemsWithDates.map((item, index) => {
     // Convert item date to date-only for consistent comparison
     const itemDateOnly = toDateOnly(item.date);
     
@@ -49,4 +72,13 @@ export default function processBoardItems(itemsWithDates, startDate, endDate, po
       index
     };
   });
+  
+  const duration = Date.now() - startTime;
+  TimelineLogger.performance('processBoardItems.complete', duration, {
+    inputCount: itemsWithDates.length,
+    outputCount: processedItems.length,
+    position
+  });
+  
+  return processedItems;
 }
