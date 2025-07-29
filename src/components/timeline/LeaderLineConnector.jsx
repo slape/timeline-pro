@@ -53,28 +53,38 @@ const LeaderLineConnector = ({ fromId, toId }) => {
     const toX = markerX;
     const toY = timelineY;
     
-    // Calculate board item position relative to timeline
+    // Calculate board item's horizontal center position
     const itemCenterX = fromRect.left + fromRect.width / 2 - containerRect.left;
-    const itemCenterY = fromRect.top + fromRect.height / 2 - containerRect.top;
     
-    // Determine if item is above or below the timeline marker
-    const isItemBelow = itemCenterY > toY;
+    // For perfectly perpendicular lines, always use the same X coordinate as the marker
+    // This ensures the line is vertical regardless of item position
+    const fromX = toX; // Always align with the marker's X position
     
-    // Calculate attachment point on the board item
-    // If item is below timeline, attach to top edge; if above, attach to bottom edge
-    const fromX = itemCenterX; // Center horizontally on the item
-    const fromY = isItemBelow 
-      ? fromRect.top - containerRect.top // Top edge of item
-      : fromRect.bottom - containerRect.top; // Bottom edge of item
+    // Determine if item is above or below the timeline
+    const itemTopY = fromRect.top - containerRect.top;
+    const itemBottomY = fromRect.bottom - containerRect.top;
     
-    // The line connects from the item edge to the FIXED timeline marker position
-    // This allows the line to be perpendicular when directly below/above, 
-    // or diagonal when the item is moved horizontally
+    // Calculate attachment point based on item position relative to timeline
+    let fromY;
+    if (itemBottomY < toY) {
+      // Item is above timeline - attach to bottom edge
+      fromY = itemBottomY;
+    } else if (itemTopY > toY) {
+      // Item is below timeline - attach to top edge
+      fromY = itemTopY;
+    } else {
+      // Item overlaps timeline - attach to closest edge
+      const distanceToTop = Math.abs(itemTopY - toY);
+      const distanceToBottom = Math.abs(itemBottomY - toY);
+      fromY = distanceToTop < distanceToBottom ? itemTopY : itemBottomY;
+    }
+    
+    // Ensure perfectly perpendicular line by using same X coordinate for both points
     setLineCoords({ 
       fromX, 
       fromY, 
-      toX, // Use the actual timeline marker X position (FIXED)
-      toY  // Use the actual timeline marker Y position (FIXED)
+      toX, // Use the exact same X as the marker for perpendicular line
+      toY  // Use the actual timeline marker Y position
     });
   }, [fromId, toId]);
 
