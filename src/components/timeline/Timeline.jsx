@@ -38,6 +38,7 @@ const Timeline = ({
   dateColumn,
   dateFormat = 'mdy',
   datePosition = 'angled-above',
+  onItemMove = () => {},
   onHideItem = () => {},
   hiddenItemIds = new Set(),
   position = 'below',
