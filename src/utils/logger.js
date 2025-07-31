@@ -1,19 +1,29 @@
 // Browser-compatible logger that handles both monday.com and local development
 // This logger gracefully handles the browser environment where process may not be defined
+import { Logger } from '@mondaycom/apps-sdk';
 
 /**
  * Browser-compatible logging utility
  * Uses monday.com Logger when available, falls back to console logging for development
  */
 class TimelineLogger {
+  static mondayLogger = null;
+  
+  /**
+   * Get or initialize the Monday Logger instance
+   */
+  static getMondayLogger() {
+    if (!this.mondayLogger && this.isMondayEnvironment()) {
+      this.mondayLogger = new Logger('timeline-generator');
+    }
+    return this.mondayLogger;
+  }
   /**
    * Check if we're in the monday.com environment
    */
   static isMondayEnvironment() {
     return typeof window !== 'undefined' && 
-           window.monday !== undefined &&
-           typeof process !== 'undefined' &&
-           process.env !== undefined;
+           window.monday !== undefined;
   }
 
   /**
@@ -23,7 +33,8 @@ class TimelineLogger {
    */
   static info(message, metadata = {}) {
     if (this.isMondayEnvironment()) {
-      console.log(`[TIMELINE-INFO] ${message}`, metadata);
+      const logger = this.getMondayLogger();
+      logger.info(message, metadata);
     } else {
       console.log(`%c[INFO] ${message}`, 'color: #0066cc', metadata);
     }
@@ -36,7 +47,8 @@ class TimelineLogger {
    */
   static warn(message, metadata = {}) {
     if (this.isMondayEnvironment()) {
-      console.warn(`[TIMELINE-WARN] ${message}`, metadata);
+      const logger = this.getMondayLogger();
+      logger.warn(message, metadata);
     } else {
       console.warn(`%c[WARN] ${message}`, 'color: #ff6600', metadata);
     }
@@ -49,7 +61,8 @@ class TimelineLogger {
    */
   static debug(message, metadata = {}) {
     if (this.isMondayEnvironment()) {
-      console.debug(`[TIMELINE-DEBUG] ${message}`, metadata);
+      const logger = this.getMondayLogger();
+      logger.debug(message, metadata);
     } else {
       console.debug(`%c[DEBUG] ${message}`, 'color: #666666', metadata);
     }
@@ -63,14 +76,19 @@ class TimelineLogger {
    */
   static error(message, error = null, metadata = {}) {
     const logData = { ...metadata };
-    if (error) {
-      logData.error = error.message || error;
-      logData.stack = error.stack;
-    }
     
     if (this.isMondayEnvironment()) {
-      console.error(`[TIMELINE-ERROR] ${message}`, logData);
+      const logger = this.getMondayLogger();
+      if (error) {
+        logger.error(message, { error });
+      } else {
+        logger.error(message, logData);
+      }
     } else {
+      if (error) {
+        logData.error = error.message || error;
+        logData.stack = error.stack;
+      }
       console.error(`%c[ERROR] ${message}`, 'color: #cc0000', logData);
     }
   }
