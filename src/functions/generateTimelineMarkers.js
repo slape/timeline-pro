@@ -13,19 +13,25 @@ import TimelineLogger from '../utils/logger';
  * @returns {Array} Array of timeline markers with date, label, and position
  */
 const generateTimelineMarkers = (boardItems, dateColumn, startDate, endDate, dateFormat) => {
+  // Normalize date column id: can be a string id or an object (e.g., {id})
+  const dateColumnId = typeof dateColumn === 'object'
+    ? (dateColumn?.id || dateColumn?.value || (Object.keys(dateColumn || {})[0]))
+    : dateColumn;
   TimelineLogger.debug('[Markers] Input', {
     boardItemsCount: boardItems?.length || 0,
-    hasDateColumn: !!dateColumn,
+    hasDateColumn: !!dateColumnId,
+    dateColumnRaw: dateColumn,
+    dateColumnId,
     startDate,
     endDate,
     dateFormat
   });
-  if (boardItems.length > 0 && dateColumn) {
+  if (boardItems.length > 0 && dateColumnId) {
     // Enhanced field detection - automatically detect field type from data structure
     const dates = new Set();
     
     boardItems.forEach(item => {
-      const column = item.column_values?.find(col => col.id === dateColumn);
+      const column = item.column_values?.find(col => col.id === dateColumnId);
       
       if (column?.value) {
         try {

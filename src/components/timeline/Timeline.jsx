@@ -91,14 +91,30 @@ const Timeline = ({
     });
 
     const startTime = Date.now();
+    let generatedMarkers = [];
     // Generate markers (function handles empty board items by returning start/end markers)
-    const nextMarkers = generateTimelineMarkers(boardItems || [], dateColumn, startDate, endDate, dateFormat);
-    setMarkers(nextMarkers);
-    TimelineLogger.debug('[Timeline] Markers generated', { count: nextMarkers?.length || 0, markers: nextMarkers });
+    try {
+      TimelineLogger.debug('[Timeline] Calling generateTimelineMarkers', {
+        boardItemsCount: (boardItems || []).length,
+        dateColumnId: typeof dateColumn === 'object' ? dateColumn?.id : dateColumn,
+        hasDateColumn: !!dateColumn,
+        startDate,
+        endDate,
+        dateFormat
+      });
+      generatedMarkers = generateTimelineMarkers(boardItems || [], dateColumn, startDate, endDate, dateFormat);
+      setMarkers(generatedMarkers);
+      TimelineLogger.debug('[Timeline] Markers generated', { count: generatedMarkers?.length || 0, markers: generatedMarkers });
+    } catch (e) {
+      TimelineLogger.error('[Timeline] generateTimelineMarkers threw', e, {
+        boardItemsCount: (boardItems || []).length,
+        dateColumn
+      });
+    }
     
     const duration = Date.now() - startTime;
     TimelineLogger.performance('generateTimelineMarkers', duration, {
-      markerCount: nextMarkers.length,
+      markerCount: generatedMarkers?.length || 0,
       visibleBoardItemCount: (boardItems || []).filter(item => !hiddenItemIds.has(item.id)).length
     });
   }, [boardItemsString, dateColumn, startDateString, endDateString, dateFormat, hiddenItemIds]);
