@@ -24,8 +24,10 @@ export function renderTimelineItems(
   const showDates = settings?.itemDates ?? settings?.showItemDates ?? true;
   
   return itemsWithPositions.map((item) => {
+    // Support either `parsedDate` (new) or `date` (legacy)
+    const raw = item.parsedDate ?? item.date;
     // Preserve Date instances from processed data; only construct if needed
-    const itemDate = item.date instanceof Date ? item.date : new Date(item.date);
+    const itemDate = raw instanceof Date ? raw : (raw ? new Date(raw) : null);
     const isValidDate = (d) => d instanceof Date && !isNaN(d);
     
     // Check if this item should be hidden

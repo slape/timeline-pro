@@ -16,9 +16,23 @@ const monday = mondaySdk();
 
 const fetchBoardItems = async (dateColumn, context, itemIds, setBoardItems, setIsLoading, setError) => {
   const startTime = Date.now();
-  const dateColumnId = typeof dateColumn === 'object'
-  ? Object.keys(dateColumn)[0]
-  : dateColumn;
+  let dateColumnId;
+  if (dateColumn && typeof dateColumn === 'object') {
+    if (dateColumn.id) {
+      dateColumnId = dateColumn.id;
+    } else if (dateColumn.value) {
+      dateColumnId = dateColumn.value; // sometimes settings store just the id under value
+    } else {
+      // last resort: if it's a one-key object like { some_col_id: true }
+      const keys = Object.keys(dateColumn);
+      dateColumnId = keys.length === 1 ? keys[0] : undefined;
+    }
+  } else {
+    dateColumnId = dateColumn;
+  }
+  if (!dateColumnId) {
+    TimelineLogger.warn('fetchBoardItems: Could not resolve dateColumnId from input', { dateColumn });
+  }
   TimelineLogger.debug('Extracted date column ID', { dateColumnId });
   if (!context || !context.boardId) {
     TimelineLogger.warn('Invalid context provided to fetchBoardItems', { context });
@@ -76,8 +90,13 @@ const fetchBoardItems = async (dateColumn, context, itemIds, setBoardItems, setI
             itemCount: response.data.items.length,
             queryType: 'specific_items'
           });
-          // Store full column_values so we can switch dateColumn locally without refetch
-          setBoardItems(response.data.items);
+          // Filter column_values to only include the selected date column
+          const filteredItems = response.data.items.map(item => ({
+            ...item,
+            column_values: (item.column_values || []).filter(cv => cv.id === dateColumnId)
+          }));
+          TimelineLogger.debug('fetchBoardItems.filteredColumns', { dateColumnId, before: response.data.items[0]?.column_values?.length, after: filteredItems[0]?.column_values?.length });
+          setBoardItems(filteredItems);
         } else {
           TimelineLogger.warn('No items found for the specified IDs', { itemIds });
           setBoardItems([]);
@@ -89,7 +108,13 @@ const fetchBoardItems = async (dateColumn, context, itemIds, setBoardItems, setI
             itemCount: response.data.boards[0].items_page.items.length,
             queryType: 'all_items'
           });
-          setBoardItems(response.data.boards[0].items_page.items);
+          // Filter column_values to only include the selected date column
+          const filteredItems = response.data.boards[0].items_page.items.map(item => ({
+            ...item,
+            column_values: (item.column_values || []).filter(cv => cv.id === dateColumnId)
+          }));
+          TimelineLogger.debug('fetchBoardItems.filteredColumns', { dateColumnId, before: response.data.boards[0].items_page.items[0]?.column_values?.length, after: filteredItems[0]?.column_values?.length });
+          setBoardItems(filteredItems);
         } else {
           TimelineLogger.warn('No board data found');
           setBoardItems([]);

@@ -1,5 +1,6 @@
 import formatDate from './formatDate';
 import { calculateItemPosition } from './timelineUtils';
+import TimelineLogger from '../utils/logger';
 
 /**
  * Generates timeline markers based on board items, date column, and date range
@@ -12,6 +13,13 @@ import { calculateItemPosition } from './timelineUtils';
  * @returns {Array} Array of timeline markers with date, label, and position
  */
 const generateTimelineMarkers = (boardItems, dateColumn, startDate, endDate, dateFormat) => {
+  TimelineLogger.debug('[Markers] Input', {
+    boardItemsCount: boardItems?.length || 0,
+    hasDateColumn: !!dateColumn,
+    startDate,
+    endDate,
+    dateFormat
+  });
   if (boardItems.length > 0 && dateColumn) {
     // Enhanced field detection - automatically detect field type from data structure
     const dates = new Set();
@@ -54,10 +62,11 @@ const generateTimelineMarkers = (boardItems, dateColumn, startDate, endDate, dat
             }
           }
         } catch (error) {
-          console.error('Error parsing date value:', error);
+          TimelineLogger.error('[Markers] Error parsing date value', { error, column: column?.value, itemId: item?.id });
         }
       }
     });
+    TimelineLogger.debug('[Markers] Unique date strings found', { count: dates.size, values: Array.from(dates) });
     
     // Convert Set back to array of Date objects and sort chronologically
     const uniqueDates = Array.from(dates)
@@ -125,9 +134,10 @@ const generateTimelineMarkers = (boardItems, dateColumn, startDate, endDate, dat
       );
       
       const sortedMarkers = uniqueMarkers.sort((a, b) => a.position - b.position);
+      TimelineLogger.debug('[Markers] Generated from board items', { count: sortedMarkers.length, markers: sortedMarkers });
       return sortedMarkers;
     } else {
-      console.log('No dates found, using default markers');
+      TimelineLogger.warn('[Markers] No dates found, using default markers');
       // No dates found in board items, use default markers
       return [
         {
@@ -143,7 +153,7 @@ const generateTimelineMarkers = (boardItems, dateColumn, startDate, endDate, dat
       ];
     }
   } else {
-    console.log('No board items or date column, using fallback markers');
+    TimelineLogger.warn('[Markers] No board items or date column, using fallback markers', { boardItemsCount: boardItems?.length || 0, hasDateColumn: !!dateColumn });
     // Fallback to default start/end markers if no board items or date column
     return [
       {

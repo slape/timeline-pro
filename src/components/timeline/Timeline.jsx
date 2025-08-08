@@ -32,12 +32,17 @@ const Timeline = ({
   const boardItems = useZustandStore(state => state.boardItems) || [];
   const timelineParams = useZustandStore(state => state.timelineParams) || {};
   const { startDate, endDate } = timelineParams;
-  console.log('startDate type:', typeof startDate, startDate);
-  console.log('endDate type:', typeof endDate, endDate);
+  TimelineLogger.debug('Start/End date types', { startType: typeof startDate, startDate, endType: typeof endDate, endDate });
   TimelineLogger.debug('Timeline params', { timelineParams, startDate, endDate });
-  const settings = useZustandStore(state => state.settings);
+  const settings = useZustandStore(state => state.settings) || {};
   const items = (timelineItems || []).filter(item => !hiddenItemIds.has(item.id));
-  const { dateColumn, dateFormat, datePosition, position, shape, showItemDates, scale } = settings;
+  const dateColumn = settings?.dateColumn;
+  const dateFormat = settings?.dateFormat || 'MMM d, yyyy';
+  const datePosition = settings?.datePosition || 'above';
+  const position = settings?.position || 'center';
+  const shape = settings?.shape || 'rectangle';
+  const showItemDates = settings?.itemDates ?? settings?.showItemDates ?? true;
+  const scale = settings?.scale || 'none';
   const [markers, setMarkers] = useState([]);
   const storeState = useZustandStore();
   TimelineLogger.debug('Full zustand store', storeState);
@@ -84,26 +89,17 @@ const Timeline = ({
       hiddenItemCount: hiddenItemIds.size,
       visibleItemCount: boardItems?.filter(item => !hiddenItemIds.has(item.id)).length || 0
     });
-    
-    // If there are no board items, skip marker generation
-    if (!boardItems || boardItems.length === 0) {
-      TimelineLogger.debug('Timeline: No board items, skipping marker generation');
-      return;
-    }
-    
+
     const startTime = Date.now();
-    
-    // Filter board items to only include visible ones
-    const visibleBoardItems = boardItems.filter(item => !hiddenItemIds.has(item.id));
-    
-    // Generate markers using only visible items
-    const nextMarkers = generateTimelineMarkers(boardItems, dateColumn, startDate, endDate, dateFormat);
+    // Generate markers (function handles empty board items by returning start/end markers)
+    const nextMarkers = generateTimelineMarkers(boardItems || [], dateColumn, startDate, endDate, dateFormat);
     setMarkers(nextMarkers);
+    TimelineLogger.debug('[Timeline] Markers generated', { count: nextMarkers?.length || 0, markers: nextMarkers });
     
     const duration = Date.now() - startTime;
     TimelineLogger.performance('generateTimelineMarkers', duration, {
-      markerCount: markers.length,
-      visibleBoardItemCount: visibleBoardItems.length
+      markerCount: nextMarkers.length,
+      visibleBoardItemCount: (boardItems || []).filter(item => !hiddenItemIds.has(item.id)).length
     });
   }, [boardItemsString, dateColumn, startDateString, endDateString, dateFormat, hiddenItemIds]);
   
@@ -143,20 +139,57 @@ const Timeline = ({
     onHideItem(itemId);
   };
 
-  // Process board items with dates and calculate positions
+  // Process items to map each item to its closest marker
   useEffect(() => {
-    const result = processBoardItemsWithMarkers(
-      boardItems,
-      dateColumn,
-      startDate,
-      endDate,
-      position,
-      markers
-    );
-    
-    setProcessedBoardItems(result.processedBoardItems);
-    setItemToMarkerMap(result.itemToMarkerMap);
-  }, [boardItemsString, dateColumn, startDateString, endDateString, markers, position]);
+    TimelineLogger.debug('[Timeline] Building item→marker map', { boardItemsCount: boardItems?.length || 0, timelineItemsCount: items?.length || 0, markersCount: markers?.length || 0 });
+    // If we have raw board items and a date column, use the existing processor
+    if (boardItems && boardItems.length > 0 && dateColumn) {
+      const result = processBoardItemsWithMarkers(
+        boardItems,
+        dateColumn,
+        startDate,
+        endDate,
+        position,
+        markers
+      );
+      setProcessedBoardItems(result.processedBoardItems);
+      setItemToMarkerMap(result.itemToMarkerMap);
+      TimelineLogger.debug('[Timeline] Map built via boardItems processor', { mapped: result.itemToMarkerMap?.size || 0 });
+      return;
+    }
+
+    // Fallback: derive mapping directly from current timeline items and markers
+    const map = new Map();
+    (items || []).forEach(item => {
+      if (!item?.date || !(item.date instanceof Date) || isNaN(item.date)) return;
+      // Compute timeline position percentage for the item's date
+      const timeRange = endDate - startDate;
+      if (!timeRange || timeRange <= 0) return;
+      const positionPct = ((item.date - startDate) / timeRange) * 100;
+      if (!markers || markers.length === 0) return;
+      // Find nearest marker by position
+      let nearestIndex = 0;
+      let nearestDist = Infinity;
+      markers.forEach((m, idx) => {
+        const d = Math.abs(m.position - positionPct);
+        if (d < nearestDist) {
+          nearestDist = d;
+          nearestIndex = idx;
+        }
+      });
+      const targetMarker = markers[nearestIndex];
+      if (!targetMarker) return;
+      map.set(item.id, {
+        markerIndex: nearestIndex,
+        markerId: `marker-${nearestIndex}`,
+        markerPosition: targetMarker.position,
+        markerDate: targetMarker.date,
+        itemPosition: positionPct
+      });
+    });
+    setItemToMarkerMap(map);
+    TimelineLogger.debug('[Timeline] Map built via fallback', { mapped: map.size });
+  }, [boardItemsString, JSON.stringify(items?.map(i => i.id)), startDateString, endDateString, JSON.stringify(markers), position, dateColumn]);
   
   // Calculate item spacing to prevent overlaps
   const spacedBoardItems = useMemo(() => {
@@ -347,21 +380,40 @@ const Timeline = ({
       {(() => {
         // Calculate positions for all items using extracted function
         const itemsWithPositions = calculateTimelineItemPositions(items, startDate, endDate, position);
+        const total = itemsWithPositions.length;
+        const visible = itemsWithPositions.filter(i => !hiddenItemIds.has(i.id));
+        if (total === 0) {
+          TimelineLogger.debug('[Timeline] No itemsWithPositions -> no connectors');
+        } else if (visible.length === 0) {
+          TimelineLogger.debug('[Timeline] All items hidden -> no connectors', { total });
+        } else if (!markers || markers.length === 0) {
+          TimelineLogger.debug('[Timeline] No markers -> no connectors');
+        }
         
         // Create connectors for visible items only
-        return itemsWithPositions
-          .filter(item => !hiddenItemIds.has(item.id)) // Only show connectors for visible items
-          .map((item, index) => {
+        return visible
+          .map((item) => {
             // Find the corresponding marker for this item
             const markerInfo = itemToMarkerMap.get(item.id);
             if (!markerInfo) return null;
+
+            // Prefer explicit markerIndex if available
+            let markerIndex = markerInfo.markerIndex;
+
+            // Fallback 1: parse index from markerId like `marker-<n>`
+            if (markerIndex == null && typeof markerInfo.markerId === 'string') {
+              const m = markerInfo.markerId.match(/marker-(\d+)/);
+              if (m) markerIndex = parseInt(m[1], 10);
+            }
+
+            // Fallback 2: compute by nearest position
+            if (markerIndex == null || isNaN(markerIndex)) {
+              markerIndex = markers.findIndex(marker => 
+                Math.abs(marker.position - markerInfo.markerPosition) < 0.5 // widen tolerance
+              );
+            }
             
-            // Find the marker index based on marker position
-            const markerIndex = markers.findIndex(marker => 
-              Math.abs(marker.position - markerInfo.markerPosition) < 0.1
-            );
-            
-            if (markerIndex === -1) return null;
+            if (markerIndex == null || markerIndex < 0 || markerIndex >= markers.length) return null;
             
             return (
               <LeaderLineConnector

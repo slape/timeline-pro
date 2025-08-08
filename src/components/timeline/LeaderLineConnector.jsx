@@ -1,17 +1,33 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import TimelineLogger from '../../utils/logger';
 
 const LeaderLineConnector = ({ fromId, toId }) => {
   const [lineCoords, setLineCoords] = useState(null);
+  const hasLoggedRef = useRef(false);
 
   const updateLinePosition = useCallback(() => {
     const fromElem = document.getElementById(fromId); // Board item container
     const toElem = document.getElementById(toId); // Timeline marker
 
-    if (!fromElem || !toElem) return;
+    if (!fromElem || !toElem) {
+      // Debug: log missing elements once per mount
+      if (!fromElem) {
+        TimelineLogger.debug('[LeaderLineConnector] from element missing', { fromId });
+      }
+      if (!toElem) {
+        TimelineLogger.debug('[LeaderLineConnector] to element missing', { toId });
+      }
+      return;
+    }
 
     // Get the timeline container to calculate relative positions
     const timelineContainer = fromElem.closest('.timeline-container');
-    if (!timelineContainer) return;
+    if (!timelineContainer) {
+      if (!hasLoggedRef.current) {
+        TimelineLogger.debug('[LeaderLineConnector] timeline container not found');
+      }
+      return;
+    }
     
     const containerRect = timelineContainer.getBoundingClientRect();
     
@@ -80,12 +96,17 @@ const LeaderLineConnector = ({ fromId, toId }) => {
     }
     
     // Ensure perfectly perpendicular line by using same X coordinate for both points
-    setLineCoords({ 
+    const next = { 
       fromX, 
       fromY, 
       toX, // Use the exact same X as the marker for perpendicular line
       toY  // Use the actual timeline marker Y position
-    });
+    };
+    setLineCoords(next);
+    if (!hasLoggedRef.current) {
+      hasLoggedRef.current = true;
+      TimelineLogger.debug('[LeaderLineConnector] line positioned', { fromId, toId, ...next });
+    }
   }, [fromId, toId]);
 
   useEffect(() => {
@@ -130,7 +151,7 @@ const LeaderLineConnector = ({ fromId, toId }) => {
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
-        zIndex: 5, // Below items but above timeline
+        zIndex: 2000, // Ensure above items and timeline
       }}
     >
       <line

@@ -12,12 +12,21 @@ export function calculateTimelineItemPositions(items, startDate, endDate, positi
   }
 
   // Sort all items chronologically
-  const sortedItems = items.sort((a, b) => new Date(a.date) - new Date(b.date));
+  const getRawDate = (it) => it?.parsedDate ?? it?.date;
+  const sortedItems = items
+    .filter(it => {
+      const raw = getRawDate(it);
+      const d = raw instanceof Date ? raw : (raw ? new Date(raw) : null);
+      return d instanceof Date && !isNaN(d);
+    })
+    .sort((a, b) => new Date(getRawDate(a)) - new Date(getRawDate(b)));
   
   // Group items by date to handle same-date overlapping
   const itemsByDate = {};
   sortedItems.forEach(item => {
-    const dateKey = new Date(item.date).toDateString();
+    const raw = getRawDate(item);
+    const d = raw instanceof Date ? raw : new Date(raw);
+    const dateKey = d.toDateString();
     if (!itemsByDate[dateKey]) {
       itemsByDate[dateKey] = [];
     }
