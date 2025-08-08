@@ -1,5 +1,6 @@
 import React from 'react';
 import DraggableBoardItem from './DraggableBoardItem';
+import { useZustandStore } from '../../store/useZustand';
 
 /**
  * Renders timeline items as JSX elements with proper positioning
@@ -7,9 +8,6 @@ import DraggableBoardItem from './DraggableBoardItem';
  * @param {Function} onItemClick - Callback for item click events
  * @param {Function} onLabelChange - Callback for label change events
  * @param {Function} onRemove - Callback for removing items
- * @param {string} shape - Shape of timeline items ('rectangle', 'circle')
- * @param {Set} hiddenItemIds - Set of item IDs that should be hidden from view
- * @param {boolean} showItemDates - Whether to show editable dates on timeline items
  * @param {Function} onPositionChange - Callback for when an item's position changes
  * @returns {Array} Array of JSX elements for timeline items
  */
@@ -18,13 +16,15 @@ export function renderTimelineItems(
   onItemClick, 
   onLabelChange, 
   onRemove, 
-  shape = 'rectangle', 
-  hiddenItemIds = new Set(), 
-  showItemDates = false,
   onPositionChange = () => {}
 ) {
-  return itemsWithPositions.map((item, index) => {
-    const itemDate = new Date(item.date);
+  const { settings, hiddenItemIds } = useZustandStore();
+  const { shape, showItemDates } = settings;
+  
+  return itemsWithPositions.map((item) => {
+    // Preserve Date instances from processed data; only construct if needed
+    const itemDate = item.date instanceof Date ? item.date : new Date(item.date);
+    const isValidDate = (d) => d instanceof Date && !isNaN(d);
     
     // Check if this item should be hidden
     const isHidden = hiddenItemIds.has(item.id);
@@ -45,7 +45,7 @@ export function renderTimelineItems(
       >
         <DraggableBoardItem
           item={item}
-          date={itemDate}
+          date={isValidDate(itemDate) ? itemDate : null}
           shape={shape}
           onClick={() => onItemClick?.(item)}
           onLabelChange={(itemId, newLabel) => onLabelChange?.(itemId, newLabel)}

@@ -1,15 +1,14 @@
 import React from 'react';
 import { Flex, Text, Box } from '@vibe/core';
+import { useZustandStore } from '../../store/useZustand';
 
 /**
  * GroupLegend component that displays a legend of unique group names and their colors
  * 
- * @param {Object} props - Component props
- * @param {Array} props.boardItems - Array of board items with group information
- * @param {Set} props.hiddenItemIds - Set of hidden item IDs to filter out
  * @returns {JSX.Element} - Group legend component
  */
-const GroupLegend = ({ boardItems = [], hiddenItemIds = new Set() }) => {
+const GroupLegend = () => {
+  const { boardItems, hiddenItemIds } = useZustandStore();
   // Get unique groups from visible boardItems
   const uniqueGroups = React.useMemo(() => {
     const groupsMap = new Map();

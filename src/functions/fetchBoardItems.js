@@ -14,9 +14,12 @@ const monday = mondaySdk();
  * @returns {Promise<void>}
  */
 
-const fetchBoardItems = async (context, itemIds, setBoardItems, setIsLoading, setError) => {
+const fetchBoardItems = async (dateColumn, context, itemIds, setBoardItems, setIsLoading, setError) => {
   const startTime = Date.now();
-  
+  const dateColumnId = typeof dateColumn === 'object'
+  ? Object.keys(dateColumn)[0]
+  : dateColumn;
+  TimelineLogger.debug('Extracted date column ID', { dateColumnId });
   if (!context || !context.boardId) {
     TimelineLogger.warn('Invalid context provided to fetchBoardItems', { context });
     return;
@@ -73,6 +76,7 @@ const fetchBoardItems = async (context, itemIds, setBoardItems, setIsLoading, se
             itemCount: response.data.items.length,
             queryType: 'specific_items'
           });
+          // Store full column_values so we can switch dateColumn locally without refetch
           setBoardItems(response.data.items);
         } else {
           TimelineLogger.warn('No items found for the specified IDs', { itemIds });

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { EditableText, Box } from '@vibe/core';
 import { getShapeStyles } from '../../functions/getShapeStyles';
 import './DraggableBoardItem.css';
+import { useZustandStore } from '../../store/useZustand';
 
 /**
  * DraggableBoardItem component that renders a draggable item from monday.com board
@@ -22,21 +23,15 @@ import './DraggableBoardItem.css';
  * @returns {JSX.Element} - Draggable board item component
  */
 const DraggableBoardItem = ({ 
-  item, 
-  date, 
-  shape = 'rectangle', 
-  onClick, 
+  onClick,
+  item,
+  date,
+  shape,
   onLabelChange, 
   onRemove, 
-  showItemDates = false,
+  showItemDates,
   onPositionChange // New prop for notifying position changes
-}) => {
-  // Initialize size based on shape - circles should be square, ovals can be flexible
-  const [size, setSize] = useState(() => ({
-    width: shape === 'circle' ? 100 : 140,
-    height: shape === 'circle' ? 100 : (showItemDates ? 50 : 30)
-  }));
-  
+}) => {  
   // Position and drag state
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -46,8 +41,17 @@ const DraggableBoardItem = ({
   const dragOffset = useRef({ x: 0, y: 0 });
   const startSize = useRef({ width: 0, height: 0 });
   const itemRef = useRef(null);
-  const containerRef = useRef(null); // Ref to the timeline container
-  
+  const containerRef = useRef(null);
+  // Timeline items are processed objects; original monday item is nested under originalItem
+  const { id } = item;
+  const groupColor = item?.originalItem?.group?.color;
+
+  // Initialize size based on shape - circles should be square, ovals can be flexible
+  const [size, setSize] = useState(() => ({
+    width: shape === 'circle' ? 100 : 140,
+    height: shape === 'circle' ? 100 : (showItemDates ? 50 : 30)
+  }));
+
   // Calculate initial position based on the item's date
   useEffect(() => {
     if (itemRef.current && containerRef.current) {
@@ -60,11 +64,13 @@ const DraggableBoardItem = ({
     }
   }, [size.width]);
 
-  const itemColor = item.originalItem.group?.color || 'primary';
+  // Use the monday group color for background; fall back to theme primary color
+  const itemColor = groupColor || 'var(--primary-color)';
 
   // Format date as needed, e.g., "Jul 18, 2025"
-  const formattedDate = date 
-    ? new Intl.DateTimeFormat('en-US', { dateStyle: 'short'}).format(date)
+  const isValidDate = (d) => d instanceof Date && !isNaN(d);
+  const formattedDate = isValidDate(date)
+    ? new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(date)
     : null;
 
   const shapeStyles = getShapeStyles(shape);
@@ -354,7 +360,7 @@ const DraggableBoardItem = ({
             WebkitBoxOrient: 'vertical'
           }}>
             <EditableText
-              value={item.originalItem.name}
+              value={item?.originalItem?.name}
               style={{
                 width: '100%',
                 textAlign: 'center',

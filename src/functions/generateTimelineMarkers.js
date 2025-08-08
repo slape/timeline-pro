@@ -1,4 +1,3 @@
-import getUniqueDates from './getUniqueDates';
 import formatDate from './formatDate';
 import { calculateItemPosition } from './timelineUtils';
 

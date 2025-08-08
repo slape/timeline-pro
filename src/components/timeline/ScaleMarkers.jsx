@@ -1,24 +1,15 @@
 import React, { useMemo } from 'react';
 import { format } from 'date-fns';
+import { useZustandStore } from '../../store/useZustand';
 
 /**
  * Component that renders scale markers (days, weeks, months, etc.) along a timeline
- * @param {Object} props - Component props
- * @param {Date} props.startDate - Start date of the timeline
- * @param {Date} props.endDate - End date of the timeline
- * @param {string} props.scale - Scale of the timeline ('days', 'weeks', 'months', 'quarters', 'years', 'none')
- * @param {string} [props.position='below'] - Position of the markers relative to the line ('above' or 'below')
- * @param {boolean} [props.flipMarkers=false] - Whether to flip markers to the opposite side of the line
- * @param {string} [props.className] - Additional CSS class names
  * @returns {JSX.Element} - ScaleMarkers component
  */
-const ScaleMarkers = ({ 
-  startDate, 
-  endDate, 
-  scale, 
-  datePosition = 'below',
-  className = '' 
-}) => {
+const ScaleMarkers = () => {
+  const { settings, timelineParams } = useZustandStore();
+  const { datePosition, scale } = settings;
+  const { startDate, endDate } = timelineParams;
   // Calculate the markers based on scale and date range
   const markers = useMemo(() => {
     if (!startDate || !endDate || scale === 'none') return [];

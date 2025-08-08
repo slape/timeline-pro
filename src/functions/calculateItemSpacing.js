@@ -11,7 +11,7 @@
  */
 const calculateItemSpacing = (
   processedItems, 
-  position = 'below', 
+  position,
   itemWidth = 300, 
   itemHeight = 80, 
   verticalSpacing = 90,

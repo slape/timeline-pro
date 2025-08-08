@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import getMarkerStyles from '../../functions/getMarkerStyles';
-import generateTimelineMarkersFunction from '../../functions/generateTimelineMarkers';
+import generateTimelineMarkers from '../../functions/generateTimelineMarkers';
 import processBoardItemsWithMarkers from '../../functions/processBoardItemsWithMarkers';
 import calculateItemSpacing from '../../functions/calculateItemSpacing';
 import { calculateTimelineItemPositions } from '../../functions/calculateTimelineItemPositions';
@@ -8,47 +8,46 @@ import { renderTimelineItems } from './renderTimelineItems.jsx'
 import LeaderLineConnector from './LeaderLineConnector';
 import calculateScaleMarkers from '../../functions/calculateScaleMarkers';
 import TimelineLogger from '../../utils/logger';
+import { useZustandStore } from '../../store/useZustand';
+import InvalidTimelineDates from './InvalidTimelineDates';
 
 /**
  * Timeline component that displays a horizontal timeline with markers and draggable items
  * 
- * @param {Object} props - Component props
- * @param {Date} props.startDate - Start date of the timeline
- * @param {Date} props.endDate - End date of the timeline
- * @param {string} props.scale - Scale of the timeline (day, week, month, quarter, year, auto)
- * @param {Array} props.items - Array of items to display on the timeline
- * @param {Array} props.boardItems - Array of board items from monday.com for extracting unique dates
- * @param {string} props.dateColumn - The ID of the column containing date values
- * @param {string} props.dateFormat - Format for displaying dates ('mdyy', 'mmddyyyy', 'md', 'mdy')
- * @param {string} props.datePosition - Position and style of date markers ('angled-above', 'horizontal-above', 'angled-below', 'horizontal-below')
- * @param {Function} props.onItemMove - Callback when an item is moved
- * @param {Function} props.onLabelChange - Callback when an item label is changed
- * @param {Function} props.onHideItem - Callback when an item is hidden/removed
- * @param {Set} props.hiddenItemIds - Set of hidden item IDs
- * @param {string} props.position - Position of timeline items ('above', 'below', or 'alternate')
- * @param {string} props.shape - Shape of timeline items ('rectangle', 'circle', 'diamond')
- * @param {boolean} props.showItemDates - Whether to show editable dates on timeline items
+ * @param {Function} onItemMove - Callback when an item is moved
+ * @param {Function} onHideItem - Callback when an item is hidden/removed
+ * @param {Function} onLabelChange - Callback when an item's label is changed
  * @returns {JSX.Element} - Timeline component
  */
 const Timeline = ({
-  startDate = new Date(),
-  endDate = new Date(new Date().setMonth(startDate.getMonth() + 3)),
-  items = [],
-  boardItems = [],
-  dateColumn,
-  dateFormat = 'mdy',
-  datePosition = 'angled-above',
-  onItemMove = () => {},
-  onHideItem = () => {},
-  hiddenItemIds = new Set(),
-  position = 'below',
-  shape = 'rectangle',
-  scale = 'auto',
-  showItemDates = false,
+  onItemMove,
+  onHideItem,
+  onLabelChange,
 }) => {
-  // Generate timeline markers from unique dates in board items
+  // ...zustand and other hooks
+  const hiddenItemIds = useZustandStore(state => state.hiddenItemIds);
+  // Use processed timeline items rather than raw board items to guarantee valid dates
+  const timelineItems = useZustandStore(state => state.timelineItems) || [];
+  // Keep raw board items available for marker generation functions that expect original shape
+  const boardItems = useZustandStore(state => state.boardItems) || [];
+  const timelineParams = useZustandStore(state => state.timelineParams) || {};
+  const { startDate, endDate } = timelineParams;
+  console.log('startDate type:', typeof startDate, startDate);
+  console.log('endDate type:', typeof endDate, endDate);
+  TimelineLogger.debug('Timeline params', { timelineParams, startDate, endDate });
+  const settings = useZustandStore(state => state.settings);
+  const items = (timelineItems || []).filter(item => !hiddenItemIds.has(item.id));
+  const { dateColumn, dateFormat, datePosition, position, shape, showItemDates, scale } = settings;
   const [markers, setMarkers] = useState([]);
+  const storeState = useZustandStore();
+  TimelineLogger.debug('Full zustand store', storeState);
+
+  const isValidDate = d => d instanceof Date && !isNaN(d);
   
+  if (!isValidDate(startDate) || !isValidDate(endDate)) {
+    return <InvalidTimelineDates />;
+  }
+
   // State for processed board items with dates and positions
   const [processedBoardItems, setProcessedBoardItems] = useState([]);
   
@@ -73,8 +72,8 @@ const Timeline = ({
   }, [startDate, endDate, scale]);
   
   // Convert dates and boardItems to strings for stable dependencies
-  const startDateString = startDate.toISOString();
-  const endDateString = endDate.toISOString();
+  const startDateString = startDate?.toISOString();
+  const endDateString = endDate?.toISOString();
   const boardItemsString = JSON.stringify(boardItems);
   
   // Generate timeline markers when board items, date column, date range, or hidden items change
@@ -98,21 +97,14 @@ const Timeline = ({
     const visibleBoardItems = boardItems.filter(item => !hiddenItemIds.has(item.id));
     
     // Generate markers using only visible items
-    const markers = generateTimelineMarkersFunction(
-      visibleBoardItems, 
-      dateColumn, 
-      startDate, 
-      endDate, 
-      dateFormat
-    );
+    const nextMarkers = generateTimelineMarkers(boardItems, dateColumn, startDate, endDate, dateFormat);
+    setMarkers(nextMarkers);
     
     const duration = Date.now() - startTime;
     TimelineLogger.performance('generateTimelineMarkers', duration, {
       markerCount: markers.length,
       visibleBoardItemCount: visibleBoardItems.length
     });
-    
-    setMarkers(markers);
   }, [boardItemsString, dateColumn, startDateString, endDateString, dateFormat, hiddenItemIds]);
   
   // Handle item position changes during drag
@@ -330,7 +322,7 @@ const Timeline = ({
       {(() => {
         // Calculate positions for all items using extracted function
         const itemsWithPositions = calculateTimelineItemPositions(items, startDate, endDate, position);
-        
+        TimelineLogger.debug('itemsWithPositions', itemsWithPositions);
         // Render items using extracted function
         return renderTimelineItems(
           itemsWithPositions,

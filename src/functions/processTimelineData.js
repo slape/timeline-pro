@@ -6,62 +6,60 @@ import TimelineLogger from '../utils/logger';
  * Processes board items to extract timeline data and parameters
  * @param {Array} boardItems - Array of board items from monday.com
  * @param {Object} settings - Settings object containing date column configuration
- * @param {string} scale - Timeline scale setting
  * @returns {Object|null} Object containing timelineParams and timelineItems, or null if processing fails
  */
-export function processTimelineData(boardItems, settings, scale) {
+export function processTimelineData(boardItems, settings, dateColumnId) {
   const startTime = Date.now();
-  
+  const { scale } = settings;
+
   if (!boardItems || boardItems.length === 0) {
     TimelineLogger.debug('processTimelineData: No board items available');
     return null;
   }
 
+  if (!dateColumnId) {
+    TimelineLogger.warn('processTimelineData: No date column selected in settings', {
+      settingsKeys: Object.keys(settings || {}),
+      hasDateSetting: !!(settings && settings.dateColumnId)
+    });
+    return null;
+  }
+
   try {
     // Find the date column ID - handle both regular date and timeline/timeline range fields
-    let dateColumn = null;
     let isTimelineField = false;
-    
-    if (settings.date) {
-      const dateKeys = Object.keys(settings.date);
-      for (const key of dateKeys) {
-        if (settings.date[key] === true) {
-          // Check if this is a timeline field (contains 'timeline' or 'timerange')
-          if (key.toLowerCase().includes('timeline') || key.toLowerCase().includes('timerange')) {
-            dateColumn = key;
-            isTimelineField = true;
-            break;
-          } else {
-            // Regular date field
-            dateColumn = key;
-            isTimelineField = false;
-            break;
-          }
-        }
+    if (dateColumnId) {
+      if (dateColumnId.toLowerCase().includes('timeline') || dateColumnId.toLowerCase().includes('timerange')) {
+        isTimelineField = true;
       }
     }
+    
+    TimelineLogger.debug('processTimelineData: Date column found', { 
+      dateColumnId,
+      isTimelineField
+    });
 
-    if (!dateColumn) {
+    if (!dateColumnId) {
       TimelineLogger.warn('processTimelineData: No date column selected in settings', {
         settingsKeys: Object.keys(settings || {}),
-        hasDateSetting: !!(settings && settings.date)
+        hasDateSetting: !!(settings && settings.dateColumnId)
       });
       return null;
     }
     
     TimelineLogger.debug('processTimelineData: Processing with date column', { 
-      dateColumn, 
+      dateColumnId, 
       isTimelineField,
       fieldType: isTimelineField ? 'timeline/timerange' : 'regular_date' 
     });
     
     // Extract dates from board items using the imported function
-    const itemsWithDates = getItemsWithDates(boardItems, dateColumn, isTimelineField);
+    const itemsWithDates = getItemsWithDates(boardItems, dateColumnId, isTimelineField);
     
     if (itemsWithDates.length === 0) {
       TimelineLogger.warn('processTimelineData: No valid dates found in board items', {
         boardItemCount: boardItems.length,
-        dateColumn
+        dateColumnId
       });
       return null;
     }
@@ -69,13 +67,16 @@ export function processTimelineData(boardItems, settings, scale) {
     TimelineLogger.debug('processTimelineData: Items with dates extracted', {
       inputCount: boardItems.length,
       outputCount: itemsWithDates.length,
-      dateColumn
+      dateColumnId
     });
     
     // Find min and max dates
-    const dates = itemsWithDates.map(item => item.date);
-    const minDate = new Date(Math.min(...dates));
-    const maxDate = new Date(Math.max(...dates));
+    const dates = itemsWithDates
+      .map(item => item.date)
+      .filter(date => date && !isNaN(new Date(date)));
+    if (dates.length === 0) return null;
+    const minDate = new Date(Math.min(...dates.map(d => new Date(d))));
+    const maxDate = new Date(Math.max(...dates.map(d => new Date(d))));
     
     TimelineLogger.debug('processTimelineData: Date range calculated', {
       minDate: minDate.toISOString(),
@@ -104,7 +105,7 @@ export function processTimelineData(boardItems, settings, scale) {
     const timelineParams = {
       startDate,
       endDate,
-      scale: timelineScale
+      timelineScale: timelineScale
     };
     
     // Create timeline items with positions
@@ -124,20 +125,15 @@ export function processTimelineData(boardItems, settings, scale) {
       };
     });
     
-    const result = {
-      timelineParams,
-      timelineItems
-    };
-    
     const duration = Date.now() - startTime;
     TimelineLogger.performance('processTimelineData.complete', duration, {
       inputCount: boardItems.length,
-      outputCount: timelineItems.length,
-      timelineScale,
+      outputCount: itemsWithDates.length,
+      scale,
       dateRangeDays: Math.round((maxDate - minDate) / (1000 * 60 * 60 * 24))
     });
     
-    return result;
+    return { timelineItems, timelineParams };
     
   } catch (error) {
     const duration = Date.now() - startTime;
@@ -149,3 +145,4 @@ export function processTimelineData(boardItems, settings, scale) {
     return null;
   }
 }
+

@@ -1,17 +1,17 @@
-import React, { useState, useContext, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button, Modal, Box, Checkbox, Flex, Text, Heading } from "@vibe/core";
 import { toPng } from 'html-to-image';
-import { ThemeProvider } from '@vibe/core';
+import { useZustandStore } from '../../store/useZustand';
 
 /**
  * ExportButton component displays a button that opens a modal for export configuration
  * Current options: including/excluding background
  * 
- * @param {Object} props Component props
- * @param {string} props.theme Current theme ('light' or 'dark')
  * @returns {JSX.Element} Export button component
  */
-const ExportButton = ({ theme }) => {
+const ExportButton = () => {
+  const { context } = useZustandStore();
+  const theme = context.theme;
   // State to manage modal visibility
   const [isModalOpen, setIsModalOpen] = useState(false);
   

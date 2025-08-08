@@ -1,4 +1,3 @@
-import { calculateItemPosition } from './timelineUtils';
 import TimelineLogger from '../utils/logger';
 
 // Helper function to create date-only Date objects for consistent comparison

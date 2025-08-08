@@ -1,10 +1,9 @@
 import React from 'react';
-import DraggableBoardItem from './DraggableBoardItem';
 
 /**
  * TimelineItem component for individual points on the timeline
  */
-const TimelineItem = ({ id, label, position, onLabelChange, originalItem, itemPosition = 'below' }) => {
+const TimelineItem = ({ position, originalItem, itemPosition }) => {
   // Base style for the timeline item
   const style = {
     position: 'absolute',

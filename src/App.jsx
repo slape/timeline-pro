@@ -7,6 +7,7 @@ import { Box, Loader, ThemeProvider } from "@vibe/core";
 import fetchBoardItems from './functions/fetchBoardItems';
 import ExportButton from './components/export/ExportButton';
 import TimelineLogger from './utils/logger';
+import { useZustandStore } from './store/useZustand';
 
 // Usage of mondaySDK example, for more information visit here: https://developer.monday.com/apps/docs/introduction-to-the-sdk/
 const monday = mondaySdk();
@@ -30,9 +31,16 @@ const monday = mondaySdk();
 
 /** Settings type
  * @typedef {Object} AppSettings
+ * @property {string} title_text - Title text setting
+ * @property {boolean} showTitle - Show item labels setting
  * @property {Object.<string, boolean>} date - Selected date column, e.g., { date_mksykvae: true }
+ * @property {string} dateFormat - Date text setting
+ * @property {string} datePosition - Date position setting
  * @property {string} scale - Display scale, e.g., 'weeks'
- * @property {string} button - Button behavior setting
+ * @property {string} itemPosition - Item position setting
+ * @property {string} shape - Item Shape setting
+ * @property {boolean} showLedger - Show ledger setting
+ * @property {boolean} showDates - Show item dates setting
  */
 
 /** context type 
@@ -44,12 +52,10 @@ const monday = mondaySdk();
  */
 
 const App = () => {
-  const [context, setContext] = useState(null);
-  const [boardItems, setBoardItems] = useState([]);
-  const [settings, setSettings] = useState(null);
-  const [itemIds, setItemIds] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { setContext, setSettings, setBoardItems, setItemIds } = useZustandStore();
+  const { context, itemIds, settings, boardItems } = useZustandStore();
 
   // Set up context listener
   useEffect(() => {
@@ -74,31 +80,6 @@ const App = () => {
       setItemIds(res.data);
     });
   }, []);
-
-  // check if settings are available
-  // if not, set default settings
-  useEffect(() => {
-    if (!settings) {
-      TimelineLogger.info('No settings found, setting default settings');
-      monday.set("settings", {
-        title: true,
-        ledger: true,
-        itemDates: false,
-        scale: 'weeks',
-        position: 'above',
-        dateFormat: 'md',
-        datePosition: 'angled-below',
-        shape: 'circle',
-      }).then(res => {
-        TimelineLogger.info('Default settings applied', { settings: res.data });
-        setSettings(res.data);
-      }).catch(error => {
-        TimelineLogger.error('Failed to set default settings', error);
-      });
-    }
-  }, [settings]);
-  
-  //console.log("itemIds in view", itemIds);
   
   // Fetch board items when context changes and has a boardId, and itemIds are available
   useEffect(() => {
@@ -109,7 +90,8 @@ const App = () => {
         boardId: context.boardId,
         itemCount: itemIds.length
       });
-      fetchBoardItems(context, itemIds, setBoardItems, setIsLoading, setError);
+      fetchBoardItems(settings.dateColumn, context, itemIds, setBoardItems, setIsLoading, setError);
+      TimelineLogger.debug('Fetched board items', boardItems );
     } else {
       TimelineLogger.debug('Skipping fetch - missing context or itemIds', {
         hasBoardId: !!context?.boardId,
@@ -117,8 +99,8 @@ const App = () => {
         itemCount: itemIds?.length || 0
       });
     }
-  }, [context?.boardId, itemIds]); // Re-run when boardId or itemIds change
-
+  }, [context?.boardId, itemIds]); // Fetch only when boardId or itemIds change
+  
   return (
       <Box padding='medium'>
         {isLoading ? (
@@ -140,10 +122,10 @@ const App = () => {
           <div style={{ color: 'red' }}>{error}</div>
         ) : (
           <ThemeProvider systemTheme={context.theme}>
-            <TimelineBoard boardItems={boardItems} settings={settings} />
+            <TimelineBoard />
             {/* Export Button - Left justified */}
             <Box marginBottom="medium">
-              <ExportButton theme={context.theme} />
+              <ExportButton />
             </Box>  
           </ThemeProvider>
         )}
