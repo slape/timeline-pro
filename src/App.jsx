@@ -123,7 +123,19 @@ const App = () => {
       });
     }
   }, [context?.boardId, itemIds]); // Fetch only when boardId or itemIds change
-  
+
+  // Refetch when the selected date column changes so items & markers reshuffle
+  useEffect(() => {
+    if (!context?.boardId || !itemIds || itemIds.length === 0) return;
+    if (!settings?.dateColumn) return;
+    TimelineLogger.dataOperation('fetchBoardItems.onDateColumnChange', {
+      boardId: context.boardId,
+      itemCount: itemIds.length,
+      dateColumnId: settings?.dateColumn?.id || settings?.dateColumn
+    });
+    fetchBoardItems(settings.dateColumn, context, itemIds, setBoardItems, setIsLoading, setError);
+  }, [settings?.dateColumn, context?.boardId, itemIds]);
+
   // Prevent incidental loader on settings-only changes (no refetch happens)
   useEffect(() => {
     const sameBoard = prevBoardIdRef.current === context?.boardId;
