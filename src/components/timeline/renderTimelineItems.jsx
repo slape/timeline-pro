@@ -19,7 +19,9 @@ export function renderTimelineItems(
   onPositionChange = () => {}
 ) {
   const { settings, hiddenItemIds } = useZustandStore();
-  const { shape, showItemDates } = settings;
+  const shape = settings?.shape;
+  // Support new settings key `itemDates`; fall back to legacy `showItemDates`
+  const showDates = settings?.itemDates ?? settings?.showItemDates ?? true;
   
   return itemsWithPositions.map((item) => {
     // Preserve Date instances from processed data; only construct if needed
@@ -50,7 +52,7 @@ export function renderTimelineItems(
           onClick={() => onItemClick?.(item)}
           onLabelChange={(itemId, newLabel) => onLabelChange?.(itemId, newLabel)}
           onRemove={onRemove}
-          showItemDates={showItemDates}
+          showItemDates={showDates}
           onPositionChange={onPositionChange}
         />
       </div>

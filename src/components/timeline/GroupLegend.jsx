@@ -8,13 +8,14 @@ import { useZustandStore } from '../../store/useZustand';
  * @returns {JSX.Element} - Group legend component
  */
 const GroupLegend = () => {
-  const { boardItems, hiddenItemIds } = useZustandStore();
+  const boardItems = useZustandStore(state => state.boardItems);
+  const hiddenItemIds = useZustandStore(state => state.hiddenItemIds) || new Set();
   // Get unique groups from visible boardItems
   const uniqueGroups = React.useMemo(() => {
     const groupsMap = new Map();
     
     // Filter out hidden items first
-    const visibleItems = boardItems.filter(item => !hiddenItemIds.has(item.id));
+    const visibleItems = (boardItems || []).filter(item => !hiddenItemIds.has(item.id));
     
     // Only process visible items
     visibleItems.forEach(item => {

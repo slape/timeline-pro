@@ -97,11 +97,11 @@ const TimelineBoard = () => {
       {/* Timeline Title */}
 
 
-      {settings.title && (
+      {settings?.title && (
         <Flex justify="center" width="100%" marginBottom="medium">
           <EditableHeading
             type="h3"
-            value={settings.titleText || 'Timeline Title'}
+            value={settings?.titleText || 'Timeline Title'}
             style={{ textAlign: 'center' }}
           />
         </Flex>
@@ -110,7 +110,7 @@ const TimelineBoard = () => {
       {/* Timeline container */}
       <Box 
         style={{
-          marginTop: settings.title ? '10px' : '0',
+          marginTop: settings?.title ? '10px' : '0',
           minHeight: '200px'
         }}
       >
@@ -137,7 +137,7 @@ const TimelineBoard = () => {
       </Box>
       {/* Group Legend - only show if ledger setting is true */}
       
-      {settings.ledger && <GroupLegend />}
+      {settings?.ledger && <GroupLegend />}
     </Box>
   );
 };
