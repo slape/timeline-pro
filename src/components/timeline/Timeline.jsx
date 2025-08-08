@@ -242,7 +242,7 @@ const Timeline = ({
           width: '100%',
           height: '2px',
           backgroundColor: 'var(--ui-border-color)',
-          zIndex: 1,
+          zIndex: 0,
         }}
       />
 
@@ -270,7 +270,7 @@ const Timeline = ({
                 height: '1px',
                 pointerEvents: 'none',
                 opacity: 0,
-                zIndex: -1
+                zIndex: 2
               }}
             />
           );
@@ -288,7 +288,7 @@ const Timeline = ({
               display: 'flex',
               ...markerStyles.markerContainer,
               alignItems: 'center',
-              zIndex: 2,
+              zIndex: 1,
             }}
           >
             <div style={markerStyles.markerLine} />

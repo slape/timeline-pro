@@ -151,7 +151,7 @@ const LeaderLineConnector = ({ fromId, toId }) => {
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
-        zIndex: 2000, // Ensure above items and timeline
+        zIndex: 3, // Ensure connectors render behind board items and markers
       }}
     >
       <line

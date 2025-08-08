@@ -13,8 +13,22 @@ import processBoardItems from './processBoardItems';
  * @returns {Object} Object containing processedBoardItems and itemToMarkerMap
  */
 const processBoardItemsWithMarkers = (boardItems, dateColumn, startDate, endDate, position, markers) => {
+  // Normalize dateColumn to a string ID to support objects provided by settings/zustand
+  let dateColumnId = dateColumn;
+  if (dateColumn && typeof dateColumn === 'object') {
+    if (dateColumn.id) {
+      dateColumnId = dateColumn.id;
+    } else if (dateColumn.value) {
+      dateColumnId = dateColumn.value;
+    } else {
+      const keys = Object.keys(dateColumn);
+      if (keys.length === 1) dateColumnId = keys[0];
+    }
+  }
+  if (dateColumnId == null) dateColumnId = dateColumn;
+
   // Early return if no board items or date column
-  if (!boardItems || boardItems.length === 0 || !dateColumn) {
+  if (!boardItems || boardItems.length === 0 || !dateColumnId) {
     return {
       processedBoardItems: [],
       itemToMarkerMap: new Map()
@@ -25,13 +39,13 @@ const processBoardItemsWithMarkers = (boardItems, dateColumn, startDate, endDate
     // Subtask 1: Extract board items with dates
     // First, determine if this is a timeline field by examining the data structure
     let isTimelineField = false;
-    if (boardItems && boardItems.length > 0 && dateColumn) {
+    if (boardItems && boardItems.length > 0 && dateColumnId) {
       const sampleItem = boardItems.find(item => 
-        item.column_values?.some(col => col.id === dateColumn && col.value)
+        item.column_values?.some(col => col.id === dateColumnId && col.value)
       );
       
       if (sampleItem) {
-        const column = sampleItem.column_values.find(col => col.id === dateColumn);
+        const column = sampleItem.column_values.find(col => col.id === dateColumnId);
         try {
           const columnValue = JSON.parse(column.value);
           // Check if this has timeline field structure
@@ -42,7 +56,7 @@ const processBoardItemsWithMarkers = (boardItems, dateColumn, startDate, endDate
       }
     }
     
-    const itemsWithDates = getItemsWithDates(boardItems, dateColumn, isTimelineField);
+    const itemsWithDates = getItemsWithDates(boardItems, dateColumnId, isTimelineField);
     
     if (itemsWithDates.length === 0) {
       return {
