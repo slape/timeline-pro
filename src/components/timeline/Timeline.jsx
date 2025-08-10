@@ -9,7 +9,6 @@ import LeaderLineConnector from './LeaderLineConnector';
 import calculateScaleMarkers from '../../functions/calculateScaleMarkers';
 import TimelineLogger from '../../utils/logger';
 import { useZustandStore } from '../../store/useZustand';
-import InvalidTimelineDates from './InvalidTimelineDates';
 
 /**
  * Timeline component that displays a horizontal timeline with markers and draggable items
@@ -46,12 +45,6 @@ const Timeline = ({
   const [markers, setMarkers] = useState([]);
   const storeState = useZustandStore();
   TimelineLogger.debug('Full zustand store', storeState);
-
-  const isValidDate = d => d instanceof Date && !isNaN(d);
-  
-  if (!isValidDate(startDate) || !isValidDate(endDate)) {
-    return <InvalidTimelineDates />;
-  }
 
   // State for processed board items with dates and positions
   const [processedBoardItems, setProcessedBoardItems] = useState([]);

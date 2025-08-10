@@ -3,10 +3,11 @@ import { useState, useEffect, useRef } from "react";
 import mondaySdk from "monday-sdk-js";
 import "@vibe/core/tokens";
 import TimelineBoard from './components/timeline/TimelineBoard';
-import { Box, Loader, ThemeProvider } from "@vibe/core";
+import { Box, ThemeProvider } from "@vibe/core";
 import fetchBoardItems from './functions/fetchBoardItems';
 import ExportButton from './components/export/ExportButton';
 import TimelineLogger from './utils/logger';
+import Loading from './components/common/Loading';
 import { useZustandStore } from './store/useZustand';
 
 // Usage of mondaySDK example, for more information visit here: https://developer.monday.com/apps/docs/introduction-to-the-sdk/
@@ -86,7 +87,42 @@ const App = () => {
     });
     monday.listen("settings", (res) => {
       TimelineLogger.info('Settings updated', { settings: res.data });
-      setSettings(res.data);
+      if (res.data.dateColumn 
+        && res.data.titleText === ''
+        && res.data.title === false
+        && res.data.dateFormat === null
+        && res.data.datePosition === null
+        && res.data.scale === null
+        && res.data.position === null
+        && res.data.shape === null
+        && res.data.ledger === false
+        && res.data.itemDates === false) {
+        monday.set('settings', {
+          titleText: "Timeline Title",
+          title: true,
+          dateFormat: "md", 
+          datePosition: "angled-below",
+          scale: "weeks",
+          position: "above", 
+          shape: "circle",
+          ledger: true,
+          itemDates: true
+        })
+        setSettings({
+          dateColumn: res.data.dateColumn,
+          titleText: "Timeline Title",
+          title: true,
+          dateFormat: "md", 
+          datePosition: "angled-below",
+          scale: "weeks",
+          position: "above", 
+          shape: "circle",
+          ledger: true,
+          itemDates: true
+        })
+      } else {
+        setSettings(res.data);
+      }
     });
     monday.listen("itemIds", (res) => {
       TimelineLogger.info('Item IDs received', { count: res.data?.length || 0 });
@@ -122,68 +158,32 @@ const App = () => {
         itemCount: itemIds?.length || 0
       });
     }
-  }, [context?.boardId, itemIds]); // Fetch only when boardId or itemIds change
+    setIsLoading(false);
+  }, [context?.boardId, itemIds, settings]); // Fetch only when boardId or itemIds change
 
-  // Refetch when the selected date column changes so items & markers reshuffle
-  useEffect(() => {
-    if (!context?.boardId || !itemIds || itemIds.length === 0) return;
-    if (!settings?.dateColumn) return;
-    TimelineLogger.dataOperation('fetchBoardItems.onDateColumnChange', {
-      boardId: context.boardId,
-      itemCount: itemIds.length,
-      dateColumnId: settings?.dateColumn?.id || settings?.dateColumn
-    });
-    fetchBoardItems(settings.dateColumn, context, itemIds, setBoardItems, setIsLoading, setError);
-  }, [settings?.dateColumn, context?.boardId, itemIds]);
 
   // Prevent incidental loader on settings-only changes (no refetch happens)
   useEffect(() => {
     const sameBoard = prevBoardIdRef.current === context?.boardId;
     const sameItems = arraysEqual(prevItemIdsRef.current, itemIds);
-    if (sameBoard && sameItems) {
-      setIsLoading(false);
-    }
   }, [settings, context?.boardId, itemIds]);
-
-  const hasData = Boolean(timelineItems?.length || boardItems?.length);
-  const isReady = Boolean(context && settings);
 
   return (
     <Box padding='medium' style={{ position: 'relative', minHeight: '300px' }}>
+      <ThemeProvider systemTheme={context?.theme ?? 'light'}>
       {error && <div style={{ color: 'red' }}>{error}</div>}
-      {!isReady ? (
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '200px'
-        }}>
-          <Loader size="medium" />
-        </div>
+      {!boardItems || !context || !settings || isLoading ? (
+        <Loading />
       ) : (
-        <ThemeProvider systemTheme={context?.theme ?? 'light'}>
+        <>
           <TimelineBoard />
           <Box marginBottom="medium">
             <ExportButton />
           </Box>
-        </ThemeProvider>
+        </>
+       
       )}
-      {isLoading && !hasData && (
-        <div style={{ 
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'var(--ui-background-color)',
-          pointerEvents: 'none'
-        }}>
-          <Loader size="medium" />
-        </div>
-      )}
+      </ThemeProvider>
     </Box>
   );
 };
