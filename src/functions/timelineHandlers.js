@@ -24,9 +24,16 @@ export function handleLabelChange(setTimelineItems, TimelineLogger) {
     };
   }
   
-export function handleHideItem(setHiddenItemIds, TimelineLogger) {
-    return (itemId) => {
+export function handleHideItem(setHiddenItemIds, TimelineLogger, itemId) {
+    return () => {
       TimelineLogger.userAction('timelineItemHidden', { itemId });
-      setHiddenItemIds(prev => new Set([...prev, itemId]));
+      setHiddenItemIds(prev => [...prev, itemId]);
     };
+}
+
+export function handleUnHideItem(setHiddenItemIds, TimelineLogger, itemId) {
+  return () => {
+    TimelineLogger.userAction('timelineItemUnHidden', { itemId });
+    setHiddenItemIds(prev => prev.filter(id => id !== itemId));
+  };
 }

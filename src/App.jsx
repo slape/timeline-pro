@@ -3,12 +3,15 @@ import { useState, useEffect, useRef } from "react";
 import mondaySdk from "monday-sdk-js";
 import "@vibe/core/tokens";
 import TimelineBoard from './components/timeline/TimelineBoard';
-import { Box, ThemeProvider } from "@vibe/core";
+import { Box, ThemeProvider, Flex } from "@vibe/core";
 import fetchBoardItems from './functions/fetchBoardItems';
 import ExportButton from './components/export/ExportButton';
+import HiddenItemsManager from './components/HiddenItemsManager';
 import TimelineLogger from './utils/logger';
 import Loading from './components/common/Loading';
 import { useZustandStore } from './store/useZustand';
+import IsViewOnly from './components/errors/IsViewOnly';
+import TooManyItems from './components/errors/TooManyItems';
 
 // Usage of mondaySDK example, for more information visit here: https://developer.monday.com/apps/docs/introduction-to-the-sdk/
 const monday = mondaySdk();
@@ -174,12 +177,17 @@ const App = () => {
       {error && <div style={{ color: 'red' }}>{error}</div>}
       {!boardItems || !context || !settings || isLoading ? (
         <Loading />
+      ) : context?.user?.isViewOnly ? (
+        <IsViewOnly />
+      ) : itemIds.length > 10 || boardItems.length > 10 ? (
+        <TooManyItems />
       ) : (
         <>
           <TimelineBoard />
-          <Box marginBottom="medium">
+          <Flex justify="start" align="center">
             <ExportButton />
-          </Box>
+            <HiddenItemsManager />
+          </Flex>
         </>
        
       )}

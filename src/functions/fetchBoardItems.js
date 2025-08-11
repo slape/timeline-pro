@@ -90,13 +90,15 @@ const fetchBoardItems = async (dateColumn, context, itemIds, setBoardItems, setI
             itemCount: response.data.items.length,
             queryType: 'specific_items'
           });
-          // Filter column_values to only include the selected date column
-          const filteredItems = response.data.items.map(item => ({
-            ...item,
-            column_values: (item.column_values || []).filter(cv => cv.id === dateColumnId)
-          }));
-          TimelineLogger.debug('fetchBoardItems.filteredColumns', { dateColumnId, before: response.data.items[0]?.column_values?.length, after: filteredItems[0]?.column_values?.length });
-          setBoardItems(filteredItems);
+          // Keep all column_values to support date column switching
+          // Previously we filtered to only the selected date column, but this prevents
+          // switching between different date columns without re-fetching
+          setBoardItems(response.data.items);
+          TimelineLogger.debug('fetchBoardItems.keepingAllColumns', { 
+            dateColumnId, 
+            totalColumns: response.data.items[0]?.column_values?.length,
+            availableColumns: response.data.items[0]?.column_values?.map(cv => cv.id)
+          });
         } else {
           TimelineLogger.warn('No items found for the specified IDs', { itemIds });
           setBoardItems([]);
@@ -108,13 +110,15 @@ const fetchBoardItems = async (dateColumn, context, itemIds, setBoardItems, setI
             itemCount: response.data.boards[0].items_page.items.length,
             queryType: 'all_items'
           });
-          // Filter column_values to only include the selected date column
-          const filteredItems = response.data.boards[0].items_page.items.map(item => ({
-            ...item,
-            column_values: (item.column_values || []).filter(cv => cv.id === dateColumnId)
-          }));
-          TimelineLogger.debug('fetchBoardItems.filteredColumns', { dateColumnId, before: response.data.boards[0].items_page.items[0]?.column_values?.length, after: filteredItems[0]?.column_values?.length });
-          setBoardItems(filteredItems);
+          // Keep all column_values to support date column switching
+          // Previously we filtered to only the selected date column, but this prevents
+          // switching between different date columns without re-fetching
+          setBoardItems(response.data.boards[0].items_page.items);
+          TimelineLogger.debug('fetchBoardItems.keepingAllColumns', { 
+            dateColumnId, 
+            totalColumns: response.data.boards[0].items_page.items[0]?.column_values?.length,
+            availableColumns: response.data.boards[0].items_page.items[0]?.column_values?.map(cv => cv.id)
+          });
         } else {
           TimelineLogger.warn('No board data found');
           setBoardItems([]);

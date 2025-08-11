@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Box, EditableHeading, Flex, Text } from '@vibe/core';
+import { useZustandStore } from '../../store/useZustand';
+import { handleTimelineItemMove, handleLabelChange } from '../../functions/timelineHandlers';
 import { processTimelineData } from '../../functions/processTimelineData';
 import Timeline from './Timeline';
-import GroupLegend from './GroupLegend';
-import TimelineLogger from '../../utils/logger';
 import isEqual from 'lodash.isequal';
-import { useZustandStore } from '../../store/useZustand';
-import { handleTimelineItemMove, handleLabelChange, handleHideItem } from '../../functions/timelineHandlers';
+import TimelineLogger from '../../utils/logger';
+import { useVisibleItems } from '../../hooks/useVisibleItems';
+import GroupLegend from './GroupLegend';
 
 /** BoardItem type * @typedef {Object} BoardItem
  * @property {string} id - Unique item ID
@@ -19,24 +20,15 @@ import { handleTimelineItemMove, handleLabelChange, handleHideItem } from '../..
  */
 
 const TimelineBoard = () => {
-  const hiddenItemIds = useZustandStore(state => state.hiddenItemIds);
   const boardItems = useZustandStore(state => state.boardItems);
   const settings = useZustandStore(state => state.settings);
   const timelineItems = useZustandStore(state => state.timelineItems);
   const timelineParams = useZustandStore(state => state.timelineParams);
-  const { setHiddenItemIds, setTimelineItems, setTimelineParams } = useZustandStore();
+  const { setTimelineItems, hideItem, setTimelineParams } = useZustandStore();
   const onTimelineItemMove = handleTimelineItemMove(setTimelineItems, TimelineLogger);
   const onLabelChange = handleLabelChange(setTimelineItems, TimelineLogger);
-  const onHideItem = handleHideItem(setHiddenItemIds, TimelineLogger);
-  const [visibleBoardItems, setVisibleBoardItems] = useState([]);
   
-  useEffect(() => {
-    //TimelineLogger.debug('visibleBoardItems effect', { boardItems, hiddenItemIds });
-    if (!boardItems) return;
-    const visible = boardItems.filter(item => !hiddenItemIds.has(item.id));
-    //TimelineLogger.debug('visibleBoardItems computed', { visible });
-    setVisibleBoardItems(prev => (!isEqual(prev, visible) ? visible : prev));
-  }, [boardItems, hiddenItemIds]);
+  const visibleBoardItems = useVisibleItems();
 
   useEffect(() => {
     const dateColumnId = settings && typeof settings.dateColumn === 'object'
@@ -59,6 +51,15 @@ const TimelineBoard = () => {
       
       const startTime = Date.now();
       const result = processTimelineData(boardItems, settings, dateColumnId);
+      
+      TimelineLogger.debug('processTimelineData result check', {
+        hasResult: !!result,
+        hasTimelineItems: !!(result?.timelineItems),
+        hasTimelineParams: !!(result?.timelineParams),
+        timelineItemsCount: result?.timelineItems?.length || 0,
+        dateColumnId
+      });
+      
       if (result) {
         const duration = Date.now() - startTime;
         TimelineLogger.performance('processTimelineData', duration, {
@@ -69,9 +70,25 @@ const TimelineBoard = () => {
         //TimelineLogger.debug('processTimelineData result', result);
         if (result && result.timelineParams && result.timelineItems) {
           
-          TimelineLogger.debug('Setting timelineItems', result.timelineItems);
-          if (!isEqual(timelineItems, result.timelineItems)) {
+          TimelineLogger.debug('Setting timelineItems', {
+            newItemsCount: result.timelineItems.length,
+            currentItemsCount: timelineItems?.length || 0,
+            dateColumnId,
+            firstNewItem: result.timelineItems[0],
+            firstCurrentItem: timelineItems?.[0]
+          });
+          
+          const itemsAreEqual = isEqual(timelineItems, result.timelineItems);
+          TimelineLogger.debug('Timeline items comparison', {
+            itemsAreEqual,
+            willUpdate: !itemsAreEqual
+          });
+          
+          if (!itemsAreEqual) {
+            TimelineLogger.debug('Updating timeline items due to date column change');
             setTimelineItems(result.timelineItems);
+          } else {
+            TimelineLogger.debug('Timeline items unchanged, skipping update');
           }
           
           if (!isEqual(timelineParams, result.timelineParams)) {
@@ -119,7 +136,7 @@ const TimelineBoard = () => {
         {timelineItems?.length > 0 ? (
           <Timeline 
             onItemMove={onTimelineItemMove}
-            onHideItem={onHideItem}
+            onHideItem={hideItem}
             onLabelChange={onLabelChange}
           />
         ) : (

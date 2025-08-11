@@ -9,6 +9,7 @@ import LeaderLineConnector from './LeaderLineConnector';
 import calculateScaleMarkers from '../../functions/calculateScaleMarkers';
 import TimelineLogger from '../../utils/logger';
 import { useZustandStore } from '../../store/useZustand';
+import { useVisibleItems } from '../../hooks/useVisibleItems';
 
 /**
  * Timeline component that displays a horizontal timeline with markers and draggable items
@@ -18,23 +19,18 @@ import { useZustandStore } from '../../store/useZustand';
  * @param {Function} onLabelChange - Callback when an item's label is changed
  * @returns {JSX.Element} - Timeline component
  */
+
 const Timeline = ({
   onItemMove,
   onHideItem,
   onLabelChange,
 }) => {
   // ...zustand and other hooks
-  const hiddenItemIds = useZustandStore(state => state.hiddenItemIds);
-  // Use processed timeline items rather than raw board items to guarantee valid dates
-  const timelineItems = useZustandStore(state => state.timelineItems) || [];
-  // Keep raw board items available for marker generation functions that expect original shape
-  const boardItems = useZustandStore(state => state.boardItems) || [];
   const timelineParams = useZustandStore(state => state.timelineParams) || {};
   const { startDate, endDate } = timelineParams;
   TimelineLogger.debug('Start/End date types', { startType: typeof startDate, startDate, endType: typeof endDate, endDate });
   TimelineLogger.debug('Timeline params', { timelineParams, startDate, endDate });
   const settings = useZustandStore(state => state.settings) || {};
-  const items = (timelineItems || []).filter(item => !hiddenItemIds.has(item.id));
   const dateColumn = settings?.dateColumn;
   const dateFormat = settings?.dateFormat || 'MMM d, yyyy';
   const datePosition = settings?.datePosition || 'above';
@@ -51,7 +47,26 @@ const Timeline = ({
   
   // State for item-to-marker mapping
   const [itemToMarkerMap, setItemToMarkerMap] = useState(new Map());
+
+  // Use processed timeline items rather than raw board items to guarantee valid dates
+  const timelineItems = useZustandStore(state => state.timelineItems) || [];
+  const hiddenItemIds = useZustandStore(state => state.hiddenItemIds) || [];
   
+  // Filter timeline items by hiddenItemIds
+  const visibleTimelineItems = useMemo(() => {
+    if (!timelineItems || !Array.isArray(timelineItems)) return [];
+    if (!hiddenItemIds || !Array.isArray(hiddenItemIds)) return timelineItems;
+    
+    return timelineItems.filter(item => {
+      // Convert item ID to string for comparison with hiddenItemIds (which are strings)
+      const itemIdStr = String(item.id);
+      return !hiddenItemIds.includes(itemIdStr);
+    });
+  }, [timelineItems, hiddenItemIds]);
+
+  // Get raw visible board items for marker generation
+  const visibleBoardItems = useVisibleItems();
+
   // Calculate the scale markers based on scale and date range
   const scaleMarkers = useMemo(() => {
     const startTime = Date.now();
@@ -69,18 +84,17 @@ const Timeline = ({
     return markers;
   }, [startDate, endDate, scale]);
   
-  // Convert dates and boardItems to strings for stable dependencies
+  // Convert dates and visibleBoardItems to strings for stable dependencies
   const startDateString = startDate?.toISOString();
   const endDateString = endDate?.toISOString();
-  const boardItemsString = JSON.stringify(boardItems);
+  const visibleBoardItemsString = JSON.stringify(visibleBoardItems);
   
   // Generate timeline markers when board items, date column, date range, or hidden items change
   useEffect(() => {
     TimelineLogger.debug('Timeline: Generating markers', {
-      boardItemCount: boardItems?.length || 0,
+      boardItemCount: visibleBoardItems?.length || 0,
       dateColumn,
-      hiddenItemCount: hiddenItemIds.size,
-      visibleItemCount: boardItems?.filter(item => !hiddenItemIds.has(item.id)).length || 0
+      visibleItemCount: visibleBoardItems?.length || 0
     });
 
     const startTime = Date.now();
@@ -88,19 +102,19 @@ const Timeline = ({
     // Generate markers (function handles empty board items by returning start/end markers)
     try {
       TimelineLogger.debug('[Timeline] Calling generateTimelineMarkers', {
-        boardItemsCount: (boardItems || []).length,
+        visibleItemsCount: (visibleBoardItems || []).length,
         dateColumnId: typeof dateColumn === 'object' ? dateColumn?.id : dateColumn,
         hasDateColumn: !!dateColumn,
         startDate,
         endDate,
         dateFormat
       });
-      generatedMarkers = generateTimelineMarkers(boardItems || [], dateColumn, startDate, endDate, dateFormat);
+      generatedMarkers = generateTimelineMarkers(visibleBoardItems, dateColumn, startDate, endDate, dateFormat);
       setMarkers(generatedMarkers);
       TimelineLogger.debug('[Timeline] Markers generated', { count: generatedMarkers?.length || 0, markers: generatedMarkers });
     } catch (e) {
       TimelineLogger.error('[Timeline] generateTimelineMarkers threw', e, {
-        boardItemsCount: (boardItems || []).length,
+        visibleBoardItemsCount: (visibleBoardItems || []).length,
         dateColumn
       });
     }
@@ -108,37 +122,27 @@ const Timeline = ({
     const duration = Date.now() - startTime;
     TimelineLogger.performance('generateTimelineMarkers', duration, {
       markerCount: generatedMarkers?.length || 0,
-      visibleBoardItemCount: (boardItems || []).filter(item => !hiddenItemIds.has(item.id)).length
+      visibleBoardItemCount: visibleBoardItems?.length || 0
     });
-  }, [boardItemsString, dateColumn, startDateString, endDateString, dateFormat, hiddenItemIds]);
+  }, [visibleBoardItems, dateColumn, startDateString, endDateString, dateFormat]);
   
   // Handle item position changes during drag
-  const handleItemPositionChange = (itemId, newPosition) => {
+  const onPositionChange = (itemId, newPosition) => {
     TimelineLogger.userAction('timelineItemDragged', { itemId, newPosition });
-    // Update the item's position in the items array
-    const updatedItems = items.map(item => {
-      if (item.id === itemId) {
-        // Calculate the new date based on the X position percentage
-        const timeRange = endDate - startDate;
-        const newDate = new Date(startDate.getTime() + (newPosition.x / 100) * timeRange);
-        
-        return {
-          ...item,
-          date: newDate,
-          // Update the render position to match the dragged position
-          renderPosition: {
-            ...(item.renderPosition || {}),
-            x: newPosition.x,
-            y: newPosition.y
-          }
-        };
-      }
-      return item;
-    });
+    
+    // Calculate the new date based on the X position percentage
+    const timeRange = endDate - startDate;
+    const newDate = new Date(startDate.getTime() + (newPosition.x / 100) * timeRange);
+    
+    // Create the updated position object with the new date
+    const updatedPosition = {
+      ...newPosition,
+      date: newDate
+    };
 
-    // If there's an onItemMove callback, call it with the updated items
+    // Call the parent component's onItemMove function with correct parameters
     if (onItemMove) {
-      onItemMove(updatedItems);
+      onItemMove(itemId, updatedPosition);
     }
   };
 
@@ -150,11 +154,11 @@ const Timeline = ({
 
   // Process items to map each item to its closest marker
   useEffect(() => {
-    TimelineLogger.debug('[Timeline] Building item→marker map', { boardItemsCount: boardItems?.length || 0, timelineItemsCount: items?.length || 0, markersCount: markers?.length || 0 });
+    TimelineLogger.debug('[Timeline] Building item→marker map', { visibleBoardItemsCount: visibleBoardItems?.length || 0, visibleTimelineItemsCount: visibleTimelineItems?.length || 0, markersCount: markers?.length || 0 });
     // If we have raw board items and a date column, use the existing processor
-    if (boardItems && boardItems.length > 0 && dateColumn) {
+    if (visibleBoardItems && visibleBoardItems.length > 0 && dateColumn) {
       const result = processBoardItemsWithMarkers(
-        boardItems,
+        visibleBoardItems,
         dateColumn,
         startDate,
         endDate,
@@ -163,42 +167,42 @@ const Timeline = ({
       );
       setProcessedBoardItems(result.processedBoardItems);
       setItemToMarkerMap(result.itemToMarkerMap);
-      TimelineLogger.debug('[Timeline] Map built via boardItems processor', { mapped: result.itemToMarkerMap?.size || 0 });
+      TimelineLogger.debug('[Timeline] Map built via visibleBoardItems processor', { mapped: result.itemToMarkerMap?.size || 0 });
       return;
     }
 
     // Fallback: derive mapping directly from current timeline items and markers
     const map = new Map();
-    (items || []).forEach(item => {
+    (visibleTimelineItems || []).forEach(item => {
       if (!item?.date || !(item.date instanceof Date) || isNaN(item.date)) return;
       // Compute timeline position percentage for the item's date
       const timeRange = endDate - startDate;
       if (!timeRange || timeRange <= 0) return;
       const positionPct = ((item.date - startDate) / timeRange) * 100;
-      if (!markers || markers.length === 0) return;
-      // Find nearest marker by position
-      let nearestIndex = 0;
-      let nearestDist = Infinity;
-      markers.forEach((m, idx) => {
-        const d = Math.abs(m.position - positionPct);
-        if (d < nearestDist) {
-          nearestDist = d;
-          nearestIndex = idx;
+      
+      // Find the closest marker by position
+      let closestMarker = null;
+      let minDistance = Infinity;
+      
+      markers.forEach((marker, index) => {
+        const distance = Math.abs(marker.position - positionPct);
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestMarker = { marker, index };
         }
       });
-      const targetMarker = markers[nearestIndex];
-      if (!targetMarker) return;
-      map.set(item.id, {
-        markerIndex: nearestIndex,
-        markerId: `marker-${nearestIndex}`,
-        markerPosition: targetMarker.position,
-        markerDate: targetMarker.date,
-        itemPosition: positionPct
-      });
+      
+      if (closestMarker) {
+        map.set(item.id, {
+          markerId: `timeline-marker-${closestMarker.index}`,
+          markerIndex: closestMarker.index,
+          markerPosition: closestMarker.marker.position
+        });
+      }
     });
     setItemToMarkerMap(map);
     TimelineLogger.debug('[Timeline] Map built via fallback', { mapped: map.size });
-  }, [boardItemsString, JSON.stringify(items?.map(i => i.id)), startDateString, endDateString, JSON.stringify(markers), position, dateColumn]);
+  }, [visibleBoardItemsString, JSON.stringify(visibleTimelineItems?.map(i => i.id)), startDateString, endDateString, JSON.stringify(markers), position, dateColumn]);
   
   // Calculate item spacing to prevent overlaps
   const spacedBoardItems = useMemo(() => {
@@ -363,44 +367,32 @@ const Timeline = ({
       {/* Board Items - Render all items chronologically with position logic */}
       {(() => {
         // Calculate positions for all items using extracted function
-        const itemsWithPositions = calculateTimelineItemPositions(items, startDate, endDate, position);
+        const itemsWithPositions = calculateTimelineItemPositions(visibleTimelineItems, startDate, endDate, position);
         TimelineLogger.debug('itemsWithPositions', itemsWithPositions);
         // Render items using extracted function
         return renderTimelineItems(
           itemsWithPositions,
-          (item) => {/* console.log('Board item clicked:', item) */},
-          (itemId, newLabel) => {
-            // console.log('Label changed:', itemId, newLabel);
-            // TODO: Implement label change handler
-          },
-          (itemId) => {
-            // console.log('Remove item:', itemId);
-            // Use the onHideItem prop callback instead of internal state
-            onHideItem(itemId);
-          },
-          shape,
-          hiddenItemIds,
-          showItemDates,
-          handleItemPositionChange // Pass the position change handler
+          onLabelChange,
+          onHideItem,
+          onPositionChange,
         );
       })()}
       
       {/* LeaderLine Connectors - Connect board items to timeline markers */}
       {(() => {
         // Calculate positions for all items using extracted function
-        const itemsWithPositions = calculateTimelineItemPositions(items, startDate, endDate, position);
+        const itemsWithPositions = calculateTimelineItemPositions(visibleTimelineItems, startDate, endDate, position);
         const total = itemsWithPositions.length;
-        const visible = itemsWithPositions.filter(i => !hiddenItemIds.has(i.id));
         if (total === 0) {
           TimelineLogger.debug('[Timeline] No itemsWithPositions -> no connectors');
-        } else if (visible.length === 0) {
+        } else if (visibleTimelineItems.length === 0) {
           TimelineLogger.debug('[Timeline] All items hidden -> no connectors', { total });
         } else if (!markers || markers.length === 0) {
           TimelineLogger.debug('[Timeline] No markers -> no connectors');
         }
         
         // Create connectors for visible items only
-        return visible
+        return visibleTimelineItems
           .map((item) => {
             // Find the corresponding marker for this item
             const markerInfo = itemToMarkerMap.get(item.id);

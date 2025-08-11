@@ -17,7 +17,7 @@ import { useZustandStore } from '../../store/useZustand';
  * @param {string} props.shape - Shape of the item ('rectangle', 'circle')
  * @param {Function} props.onClick - Optional click handler
  * @param {Function} props.onLabelChange - Handler for label changes
- * @param {Function} props.onRemove - Handler for removing the item
+ * @param {Function} props.onHideItem - Handler for hiding the item
  * @param {boolean} props.showItemDates - Whether to show editable date text
  * @param {Function} props.onPositionChange - Callback when item position changes (id, {x, y})
  * @returns {JSX.Element} - Draggable board item component
@@ -28,7 +28,7 @@ const DraggableBoardItem = ({
   date,
   shape,
   onLabelChange, 
-  onRemove, 
+  onHideItem, 
   showItemDates,
   onPositionChange // New prop for notifying position changes
 }) => {  
@@ -258,7 +258,7 @@ const DraggableBoardItem = ({
           right: '-6px',
           width: '20px',
           height: '20px',
-          display: isHovered && onRemove ? 'flex' : 'none',
+          display: isHovered && onHideItem ? 'flex' : 'none',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1001,
@@ -268,7 +268,7 @@ const DraggableBoardItem = ({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onRemove?.(item.id);
+              onHideItem?.(item.id);
             }}
             style={{
               width: '20px',

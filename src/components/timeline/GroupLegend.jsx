@@ -1,6 +1,6 @@
 import React from 'react';
 import { Flex, Text, Box } from '@vibe/core';
-import { useZustandStore } from '../../store/useZustand';
+import { useVisibleItems } from '../../hooks/useVisibleItems';
 
 /**
  * GroupLegend component that displays a legend of unique group names and their colors
@@ -8,14 +8,12 @@ import { useZustandStore } from '../../store/useZustand';
  * @returns {JSX.Element} - Group legend component
  */
 const GroupLegend = () => {
-  const boardItems = useZustandStore(state => state.boardItems);
-  const hiddenItemIds = useZustandStore(state => state.hiddenItemIds) || new Set();
+  const visibleItems = useVisibleItems(); 
   // Get unique groups from visible boardItems
   const uniqueGroups = React.useMemo(() => {
     const groupsMap = new Map();
     
-    // Filter out hidden items first
-    const visibleItems = (boardItems || []).filter(item => !hiddenItemIds.has(item.id));
+    // Use the visible items from the hook
     
     // Only process visible items
     visibleItems.forEach(item => {
@@ -34,7 +32,7 @@ const GroupLegend = () => {
     
     const groups = Array.from(groupsMap.values());
     return groups;
-  }, [boardItems, hiddenItemIds]); // Add hiddenItemIds as dependency
+  }, [visibleItems]); // Depend on visibleItems from hook
 
   if (uniqueGroups.length === 0) {
     return null; // Don't render if no groups

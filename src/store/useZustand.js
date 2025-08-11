@@ -3,14 +3,35 @@ import TimelineLogger from '../utils/logger';
 
 console.log('Zustand store created (should appear only once per reload)');
 
+// Helper functions for localStorage persistence
+const HIDDEN_ITEMS_KEY = 'timeline-pro-hidden-items';
+
+const loadHiddenItemsFromStorage = () => {
+  try {
+    const stored = localStorage.getItem(HIDDEN_ITEMS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    TimelineLogger.error('Failed to load hidden items from localStorage', error);
+    return [];
+  }
+};
+
+const saveHiddenItemsToStorage = (hiddenItemIds) => {
+  try {
+    localStorage.setItem(HIDDEN_ITEMS_KEY, JSON.stringify(hiddenItemIds));
+  } catch (error) {
+    TimelineLogger.error('Failed to save hidden items to localStorage', error);
+  }
+};
+
 export const useZustandStore = create((set, get) => ({
-  settings: null,
-  context: null,
-  boardItems: null,
-  itemIds: null,
-  hiddenItemIds: new Set(),
-  timelineParams: null,
-  timelineItems: null,
+  settings: {},
+  context: {},
+  boardItems: [],
+  itemIds: [],
+  hiddenItemIds: loadHiddenItemsFromStorage(), // Load from localStorage on init
+  timelineParams: {},
+  timelineItems: [],
   setSettings: (settings) => {
     TimelineLogger.debug('setSettings called', settings);
     set({ settings });
@@ -29,22 +50,41 @@ export const useZustandStore = create((set, get) => ({
   },
   setHiddenItemIds: (hiddenItemIds) => {
     TimelineLogger.debug('setHiddenItemIds called', hiddenItemIds);
+    saveHiddenItemsToStorage(hiddenItemIds); // Persist to localStorage
     set({ hiddenItemIds });
+  },
+  // Helper function to hide a single item
+  hideItem: (itemId) => {
+    const { hiddenItemIds } = get();
+    if (!hiddenItemIds.includes(itemId)) {
+      const newHiddenIds = [...hiddenItemIds, itemId];
+      TimelineLogger.userAction('timelineItemHidden', { itemId });
+      saveHiddenItemsToStorage(newHiddenIds);
+      set({ hiddenItemIds: newHiddenIds });
+    }
+  },
+  // Helper function to unhide a single item
+  unhideItem: (itemId) => {
+    const { hiddenItemIds } = get();
+    const newHiddenIds = hiddenItemIds.filter(id => id !== itemId);
+    TimelineLogger.userAction('timelineItemUnhidden', { itemId });
+    saveHiddenItemsToStorage(newHiddenIds);
+    set({ hiddenItemIds: newHiddenIds });
+  },
+  // Helper function to unhide all items
+  unhideAllItems: () => {
+    TimelineLogger.userAction('allItemsUnhidden');
+    saveHiddenItemsToStorage([]);
+    set({ hiddenItemIds: [] });
+  },
+  // Helper function to get count of hidden items
+  getHiddenItemCount: () => {
+    const { hiddenItemIds } = get();
+    return hiddenItemIds.length;
   },
   setTimelineParams: (timelineParams) => {
     TimelineLogger.debug('setTimelineParams called', timelineParams);
-    if (timelineParams === null) {
-      set({ timelineParams: null });
-      return;
-    }
-    // Defensive: always store Date objects
-    const safeParams = {
-      ...timelineParams,
-      startDate: timelineParams.startDate instanceof Date ? timelineParams.startDate : new Date(timelineParams.startDate),
-      endDate: timelineParams.endDate instanceof Date ? timelineParams.endDate : new Date(timelineParams.endDate),
-    };
-    set({ timelineParams: safeParams });
-    TimelineLogger.debug('timelineParams set in store', safeParams);
+    set({ timelineParams });
   },
   setTimelineItems: (timelineItems) => {
     TimelineLogger.debug('setTimelineItems called', timelineItems);
@@ -52,7 +92,16 @@ export const useZustandStore = create((set, get) => ({
       set({ timelineItems: null });
       return;
     }
-    set({ timelineItems });
-    TimelineLogger.debug('timelineItems set in store', timelineItems);
+    
+    // Handle function updates (React setState pattern)
+    if (typeof timelineItems === 'function') {
+      set((state) => ({ 
+        timelineItems: timelineItems(state.timelineItems) 
+      }));
+      TimelineLogger.debug('timelineItems updated via function in store');
+    } else {
+      set({ timelineItems });
+      TimelineLogger.debug('timelineItems set directly in store', timelineItems);
+    }
   },
 }));

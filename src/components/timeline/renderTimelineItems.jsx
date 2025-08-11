@@ -5,23 +5,25 @@ import { useZustandStore } from '../../store/useZustand';
 /**
  * Renders timeline items as JSX elements with proper positioning
  * @param {Array} itemsWithPositions - Array of items with calculated render positions
- * @param {Function} onItemClick - Callback for item click events
  * @param {Function} onLabelChange - Callback for label change events
- * @param {Function} onRemove - Callback for removing items
+ * @param {Function} onHideItem - Callback for removing items
  * @param {Function} onPositionChange - Callback for when an item's position changes
  * @returns {Array} Array of JSX elements for timeline items
  */
 export function renderTimelineItems(
   itemsWithPositions, 
-  onItemClick, 
   onLabelChange, 
-  onRemove, 
+  onHideItem, 
   onPositionChange = () => {}
 ) {
   const { settings, hiddenItemIds } = useZustandStore();
   const shape = settings?.shape;
   // Support new settings key `itemDates`; fall back to legacy `showItemDates`
   const showDates = settings?.itemDates ?? settings?.showItemDates ?? true;
+  
+  // Debug logging to track hidden items
+  console.log('renderTimelineItems - hiddenItemIds:', hiddenItemIds);
+  console.log('renderTimelineItems - itemsWithPositions count:', itemsWithPositions?.length);
   
   return itemsWithPositions.map((item) => {
     // Support either `parsedDate` (new) or `date` (legacy)
@@ -31,7 +33,9 @@ export function renderTimelineItems(
     const isValidDate = (d) => d instanceof Date && !isNaN(d);
     
     // Check if this item should be hidden
-    const isHidden = hiddenItemIds.has(item.id);
+    const isHidden = hiddenItemIds?.includes(item.id);
+    
+    console.log(`Item ${item.id}: isHidden=${isHidden}, hiddenItemIds includes:`, hiddenItemIds?.includes(item.id));
     
     return (
       <div
@@ -51,9 +55,9 @@ export function renderTimelineItems(
           item={item}
           date={isValidDate(itemDate) ? itemDate : null}
           shape={shape}
-          onClick={() => onItemClick?.(item)}
+
           onLabelChange={(itemId, newLabel) => onLabelChange?.(itemId, newLabel)}
-          onRemove={onRemove}
+          onHideItem={onHideItem}
           showItemDates={showDates}
           onPositionChange={onPositionChange}
         />
