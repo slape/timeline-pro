@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button, Modal, List, ListItem, Text, Flex, Badge } from '@vibe/core';
 import { useZustandStore } from '../store/useZustand';
 import { useVisibleItems } from '../hooks/useVisibleItems';
+import TimelineLogger from '../utils/logger';
 
 /**
  * HiddenItemsManager component for showing/hiding timeline items
@@ -19,9 +20,23 @@ const HiddenItemsManager = () => {
   
   const hiddenCount = getHiddenItemCount();
   
+  // Ensure modal starts closed when component first renders with hidden items
+  React.useEffect(() => {
+    // Always ensure modal is closed when hiddenCount changes (new items hidden)
+    setIsModalOpen(false);
+    TimelineLogger.debug('HiddenItemsManager: Modal state reset due to hiddenCount change');
+  }, [hiddenCount]);
+  
+  TimelineLogger.debug('HiddenItemsManager render:', {
+    hiddenCount,
+    hiddenItemIds,
+    boardItemsCount: boardItems?.length || 0,
+    isModalOpen
+  });
+  
   // Get the actual hidden items for display
   const hiddenItems = (boardItems || []).filter(item => 
-    hiddenItemIds.includes(item.id)
+    hiddenItemIds.includes(String(item.id))
   );
 
   if (hiddenCount === 0) {
@@ -32,13 +47,16 @@ const HiddenItemsManager = () => {
     <>
       {/* Hidden Items Button */}
       <Button
-        onClick={() => setIsModalOpen(true)}
+        onClick={() => {
+          TimelineLogger.userAction('hiddenItemsManagerButtonClicked');
+          setIsModalOpen(true);
+        }}
         kind="secondary"
         size="small"
         style={{ marginLeft: '8px' }}
       >
         <Flex align="center" gap="xs">
-          <Text>Hidden Items</Text>
+          <Text>Unhide Items</Text>
           <Badge 
             text={hiddenCount.toString()} 
             color="negative"
@@ -49,25 +67,38 @@ const HiddenItemsManager = () => {
 
       {/* Hidden Items Modal */}
       <Modal
-        isOpen={isModalOpen}
+        show={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Hidden Timeline Items"
-        size="medium"
+        size="large"
       >
-        <div style={{ padding: '16px' }}>
-          <Flex direction="column" gap="md">
-            <Text>
-              The following items are currently hidden from the timeline. 
-              Click "Show" to make them visible again.
-            </Text>
-            
-            {/* Show All Button */}
-            <Flex justify="space-between" align="center">
-              <Text weight="bold">
-                {hiddenCount} item{hiddenCount !== 1 ? 's' : ''} hidden
-              </Text>
+        <div style={{ padding: '20px', width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+            {/* Compact Header with Stats and Actions */}
+            <div style={{ 
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '12px 16px',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '8px',
+              border: '1px solid #e9ecef',
+              width: '100%',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Text weight="bold" size="medium">
+                  {hiddenCount} Hidden Item{hiddenCount !== 1 ? 's' : ''}
+                </Text>
+                <Badge 
+                  text={hiddenCount.toString()} 
+                  color="negative"
+                  size="small"
+                />
+              </div>
               <Button
                 onClick={() => {
+                  TimelineLogger.userAction('allItemsUnhidden');
                   unhideAllItems();
                   setIsModalOpen(false);
                 }}
@@ -76,40 +107,78 @@ const HiddenItemsManager = () => {
               >
                 Show All Items
               </Button>
-            </Flex>
+            </div>
 
             {/* Hidden Items List */}
-            <List>
-              {hiddenItems.map(item => (
-                <ListItem
+            <div style={{ 
+              maxHeight: '350px', 
+              overflowY: 'auto',
+              border: '1px solid #e9ecef',
+              borderRadius: '8px',
+              width: '100%',
+              boxSizing: 'border-box'
+            }}>
+              {hiddenItems.map((item, index) => (
+                <div
                   key={item.id}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    padding: '8px 12px',
-                    borderBottom: '1px solid #e1e1e1'
+                    padding: '12px 20px',
+                    borderBottom: index < hiddenItems.length - 1 ? '1px solid #f1f3f4' : 'none',
+                    transition: 'background-color 0.2s ease',
+                    cursor: 'default',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
                   }}
                 >
-                  <Flex direction="column" gap="xs" style={{ flex: 1 }}>
-                    <Text weight="medium">{item.name || 'Unnamed Item'}</Text>
+                  <div style={{ flex: 1, minWidth: 0, marginRight: '24px' }}>
+                    <Text weight="medium" size="medium" style={{ 
+                      display: 'block',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      marginBottom: '4px'
+                    }}>
+                      {item.name || 'Unnamed Item'}
+                    </Text>
                     {item.group && (
-                      <Text size="small" color="secondary">
-                        Group: {item.group.title || 'Unnamed Group'}
-                      </Text>
+                      <Flex align="center" gap="xs">
+                        <div style={{
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '50%',
+                          backgroundColor: item.group.color || '#666',
+                          flexShrink: 0
+                        }} />
+                        <Text size="small" color="secondary">
+                          {item.group.title || 'Unnamed Group'}
+                        </Text>
+                      </Flex>
                     )}
-                  </Flex>
+                  </div>
                   <Button
-                    onClick={() => unhideItem(item.id)}
+                    onClick={() => {
+                      TimelineLogger.userAction('itemUnhidden', { itemId: item.id });
+                      unhideItem(item.id);
+                    }}
                     kind="secondary"
-                    size="xs"
+                    size="small"
+                    style={{ flexShrink: 0 }}
                   >
                     Show
                   </Button>
-                </ListItem>
+                </div>
               ))}
-            </List>
-          </Flex>
+            </div>
+          </div>
         </div>
       </Modal>
     </>
