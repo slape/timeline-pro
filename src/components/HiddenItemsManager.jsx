@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Modal, List, ListItem, Text, Flex, Badge } from '@vibe/core';
 import { useZustandStore } from '../store/useZustand';
-import { useVisibleItems } from '../hooks/useVisibleItems';
 import TimelineLogger from '../utils/logger';
 
 /**
@@ -69,7 +68,7 @@ const HiddenItemsManager = () => {
       <Modal
         show={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Hidden Timeline Items"
+        title="Hidden Items"
         size="large"
       >
         <div style={{ padding: '20px', width: '100%', boxSizing: 'border-box' }}>
@@ -88,7 +87,7 @@ const HiddenItemsManager = () => {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Text weight="bold" size="medium">
-                  {hiddenCount} Hidden Item{hiddenCount !== 1 ? 's' : ''}
+                  {hiddenCount} Hidden Item {hiddenCount !== 1 ? 's' : ''}
                 </Text>
                 <Badge 
                   text={hiddenCount.toString()} 
