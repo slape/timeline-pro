@@ -8,6 +8,7 @@ import { renderTimelineItems } from './renderTimelineItems.jsx'
 import LeaderLineConnector from './LeaderLineConnector';
 import filterVisibleTimelineItems from '../../functions/filterVisibleTimelineItems';
 import calculateScaleMarkersWithLogging from '../../functions/calculateScaleMarkersWithLogging';
+import handleTimelineItemPositionChange from '../../functions/handleTimelineItemPositionChange';
 import TimelineLogger from '../../utils/logger';
 import { useZustandStore } from '../../store/useZustand';
 import { useVisibleItems } from '../../hooks/useVisibleItems';
@@ -83,22 +84,7 @@ const Timeline = ({
   
   // Handle item position changes during drag
   const onPositionChange = (itemId, newPosition) => {
-    TimelineLogger.userAction('timelineItemDragged', { itemId, newPosition });
-    
-    // Calculate the new date based on the X position percentage
-    const timeRange = endDate - startDate;
-    const newDate = new Date(startDate.getTime() + (newPosition.x / 100) * timeRange);
-    
-    // Create the updated position object with the new date
-    const updatedPosition = {
-      ...newPosition,
-      date: newDate
-    };
-
-    // Call the parent component's onItemMove function with correct parameters
-    if (onItemMove) {
-      onItemMove(itemId, updatedPosition);
-    }
+    handleTimelineItemPositionChange(itemId, newPosition, startDate, endDate, onItemMove);
   };
 
   // Process items to map each item to its closest marker
