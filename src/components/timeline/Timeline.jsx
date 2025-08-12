@@ -9,6 +9,7 @@ import LeaderLineConnector from './LeaderLineConnector';
 import filterVisibleTimelineItems from '../../functions/filterVisibleTimelineItems';
 import calculateScaleMarkersWithLogging from '../../functions/calculateScaleMarkersWithLogging';
 import handleTimelineItemPositionChange from '../../functions/handleTimelineItemPositionChange';
+import buildItemToMarkerMap from '../../functions/buildItemToMarkerMap';
 import TimelineLogger from '../../utils/logger';
 import { useZustandStore } from '../../store/useZustand';
 import { useVisibleItems } from '../../hooks/useVisibleItems';
@@ -89,54 +90,20 @@ const Timeline = ({
 
   // Process items to map each item to its closest marker
   useEffect(() => {
-    TimelineLogger.debug('[Timeline] Building item→marker map', { visibleBoardItemsCount: visibleBoardItems?.length || 0, visibleTimelineItemsCount: visibleTimelineItems?.length || 0, markersCount: markers?.length || 0 });
-    // If we have raw board items and a date column, use the existing processor
-    if (visibleBoardItems && visibleBoardItems.length > 0 && dateColumn) {
-      const result = processBoardItemsWithMarkers(
-        visibleBoardItems,
-        dateColumn,
-        startDate,
-        endDate,
-        position,
-        markers
-      );
-      setProcessedBoardItems(result.processedBoardItems);
-      setItemToMarkerMap(result.itemToMarkerMap);
-      TimelineLogger.debug('[Timeline] Map built via visibleBoardItems processor', { mapped: result.itemToMarkerMap?.size || 0 });
-      return;
-    }
-
-    // Fallback: derive mapping directly from current timeline items and markers
-    const map = new Map();
-    (visibleTimelineItems || []).forEach(item => {
-      if (!item?.date || !(item.date instanceof Date) || isNaN(item.date)) return;
-      // Compute timeline position percentage for the item's date
-      const timeRange = endDate - startDate;
-      if (!timeRange || timeRange <= 0) return;
-      const positionPct = ((item.date - startDate) / timeRange) * 100;
-      
-      // Find the closest marker by position
-      let closestMarker = null;
-      let minDistance = Infinity;
-      
-      markers.forEach((marker, index) => {
-        const distance = Math.abs(marker.position - positionPct);
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestMarker = { marker, index };
-        }
-      });
-      
-      if (closestMarker) {
-        map.set(item.id, {
-          markerId: `timeline-marker-${closestMarker.index}`,
-          markerIndex: closestMarker.index,
-          markerPosition: closestMarker.marker.position
-        });
-      }
+    const result = buildItemToMarkerMap({
+      visibleBoardItems,
+      visibleTimelineItems,
+      dateColumn,
+      startDate,
+      endDate,
+      position,
+      markers
     });
-    setItemToMarkerMap(map);
-    TimelineLogger.debug('[Timeline] Map built via fallback', { mapped: map.size });
+    
+    if (result.processedBoardItems) {
+      setProcessedBoardItems(result.processedBoardItems);
+    }
+    setItemToMarkerMap(result.itemToMarkerMap);
   }, [visibleBoardItemsString, JSON.stringify(visibleTimelineItems?.map(i => i.id)), startDateString, endDateString, JSON.stringify(markers), position, dateColumn]);
   
   // Calculate item spacing to prevent overlaps
