@@ -1,4 +1,5 @@
 import TimelineLogger from '../utils/logger';
+import sanitizeItemName from './sanitizeItemName';
 
 /**
  * Updates an item's name on Monday.com using the GraphQL API
@@ -34,11 +35,13 @@ const updateItemName = async (mondaySDK, itemId, boardId, newName) => {
       throw new Error('Item name cannot exceed 255 characters');
     }
     
+    const sanitizedItemName = sanitizeItemName(trimmedName);
+    
     TimelineLogger.debug('Updating item name', {
       itemId,
       boardId,
       oldName: 'unknown', // We don't have the old name in this context
-      newName: trimmedName
+      newName: sanitizedItemName
     });
     
     // Prepare the GraphQL mutation
@@ -47,7 +50,7 @@ const updateItemName = async (mondaySDK, itemId, boardId, newName) => {
         change_multiple_column_values(
           item_id: ${itemId}, 
           board_id: ${boardId}, 
-          column_values: "{\\"name\\": \\"${trimmedName.replace(/"/g, '\\"')}\\"}"
+          column_values: "{\\"name\\": \\"${sanitizedItemName.replace(/"/g, '\\"')}\\"}"
         ) {
           id
           name
@@ -63,7 +66,7 @@ const updateItemName = async (mondaySDK, itemId, boardId, newName) => {
       TimelineLogger.error('Monday.com API returned errors', {
         itemId,
         boardId,
-        newName: trimmedName,
+        newName: sanitizedItemName,
         errors: response.errors
       });
       throw new Error(`Monday.com API error: ${errorMessage}`);
@@ -73,7 +76,7 @@ const updateItemName = async (mondaySDK, itemId, boardId, newName) => {
       TimelineLogger.error('Unexpected response format from Monday.com API', {
         itemId,
         boardId,
-        newName: trimmedName,
+        newName: sanitizedItemName,
         response
       });
       throw new Error('Unexpected response format from Monday.com API');
@@ -84,7 +87,7 @@ const updateItemName = async (mondaySDK, itemId, boardId, newName) => {
     TimelineLogger.userAction('itemNameUpdated', {
       itemId,
       boardId,
-      newName: trimmedName,
+      newName: sanitizedItemName,
       updatedItemId: updatedItem.id,
       updatedItemName: updatedItem.name
     });
@@ -92,7 +95,7 @@ const updateItemName = async (mondaySDK, itemId, boardId, newName) => {
     TimelineLogger.debug('Successfully updated item name', {
       itemId,
       boardId,
-      newName: trimmedName,
+      newName: sanitizedItemName,
       updatedItem
     });
     

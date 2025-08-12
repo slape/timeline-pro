@@ -4,6 +4,7 @@ import { getShapeStyles } from '../../functions/getShapeStyles';
 import './DraggableBoardItem.css';
 import { useZustandStore } from '../../store/useZustand';
 import updateItemName from '../../functions/updateItemName';
+import sanitizeItemName from '../../functions/sanitizeItemName';
 import mondaySdk from 'monday-sdk-js';
 import TimelineLogger from '../../utils/logger';
 
@@ -207,16 +208,27 @@ const DraggableBoardItem = ({
     }
     
     const trimmedName = newName.trim();
+    const sanitizedName = sanitizeItemName(trimmedName);
+    
+    // Check if sanitization resulted in an empty string
+    if (!sanitizedName) {
+      TimelineLogger.warn('Item name became empty after sanitization', { 
+        itemId: item.id, 
+        originalName: newName,
+        trimmedName 
+      });
+      return;
+    }
     
     // Don't update if the name hasn't actually changed
-    if (trimmedName === item?.originalItem?.name) {
+    if (sanitizedName === item?.originalItem?.name) {
       return;
     }
     
     if (!context?.boardId) {
       TimelineLogger.error('Cannot update item name: board ID not available', { 
         itemId: item.id, 
-        newName: trimmedName 
+        newName: sanitizedName 
       });
       return;
     }
@@ -225,24 +237,25 @@ const DraggableBoardItem = ({
       itemId: item.id,
       boardId: context.boardId,
       oldName: item?.originalItem?.name,
-      newName: trimmedName
+      originalInput: newName,
+      sanitizedName: sanitizedName
     });
     
-    const result = await updateItemName(monday, item.id, context.boardId, trimmedName);
+    const result = await updateItemName(monday, item.id, context.boardId, sanitizedName);
     
     if (result.success) {
       TimelineLogger.debug('Item name updated successfully', {
         itemId: item.id,
-        newName: trimmedName
+        newName: sanitizedName
       });
       
       // Optionally trigger a callback to refresh board data
       // This could be passed as a prop if needed
-      onLabelChange?.(item.id, trimmedName);
+      onLabelChange?.(item.id, sanitizedName);
     } else {
       TimelineLogger.error('Failed to update item name', {
         itemId: item.id,
-        newName: trimmedName,
+        newName: sanitizedName,
         error: result.error
       });
       
