@@ -43,13 +43,24 @@ class TimelineLogger {
   }
 
   /**
-   * Log an info message
+   * Log an info message - FOCUSED DEBUG MODE: Suppress most info logs
    * @param {string} message - The message to log
    * @param {Object} [metadata] - Additional metadata to include
    */
   static info(message: string, metadata: LogMetadata = {}): void {
-    const formattedMeta = this.formatMetadata(metadata);
-    console.log(`%c[INFO] ${message}`, 'color: #0066cc', formattedMeta || '');
+    // Suppress most info logs during focused debugging
+    const allowedInfoMessages = [
+      'Setting up monday.com context listeners',
+      'Timeline Builder app initialized'
+    ];
+    
+    const isAllowed = allowedInfoMessages.some(allowed => message.includes(allowed));
+    
+    if (isAllowed) {
+      const formattedMeta = this.formatMetadata(metadata);
+      console.log(`%c[INFO] ${message}`, 'color: #0066cc', formattedMeta || '');
+    }
+    // All other info messages are suppressed
   }
 
   /**
@@ -63,13 +74,32 @@ class TimelineLogger {
   }
 
   /**
-   * Log a debug message
+   * Log a debug message - FOCUSED DEBUG MODE: Only show critical hidden items debugging
    * @param {string} message - The debug message to log
    * @param {Object} [metadata] - Additional metadata to include
    */
   static debug(message: string, metadata: LogMetadata = {}): void {
-    const formattedMeta = this.formatMetadata(metadata);
-    console.debug(`%c[DEBUG] ${message}`, 'color: #666666', formattedMeta || '');
+    // Only show critical debugging logs for hidden items issue
+    const criticalKeywords = [
+      '🔄 Initializing Monday storage',
+      '✅ Monday storage service initialized',
+      '🔄 Loading hidden items from Monday storage',
+      '✅ Setting hidden items in store',
+      '✅ Hidden items loaded and store updated',
+      '🎯 App render decision',
+      '✅ Rendering timeline with hidden items',
+      '🔍 useVisibleItems: Filtered items',
+      '🔍 Dynamic dates calculation',
+      '🔍 Timeline markers generated'
+    ];
+    
+    const isCritical = criticalKeywords.some(keyword => message.includes(keyword));
+    
+    if (isCritical) {
+      const formattedMeta = this.formatMetadata(metadata);
+      console.debug(`%c[DEBUG] ${message}`, 'color: #666666', formattedMeta || '');
+    }
+    // All other debug messages are suppressed
   }
 
   /**

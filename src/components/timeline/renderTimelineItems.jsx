@@ -22,8 +22,8 @@ export function renderTimelineItems(
   const showDates = settings?.itemDates ?? settings?.showItemDates ?? true;
   
   // Debug logging to track hidden items
-  console.log('renderTimelineItems - hiddenItemIds:', hiddenItemIds);
-  console.log('renderTimelineItems - itemsWithPositions count:', itemsWithPositions?.length);
+  // console.log('renderTimelineItems - hiddenItemIds:', hiddenItemIds); // Suppressed for focused debugging
+  // console.log('renderTimelineItems - itemsWithPositions count:', itemsWithPositions?.length); // Suppressed for focused debugging
   
   return itemsWithPositions.map((item) => {
     // Support either `parsedDate` (new) or `date` (legacy)
@@ -35,7 +35,7 @@ export function renderTimelineItems(
     // Check if this item should be hidden
     const isHidden = hiddenItemIds?.includes(item.id);
     
-    console.log(`Item ${item.id}: isHidden=${isHidden}, hiddenItemIds includes:`, hiddenItemIds?.includes(item.id));
+    // console.log(`Item ${item.id}: isHidden=${isHidden}, hiddenItemIds includes:`, hiddenItemIds?.includes(item.id)); // Suppressed for focused debugging
     
     return (
       <div

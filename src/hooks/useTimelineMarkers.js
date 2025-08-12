@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useZustandStore } from '../store/useZustand';
 import generateTimelineMarkersWithLogging from '../functions/generateTimelineMarkersWithLogging';
 import buildItemToMarkerMap from '../functions/buildItemToMarkerMap';
 import calculateItemSpacing from '../functions/calculateItemSpacing';
+import TimelineLogger from '../utils/logger';
 
 /**
  * Custom hook to manage timeline markers and item-to-marker mapping
@@ -34,8 +36,24 @@ export const useTimelineMarkers = ({
   const [processedBoardItems, setProcessedBoardItems] = useState([]);
   const [itemToMarkerMap, setItemToMarkerMap] = useState(new Map());
 
+  // Get hidden items loaded state to ensure markers are regenerated after hidden items are loaded
+  const hiddenItemsLoaded = useZustandStore(state => state.hiddenItemsLoaded);
+  const hiddenItemIds = useZustandStore(state => state.hiddenItemIds);
+
   // Generate timeline markers when board items, date column, date range, or hidden items change
   useEffect(() => {
+    // Only generate markers if hidden items have been loaded to prevent stale data
+    if (!hiddenItemsLoaded) {
+      TimelineLogger.debug('Skipping marker generation - hidden items not loaded yet');
+      return;
+    }
+
+    TimelineLogger.debug('Generating timeline markers', {
+      visibleBoardItemsCount: visibleBoardItems?.length || 0,
+      hiddenItemsCount: hiddenItemIds?.length || 0,
+      hiddenItemsLoaded
+    });
+
     const generatedMarkers = generateTimelineMarkersWithLogging(
       visibleBoardItems, 
       dateColumn, 
@@ -44,7 +62,7 @@ export const useTimelineMarkers = ({
       dateFormat
     );
     setMarkers(generatedMarkers);
-  }, [visibleBoardItems, dateColumn, startDateString, endDateString, dateFormat]);
+  }, [visibleBoardItems, dateColumn, startDateString, endDateString, dateFormat, hiddenItemsLoaded, hiddenItemIds]);
 
   // Process items to map each item to its closest marker
   useEffect(() => {

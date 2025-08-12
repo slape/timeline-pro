@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useZustandStore } from '../store/useZustand';
 import TimelineLogger from '../utils/logger';
 
 /**
@@ -10,13 +11,29 @@ import TimelineLogger from '../utils/logger';
  * @returns {Object} Object containing adjusted startDate and endDate
  */
 export const useDynamicTimelineDates = (visibleTimelineItems, originalStartDate, originalEndDate) => {
+  // Get hidden items loaded state to ensure dates are only adjusted after hidden items are loaded
+  const hiddenItemsLoaded = useZustandStore(state => state.hiddenItemsLoaded);
+  const hiddenItemIds = useZustandStore(state => state.hiddenItemIds);
+
   return useMemo(() => {
+    // If hidden items haven't been loaded yet, return original dates to prevent premature adjustment
+    if (!hiddenItemsLoaded) {
+      TimelineLogger.debug('useDynamicTimelineDates: Hidden items not loaded yet, using original dates');
+      return {
+        startDate: originalStartDate,
+        endDate: originalEndDate,
+        isAdjusted: false
+      };
+    }
+
     // If no visible items or no original dates, return original dates
     if (!visibleTimelineItems || visibleTimelineItems.length === 0 || !originalStartDate || !originalEndDate) {
       TimelineLogger.debug('useDynamicTimelineDates: Using original dates (no visible items or original dates)', {
         visibleItemCount: visibleTimelineItems?.length || 0,
         hasOriginalStartDate: !!originalStartDate,
-        hasOriginalEndDate: !!originalEndDate
+        hasOriginalEndDate: !!originalEndDate,
+        hiddenItemsLoaded,
+        hiddenItemsCount: hiddenItemIds?.length || 0
       });
       return {
         startDate: originalStartDate,
@@ -66,6 +83,8 @@ export const useDynamicTimelineDates = (visibleTimelineItems, originalStartDate,
         adjustedStart: adjustedStartDate.toISOString(),
         adjustedEnd: adjustedEndDate.toISOString(),
         visibleItemCount: visibleTimelineItems.length,
+        hiddenItemsCount: hiddenItemIds?.length || 0,
+        hiddenItemsLoaded,
         visibleDateRange: {
           min: minVisibleDate.toISOString(),
           max: maxVisibleDate.toISOString()
@@ -82,7 +101,9 @@ export const useDynamicTimelineDates = (visibleTimelineItems, originalStartDate,
 
     TimelineLogger.debug('useDynamicTimelineDates: No adjustment needed, using original dates', {
       rangeDifference: Math.round(rangeDifference * 100) + '%',
-      visibleItemCount: visibleTimelineItems.length
+      visibleItemCount: visibleTimelineItems.length,
+      hiddenItemsCount: hiddenItemIds?.length || 0,
+      hiddenItemsLoaded
     });
 
     return {
@@ -90,5 +111,5 @@ export const useDynamicTimelineDates = (visibleTimelineItems, originalStartDate,
       endDate: originalEndDate,
       isAdjusted: false
     };
-  }, [visibleTimelineItems, originalStartDate, originalEndDate]);
+  }, [visibleTimelineItems, originalStartDate, originalEndDate, hiddenItemsLoaded, hiddenItemIds]);
 };

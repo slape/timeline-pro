@@ -58,9 +58,23 @@ const monday = mondaySdk();
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { setContext, setSettings, setBoardItems, setItemIds } = useZustandStore();
-  const { context, itemIds, settings, boardItems } = useZustandStore();
+  const { setContext, setSettings, setBoardItems, setItemIds, initializeMondayStorage } = useZustandStore();
+  const { context, itemIds, settings, boardItems, hiddenItemsLoaded, hiddenItemIds } = useZustandStore();
   const timelineItems = useZustandStore(state => state.timelineItems);
+
+  // Debug logging for loading states
+  React.useEffect(() => {
+    TimelineLogger.debug('🔍 App render state check', {
+      hasContext: !!context,
+      hasBoardItems: !!boardItems,
+      hasSettings: !!settings,
+      isLoading,
+      hiddenItemsLoaded,
+      hiddenItemsCount: hiddenItemIds?.length || 0,
+      boardItemsCount: boardItems?.length || 0,
+      itemIdsCount: itemIds?.length || 0
+    });
+  }, [context, boardItems, settings, isLoading, hiddenItemsLoaded, hiddenItemIds, itemIds]);
 
   // Track previous IDs to avoid unnecessary refetching (some SDKs re-emit same values)
   const prevBoardIdRef = useRef();
@@ -77,6 +91,9 @@ const App = () => {
   // Set up context listener
   useEffect(() => {
     TimelineLogger.info('Setting up monday.com context listeners');
+    
+    // Initialize Monday storage service for hidden items persistence
+    initializeMondayStorage(monday);
     
     // Notice this method notifies the monday platform that user gains a first value in an app.
     // Read more about it here: https://developer.monday.com/apps/docs/mondayexecute#value-created-for-user/
@@ -168,22 +185,43 @@ const App = () => {
     <Box padding='medium' style={{ position: 'relative', minHeight: '300px' }}>
       <ThemeProvider systemTheme={context?.theme ?? 'light'}>
       {error && <div style={{ color: 'red' }}>{error}</div>}
-      {!boardItems || !context || !settings || isLoading ? (
-        <Loading />
-      ) : context?.user?.isViewOnly ? (
-        <IsViewOnly />
-      ) : itemIds.length > 15 || boardItems.length > 15 ? (
-        <TooManyItems />
-      ) : (
-        <>
-          <TimelineBoard />
-          <Flex justify="start" align="center">
-            <ExportButton />
-            <HiddenItemsManager />
-          </Flex>
-        </>
-       
-      )}
+      {(() => {
+        const shouldShowLoading = !boardItems || !context || !settings || isLoading || !hiddenItemsLoaded;
+        
+        TimelineLogger.debug('🎯 App render decision', {
+          shouldShowLoading,
+          reasons: {
+            noBoardItems: !boardItems,
+            noContext: !context,
+            noSettings: !settings,
+            isLoading,
+            hiddenItemsNotLoaded: !hiddenItemsLoaded
+          },
+          hiddenItemsCount: hiddenItemIds?.length || 0
+        });
+        
+        if (shouldShowLoading) {
+          return <Loading />;
+        } else if (context?.user?.isViewOnly) {
+          return <IsViewOnly />;
+        } else if (itemIds.length > 15 || boardItems.length > 15) {
+          return <TooManyItems />;
+        } else {
+          TimelineLogger.debug('✅ Rendering timeline with hidden items', {
+            hiddenItemsCount: hiddenItemIds?.length || 0,
+            boardItemsCount: boardItems?.length || 0
+          });
+          return (
+            <>
+              <TimelineBoard />
+              <Flex justify="start" align="center">
+                <ExportButton />
+                <HiddenItemsManager />
+              </Flex>
+            </>
+          );
+        }
+      })()}
       </ThemeProvider>
     </Box>
   );

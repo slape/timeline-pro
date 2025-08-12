@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Modal, List, ListItem, Text, Flex, Badge } from '@vibe/core';
+import { Button, Modal, Text, Flex, Badge } from '@vibe/core';
 import { useZustandStore } from '../store/useZustand';
 import TimelineLogger from '../utils/logger';
 

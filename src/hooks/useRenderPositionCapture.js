@@ -14,7 +14,7 @@ export const useRenderPositionCapture = (items, onPositionsCaptured, shouldCaptu
   const captureRenderPositions = useCallback(() => {
     if (!items || items.length === 0 || !shouldCapture) return;
     
-    console.log('Capturing render positions for', items.length, 'items');
+    // console.log('Capturing render positions for', items.length, 'items'); // Suppressed for focused debugging
     
     // Wait for DOM to be fully rendered
     setTimeout(() => {
@@ -52,7 +52,7 @@ export const useRenderPositionCapture = (items, onPositionsCaptured, shouldCaptu
             y: boundedY
           };
           
-          console.log('Captured position for item', item.id, ':', { x: xPosition, y: boundedY, original: absoluteY });
+          // console.log('Captured position for item', item.id, ':', { x: xPosition, y: boundedY, original: absoluteY }); // Suppressed for focused debugging
         }
       });
       

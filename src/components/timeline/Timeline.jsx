@@ -55,10 +55,19 @@ const Timeline = ({
   const {
     visibleBoardItems,
     visibleTimelineItems,
-    startDateString,
-    endDateString,
     visibleBoardItemsString,
   } = useTimelineData(startDate, endDate, scale);
+
+  // Debug logging for timeline data
+  React.useEffect(() => {
+    TimelineLogger.debug('🔍 Timeline component data check', {
+      visibleBoardItemsCount: visibleBoardItems?.length || 0,
+      visibleTimelineItemsCount: visibleTimelineItems?.length || 0,
+      hasStartDate: !!startDate,
+      hasEndDate: !!endDate,
+      scale
+    });
+  }, [visibleBoardItems, visibleTimelineItems, startDate, endDate, scale]);
 
   // Calculate dynamic dates based on visible items to prevent empty space at edges
   const {
@@ -66,6 +75,18 @@ const Timeline = ({
     endDate: dynamicEndDate,
     isAdjusted
   } = useDynamicTimelineDates(visibleTimelineItems, startDate, endDate);
+
+  // Debug logging for dynamic dates
+  React.useEffect(() => {
+    TimelineLogger.debug('🔍 Dynamic dates calculation', {
+      originalStart: startDate?.toISOString(),
+      originalEnd: endDate?.toISOString(),
+      dynamicStart: dynamicStartDate?.toISOString(),
+      dynamicEnd: dynamicEndDate?.toISOString(),
+      isAdjusted,
+      visibleTimelineItemsCount: visibleTimelineItems?.length || 0
+    });
+  }, [startDate, endDate, dynamicStartDate, dynamicEndDate, isAdjusted, visibleTimelineItems]);
 
   // Use dynamic dates for all timeline calculations
   const effectiveStartDate = dynamicStartDate;
@@ -101,6 +122,17 @@ const Timeline = ({
     endDateString: effectiveEndDate?.toISOString(),
     visibleBoardItemsString,
   });
+
+  // Debug logging for timeline markers
+  React.useEffect(() => {
+    TimelineLogger.debug('🔍 Timeline markers generated', {
+      markersCount: markers?.length || 0,
+      itemToMarkerMapSize: itemToMarkerMap?.size || 0,
+      effectiveStart: effectiveStartDate?.toISOString(),
+      effectiveEnd: effectiveEndDate?.toISOString(),
+      visibleBoardItemsCount: visibleBoardItems?.length || 0
+    });
+  }, [markers, itemToMarkerMap, effectiveStartDate, effectiveEndDate, visibleBoardItems]);
 
   // Get callback functions using effective dates
   const { onPositionChange } = useTimelineCallbacks(effectiveStartDate, effectiveEndDate, onItemMove);
