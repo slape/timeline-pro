@@ -9,6 +9,8 @@ import { useTimelineSettings } from '../../hooks/useTimelineSettings';
 import { useTimelineData } from '../../hooks/useTimelineData';
 import { useTimelineMarkers } from '../../hooks/useTimelineMarkers';
 import { useTimelineCallbacks } from '../../hooks/useTimelineCallbacks';
+import { useDynamicTimelineDates } from '../../hooks/useDynamicTimelineDates';
+import { useDynamicScaleMarkers } from '../../hooks/useDynamicScaleMarkers';
 
 // Timeline subcomponents
 import TimelineLine from './TimelineLine';
@@ -49,17 +51,41 @@ const Timeline = ({
     endDate 
   });
 
-  // Get timeline data
+  // Get timeline data using original dates
   const {
     visibleBoardItems,
     visibleTimelineItems,
-    scaleMarkers,
     startDateString,
     endDateString,
     visibleBoardItemsString,
   } = useTimelineData(startDate, endDate, scale);
 
-  // Get timeline markers and mappings
+  // Calculate dynamic dates based on visible items to prevent empty space at edges
+  const {
+    startDate: dynamicStartDate,
+    endDate: dynamicEndDate,
+    isAdjusted
+  } = useDynamicTimelineDates(visibleTimelineItems, startDate, endDate);
+
+  // Use dynamic dates for all timeline calculations
+  const effectiveStartDate = dynamicStartDate;
+  const effectiveEndDate = dynamicEndDate;
+
+  // Calculate dynamic scale markers based on effective dates
+  const dynamicScaleMarkers = useDynamicScaleMarkers(effectiveStartDate, effectiveEndDate, scale, isAdjusted);
+
+  // Log when dates are adjusted
+  if (isAdjusted) {
+    TimelineLogger.debug('Timeline dates adjusted for visible items', {
+      originalStart: startDate?.toISOString(),
+      originalEnd: endDate?.toISOString(),
+      adjustedStart: effectiveStartDate?.toISOString(),
+      adjustedEnd: effectiveEndDate?.toISOString(),
+      visibleItemCount: visibleTimelineItems?.length || 0
+    });
+  }
+
+  // Get timeline markers and mappings using effective dates
   const {
     markers,
     itemToMarkerMap,
@@ -67,17 +93,17 @@ const Timeline = ({
     visibleBoardItems,
     visibleTimelineItems,
     dateColumn,
-    startDate,
-    endDate,
+    startDate: effectiveStartDate,
+    endDate: effectiveEndDate,
     dateFormat,
     position,
-    startDateString,
-    endDateString,
+    startDateString: effectiveStartDate?.toISOString(),
+    endDateString: effectiveEndDate?.toISOString(),
     visibleBoardItemsString,
   });
 
-  // Get callback functions
-  const { onPositionChange } = useTimelineCallbacks(startDate, endDate, onItemMove);
+  // Get callback functions using effective dates
+  const { onPositionChange } = useTimelineCallbacks(effectiveStartDate, effectiveEndDate, onItemMove);
 
   // Calculate layout values
   const { shouldFlipScaleMarkers, timelineTop } = calculateTimelineLayout(position, datePosition);
@@ -100,15 +126,15 @@ const Timeline = ({
       {/* Scale markers */}
       <TimelineScaleMarkers 
         scale={scale}
-        scaleMarkers={scaleMarkers}
+        scaleMarkers={dynamicScaleMarkers}
         timelineTop={timelineTop}
         shouldFlipScaleMarkers={shouldFlipScaleMarkers}
       />
 
       {/* Board Items - Render all items chronologically with position logic */}
       {(() => {
-        // Calculate positions for all items using extracted function
-        const itemsWithPositions = calculateTimelineItemPositions(visibleTimelineItems, startDate, endDate, position);
+        // Calculate positions for all items using effective dates
+        const itemsWithPositions = calculateTimelineItemPositions(visibleTimelineItems, effectiveStartDate, effectiveEndDate, position);
         TimelineLogger.debug('itemsWithPositions', itemsWithPositions);
         // Render items using extracted function
         return renderTimelineItems(
