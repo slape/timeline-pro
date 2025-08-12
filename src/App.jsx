@@ -60,8 +60,7 @@ const App = () => {
   const [error, setError] = useState(null);
   const { setContext, setSettings, setBoardItems, setItemIds, initializeMondayStorage } = useZustandStore();
   const { context, itemIds, settings, boardItems, hiddenItemsLoaded, hiddenItemIds } = useZustandStore();
-  const timelineItems = useZustandStore(state => state.timelineItems);
-
+  
   // Debug logging for loading states
   React.useEffect(() => {
     TimelineLogger.debug('🔍 App render state check', {

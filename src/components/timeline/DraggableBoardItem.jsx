@@ -3,6 +3,11 @@ import { EditableText, Box } from '@vibe/core';
 import { getShapeStyles } from '../../functions/getShapeStyles';
 import './DraggableBoardItem.css';
 import { useZustandStore } from '../../store/useZustand';
+import updateItemName from '../../functions/updateItemName';
+import mondaySdk from 'monday-sdk-js';
+import TimelineLogger from '../../utils/logger';
+
+const monday = mondaySdk();
 
 /**
  * DraggableBoardItem component that renders a draggable item from monday.com board
@@ -45,6 +50,9 @@ const DraggableBoardItem = ({
   // Timeline items are processed objects; original monday item is nested under originalItem
   const { id } = item;
   const groupColor = item?.originalItem?.group?.color;
+  
+  // Get context from zustand store for board ID
+  const { context } = useZustandStore();
 
   // Initialize size based on shape - circles should be square, ovals can be flexible
   const [size, setSize] = useState(() => ({
@@ -183,15 +191,66 @@ const DraggableBoardItem = ({
   };
 
   const handleMouseUp = () => {
-    // Clean up event listeners
+    setIsDragging(false);
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
-    document.removeEventListener('mousemove', handleResizeMouseMove);
-    document.removeEventListener('mouseup', handleResizeMouseUp);
     
-    setIsDragging(false);
+    // Notify parent of position change
+    onPositionChange?.(item.id, position);
   };
   
+  // Handle item name change
+  const handleNameChange = async (newName) => {
+    if (!newName || newName.trim() === '') {
+      TimelineLogger.warn('Attempted to set empty item name', { itemId: item.id });
+      return;
+    }
+    
+    const trimmedName = newName.trim();
+    
+    // Don't update if the name hasn't actually changed
+    if (trimmedName === item?.originalItem?.name) {
+      return;
+    }
+    
+    if (!context?.boardId) {
+      TimelineLogger.error('Cannot update item name: board ID not available', { 
+        itemId: item.id, 
+        newName: trimmedName 
+      });
+      return;
+    }
+    
+    TimelineLogger.debug('Updating item name', {
+      itemId: item.id,
+      boardId: context.boardId,
+      oldName: item?.originalItem?.name,
+      newName: trimmedName
+    });
+    
+    const result = await updateItemName(monday, item.id, context.boardId, trimmedName);
+    
+    if (result.success) {
+      TimelineLogger.debug('Item name updated successfully', {
+        itemId: item.id,
+        newName: trimmedName
+      });
+      
+      // Optionally trigger a callback to refresh board data
+      // This could be passed as a prop if needed
+      onLabelChange?.(item.id, trimmedName);
+    } else {
+      TimelineLogger.error('Failed to update item name', {
+        itemId: item.id,
+        newName: trimmedName,
+        error: result.error
+      });
+      
+      // You might want to show a toast notification or revert the change
+      // For now, we'll just log the error
+    }
+  };
+
   // Clean up event listeners on unmount
   useEffect(() => {
     return () => {
@@ -361,6 +420,7 @@ const DraggableBoardItem = ({
           }}>
             <EditableText
               value={item?.originalItem?.name}
+              onChange={handleNameChange}
               style={{
                 width: '100%',
                 textAlign: 'center',
