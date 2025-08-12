@@ -8,6 +8,7 @@ import isEqual from 'lodash.isequal';
 import TimelineLogger from '../../utils/logger';
 import { useVisibleItems } from '../../hooks/useVisibleItems';
 import GroupLegend from './GroupLegend';
+import Loading from '../common/Loading';
 
 /** BoardItem type * @typedef {Object} BoardItem
  * @property {string} id - Unique item ID
@@ -131,8 +132,6 @@ const TimelineBoard = () => {
           minHeight: '200px'
         }}
       >
-        
-
         {timelineItems?.length > 0 ? (
           <Timeline 
             onItemMove={onTimelineItemMove}
@@ -140,16 +139,7 @@ const TimelineBoard = () => {
             onLabelChange={onLabelChange}
           />
         ) : (
-          <Flex 
-            justify="center" 
-            align="center" 
-            style={{ 
-              height: '100px',
-              color: 'var(--secondary-text-color)'
-            }}
-          >
-            <Text>No date column selected. Check the 'Date Field to Display' setting.</Text>
-          </Flex>
+          <Loading />
         )}
       </Box>
       {/* Group Legend - only show if ledger setting is true */}

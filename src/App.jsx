@@ -164,13 +164,6 @@ const App = () => {
     setIsLoading(false);
   }, [context?.boardId, itemIds, settings]); // Fetch only when boardId or itemIds change
 
-
-  // Prevent incidental loader on settings-only changes (no refetch happens)
-  useEffect(() => {
-    const sameBoard = prevBoardIdRef.current === context?.boardId;
-    const sameItems = arraysEqual(prevItemIdsRef.current, itemIds);
-  }, [settings, context?.boardId, itemIds]);
-
   return (
     <Box padding='medium' style={{ position: 'relative', minHeight: '300px' }}>
       <ThemeProvider systemTheme={context?.theme ?? 'light'}>
@@ -179,7 +172,7 @@ const App = () => {
         <Loading />
       ) : context?.user?.isViewOnly ? (
         <IsViewOnly />
-      ) : itemIds.length > 10 || boardItems.length > 10 ? (
+      ) : itemIds.length > 15 || boardItems.length > 15 ? (
         <TooManyItems />
       ) : (
         <>
