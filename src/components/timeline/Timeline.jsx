@@ -6,7 +6,8 @@ import calculateItemSpacing from '../../functions/calculateItemSpacing';
 import { calculateTimelineItemPositions } from '../../functions/calculateTimelineItemPositions';
 import { renderTimelineItems } from './renderTimelineItems.jsx'
 import LeaderLineConnector from './LeaderLineConnector';
-import calculateScaleMarkers from '../../functions/calculateScaleMarkers';
+import filterVisibleTimelineItems from '../../functions/filterVisibleTimelineItems';
+import calculateScaleMarkersWithLogging from '../../functions/calculateScaleMarkersWithLogging';
 import TimelineLogger from '../../utils/logger';
 import { useZustandStore } from '../../store/useZustand';
 import { useVisibleItems } from '../../hooks/useVisibleItems';
@@ -35,8 +36,6 @@ const Timeline = ({
   const dateFormat = settings?.dateFormat || 'MMM d, yyyy';
   const datePosition = settings?.datePosition || 'above';
   const position = settings?.position || 'center';
-  const shape = settings?.shape || 'rectangle';
-  const showItemDates = settings?.itemDates ?? settings?.showItemDates ?? true;
   const scale = settings?.scale || 'none';
   const [markers, setMarkers] = useState([]);
   const storeState = useZustandStore();
@@ -54,14 +53,7 @@ const Timeline = ({
   
   // Filter timeline items by hiddenItemIds
   const visibleTimelineItems = useMemo(() => {
-    if (!timelineItems || !Array.isArray(timelineItems)) return [];
-    if (!hiddenItemIds || !Array.isArray(hiddenItemIds)) return timelineItems;
-    
-    return timelineItems.filter(item => {
-      // Convert item ID to string for comparison with hiddenItemIds (which are strings)
-      const itemIdStr = String(item.id);
-      return !hiddenItemIds.includes(itemIdStr);
-    });
+    return filterVisibleTimelineItems(timelineItems, hiddenItemIds);
   }, [timelineItems, hiddenItemIds]);
 
   // Get raw visible board items for marker generation
@@ -69,19 +61,7 @@ const Timeline = ({
 
   // Calculate the scale markers based on scale and date range
   const scaleMarkers = useMemo(() => {
-    const startTime = Date.now();
-    const markers = calculateScaleMarkers(startDate, endDate, scale);
-    
-    if (markers.length > 0) {
-      const duration = Date.now() - startTime;
-      TimelineLogger.performance('calculateScaleMarkers', duration, {
-        markerCount: markers.length,
-        scale,
-        dateRangeDays: Math.round((endDate - startDate) / (1000 * 60 * 60 * 24))
-      });
-    }
-    
-    return markers;
+    return calculateScaleMarkersWithLogging(startDate, endDate, scale);
   }, [startDate, endDate, scale]);
   
   // Convert dates and visibleBoardItems to strings for stable dependencies
