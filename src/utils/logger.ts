@@ -90,7 +90,8 @@ class TimelineLogger {
       '✅ Rendering timeline with hidden items',
       '🔍 useVisibleItems: Filtered items',
       '🔍 Dynamic dates calculation',
-      '🔍 Timeline markers generated'
+      '🔍 Timeline markers generated',
+      'Fetched board items'
     ];
     
     const isCritical = criticalKeywords.some(keyword => message.includes(keyword));

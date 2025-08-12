@@ -103,6 +103,40 @@ export const useZustandStore = create((set, get) => ({
     TimelineLogger.debug('setBoardItems called', boardItems);
     set({ boardItems });
   },
+  // Update a specific board item's date column value in the store
+  updateBoardItemDate: (itemId, columnId, newDateValue) => {
+    const { boardItems } = get();
+    const updatedBoardItems = boardItems.map(item => {
+      if (item.id === itemId) {
+        // Update the column value for this item
+        const updatedColumnValues = item.column_values.map(col => {
+          if (col.id === columnId) {
+            return {
+              ...col,
+              value: newDateValue, // Update the JSON value
+              text: typeof newDateValue === 'string' ? JSON.parse(newDateValue).to || JSON.parse(newDateValue).date : col.text // Update display text
+            };
+          }
+          return col;
+        });
+        
+        return {
+          ...item,
+          column_values: updatedColumnValues
+        };
+      }
+      return item;
+    });
+    
+    TimelineLogger.debug('Updated board item date in store', {
+      itemId,
+      columnId,
+      newDateValue,
+      updatedItemsCount: updatedBoardItems.length
+    });
+    
+    set({ boardItems: updatedBoardItems });
+  },
   setItemIds: (itemIds) => {
     TimelineLogger.debug('setItemIds called', itemIds);
     set({ itemIds });

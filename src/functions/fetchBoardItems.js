@@ -68,6 +68,7 @@ const fetchBoardItems = async (dateColumn, context, itemIds, setBoardItems, setI
         column_values {
           id
           value
+          type
         }
       }
     }`;
