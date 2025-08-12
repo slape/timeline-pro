@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import getMarkerStyles from '../../functions/getMarkerStyles';
 import generateTimelineMarkersWithLogging from '../../functions/generateTimelineMarkersWithLogging';
 import processBoardItemsWithMarkers from '../../functions/processBoardItemsWithMarkers';
 import calculateItemSpacing from '../../functions/calculateItemSpacing';
 import { calculateTimelineItemPositions } from '../../functions/calculateTimelineItemPositions';
 import { renderTimelineItems } from './renderTimelineItems.jsx'
-import LeaderLineConnector from './LeaderLineConnector';
 import filterVisibleTimelineItems from '../../functions/filterVisibleTimelineItems';
 import calculateScaleMarkersWithLogging from '../../functions/calculateScaleMarkersWithLogging';
 import handleTimelineItemPositionChange from '../../functions/handleTimelineItemPositionChange';
@@ -13,6 +11,12 @@ import buildItemToMarkerMap from '../../functions/buildItemToMarkerMap';
 import TimelineLogger from '../../utils/logger';
 import { useZustandStore } from '../../store/useZustand';
 import { useVisibleItems } from '../../hooks/useVisibleItems';
+
+// Timeline subcomponents
+import TimelineLine from './TimelineLine';
+import TimelineMarkers from './TimelineMarkers';
+import TimelineScaleMarkers from './TimelineScaleMarkers';
+import TimelineConnectors from './TimelineConnectors';
 
 /**
  * Timeline component that displays a horizontal timeline with markers and draggable items
@@ -133,138 +137,22 @@ const Timeline = ({
       }}
     >
       {/* Timeline line */}
-      <div
-        style={{
-          position: 'absolute',
-          top: position === 'above' ? '75%' : position === 'below' ? '25%' : '50%', // Dynamic positioning based on item placement
-          left: 0,
-          width: '100%',
-          height: '2px',
-          backgroundColor: 'var(--ui-border-color)',
-          zIndex: 0,
-        }}
-      />
-
+      <TimelineLine position={position} />
 
       {/* Timeline markers */}
-      {markers.map((marker, index) => {
-        const markerStyles = getMarkerStyles(datePosition);
-        const isEdgeMarker = index === 0 || index === markers.length - 1;
-        const isAbove = datePosition.includes('above');
-        
-        // For 'none' date position, only show the marker and label for first and last markers
-        const showMarker = datePosition !== 'none' || isEdgeMarker;
-        
-        // Always render a hidden anchor point for connector lines
-        if (!showMarker) {
-          return (
-            <div
-              key={`marker-${index}`}
-              id={`timeline-marker-${index}`}
-              style={{
-                position: 'absolute',
-                left: `${marker.position}%`,
-                top: timelineTop,
-                width: '1px',
-                height: '1px',
-                pointerEvents: 'none',
-                opacity: 0,
-                zIndex: 2
-              }}
-            />
-          );
-        }
-        
-        return (
-          <div
-            key={`marker-${index}`}
-            id={`timeline-marker-${index}`}
-            style={{
-              position: 'absolute',
-              left: `${marker.position}%`,
-              top: timelineTop,
-              transform: isAbove ? 'translateX(-50%) translateY(-100%)' : 'translateX(-50%)',
-              display: 'flex',
-              ...markerStyles.markerContainer,
-              alignItems: 'center',
-              zIndex: 1,
-            }}
-          >
-            <div style={markerStyles.markerLine} />
-            <div style={markerStyles.dateLabel}>
-              {marker.label}
-            </div>
-          </div>
-        );
-      })}
+      <TimelineMarkers 
+        markers={markers}
+        datePosition={datePosition}
+        timelineTop={timelineTop}
+      />
       
-      {/* Scale markers - only show if scale is not 'none' */}
-      {scale !== 'none' && (
-        <>
-          {/* Scale marker line */}
-          <div
-            style={{
-              position: 'absolute',
-              left: 0,
-              width: '100%',
-              top: timelineTop, // Use the same top position as the timeline
-              height: '1px',
-              backgroundColor: 'var(--ui-border-color)',
-              zIndex: 1,
-            }}
-          />
-          
-          {/* Scale marker ticks and labels */}
-          {scaleMarkers.map((marker, index) => {
-            // Skip rendering hidden markers (like the second-to-last marker if it matches the last one)
-            if (marker.hidden) return null;
-            
-            const isAbove = !shouldFlipScaleMarkers;
-            const offset = shouldFlipScaleMarkers ? 3 : -28; // -1px when flipped (below), -23px when not flipped (above)
-            
-            return (
-              <div
-                key={`scale-marker-${index}`}
-                style={{
-                  position: 'absolute',
-                  left: `${marker.position}%`,
-                  top: `calc(${timelineTop} + ${offset}px)`, // Offset from timeline position
-                  transform: 'translateX(-50%)',
-                  display: 'flex',
-                  flexDirection: isAbove ? 'column-reverse' : 'column', // column-reverse for above, column for below
-                  alignItems: 'center',
-                  zIndex: 2,
-                }}
-              >
-                <div 
-                  style={{
-                    width: '1px',
-                    height: '8px',
-                    backgroundColor: 'var(--ui-border-color)',
-                    flexShrink: 0,
-                    marginTop: isAbove ? 0 : 0, // No margin needed when using proper offsets
-                    marginBottom: isAbove ? '-1px' : 0, // Connect to timeline when above
-                  }}
-                />
-                <div 
-                  style={{
-                    fontSize: '10px',
-                    color: 'var(--secondary-text-color)',
-                    whiteSpace: 'nowrap',
-                    marginTop: isAbove ? '0px' : '8px', // Add space below the tick when markers are below
-                    marginBottom: isAbove ? '8px' : '0px', // Add space above the tick when markers are above
-                    textAlign: 'center',
-                    transform: scale === 'days' ? 'rotate(-25deg)' : 'none',
-                    transformOrigin: isAbove ? 'center bottom' : 'center top',
-                  }}
-                >
-                  {marker.label}
-                </div>
-              </div>
-            );
-          })}
-        </>
-      )}
+      {/* Scale markers */}
+      <TimelineScaleMarkers 
+        scale={scale}
+        scaleMarkers={scaleMarkers}
+        timelineTop={timelineTop}
+        shouldFlipScaleMarkers={shouldFlipScaleMarkers}
+      />
 
       {/* Board Items - Render all items chronologically with position logic */}
       {(() => {
@@ -281,53 +169,11 @@ const Timeline = ({
       })()}
       
       {/* LeaderLine Connectors - Connect board items to timeline markers */}
-      {(() => {
-        // Calculate positions for all items using extracted function
-        const itemsWithPositions = calculateTimelineItemPositions(visibleTimelineItems, startDate, endDate, position);
-        const total = itemsWithPositions.length;
-        if (total === 0) {
-          TimelineLogger.debug('[Timeline] No itemsWithPositions -> no connectors');
-        } else if (visibleTimelineItems.length === 0) {
-          TimelineLogger.debug('[Timeline] All items hidden -> no connectors', { total });
-        } else if (!markers || markers.length === 0) {
-          TimelineLogger.debug('[Timeline] No markers -> no connectors');
-        }
-        
-        // Create connectors for visible items only
-        return visibleTimelineItems
-          .map((item) => {
-            // Find the corresponding marker for this item
-            const markerInfo = itemToMarkerMap.get(item.id);
-            if (!markerInfo) return null;
-
-            // Prefer explicit markerIndex if available
-            let markerIndex = markerInfo.markerIndex;
-
-            // Fallback 1: parse index from markerId like `marker-<n>`
-            if (markerIndex == null && typeof markerInfo.markerId === 'string') {
-              const m = markerInfo.markerId.match(/marker-(\d+)/);
-              if (m) markerIndex = parseInt(m[1], 10);
-            }
-
-            // Fallback 2: compute by nearest position
-            if (markerIndex == null || isNaN(markerIndex)) {
-              markerIndex = markers.findIndex(marker => 
-                Math.abs(marker.position - markerInfo.markerPosition) < 0.5 // widen tolerance
-              );
-            }
-            
-            if (markerIndex == null || markerIndex < 0 || markerIndex >= markers.length) return null;
-            
-            return (
-              <LeaderLineConnector
-                key={`connector-${item.id}`}
-                fromId={`board-item-${item.id}`}
-                toId={`timeline-marker-${markerIndex}`}
-              />
-            );
-          })
-          .filter(Boolean); // Remove null values
-      })()}
+      <TimelineConnectors 
+        visibleTimelineItems={visibleTimelineItems}
+        markers={markers}
+        itemToMarkerMap={itemToMarkerMap}
+      />
     </div>
   );
 };
