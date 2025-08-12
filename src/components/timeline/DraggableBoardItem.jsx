@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { EditableText, Box, DatePicker, Modal, Button, DialogContentContainer } from '@vibe/core';
+import { EditableText, Box, DatePicker, Modal, Button, DialogContentContainer, Text, AlertBanner, AlertBannerText } from '@vibe/core';
 import { getShapeStyles } from '../../functions/getShapeStyles';
 import './DraggableBoardItem.css';
 import { useZustandStore } from '../../store/useZustand';
 import updateItemName from '../../functions/updateItemName';
 import updateItemDate from '../../functions/updateItemDate';
-import refreshTimelineData from '../../functions/refreshTimelineData';
 import sanitizeItemName from '../../functions/sanitizeItemName';
 import mondaySdk from 'monday-sdk-js';
 import TimelineLogger from '../../utils/logger';
@@ -57,11 +56,8 @@ const DraggableBoardItem = ({
   
   // Get context, settings, and store methods from zustand store for board ID, date column, and timeline refresh
   const { 
-    boardItems, 
     settings, 
     context, 
-    setTimelineItems, 
-    setTimelineParams,
     updateBoardItemDate
   } = useZustandStore();
   
@@ -663,7 +659,8 @@ const DraggableBoardItem = ({
               whiteSpace: 'nowrap',
               padding: '0 2px'
             }}>
-              <div
+              <Text
+                element="div"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleOpenDatePicker();
@@ -673,14 +670,13 @@ const DraggableBoardItem = ({
                   padding: '2px 4px',
                   borderRadius: '3px',
                   transition: 'background-color 0.2s',
-                  ':hover': {
-                    backgroundColor: 'rgba(0,0,0,0.1)'
-                  }
+                  fontSize: 'inherit',
+                  lineHeight: 'inherit'
                 }}
                 onMouseDown={e => e.stopPropagation()}
               >
                 {formattedDate || 'Click to set date'}
-              </div>
+              </Text>
             </div>
           )}
         </div>
@@ -695,8 +691,13 @@ const DraggableBoardItem = ({
             setIsDatePickerOpen(false);
             setSelectedDate(null);
           }}
-          title={`Change Date for "${item?.originalItem?.name || 'Item'}"`}
+          title={
+            <Text size="text-size-medium" weight="medium">
+              Change Date: {item?.originalItem?.name || 'Item'}
+            </Text>
+          }
           size="small"
+          width="400px"
         >
           <DialogContentContainer>
             <DatePicker
@@ -705,11 +706,18 @@ const DraggableBoardItem = ({
               firstDayOfWeek={1}
               data-testid="date-picker"
             />
+            <AlertBanner
+              isCloseHidden={true}
+            >
+            <AlertBannerText
+              text="Changing this date will update your board."
+            />
+            </AlertBanner>
             <div style={{ 
-              marginTop: '20px', 
+              marginTop: '16px', 
               display: 'flex', 
               justifyContent: 'flex-end', 
-              gap: '10px' 
+              gap: '8px' 
             }}>
               <Button
                 onClick={() => {
@@ -717,6 +725,7 @@ const DraggableBoardItem = ({
                   setSelectedDate(null);
                 }}
                 kind="tertiary"
+                size="small"
               >
                 Cancel
               </Button>
@@ -724,6 +733,7 @@ const DraggableBoardItem = ({
                 onClick={handleSaveDate}
                 kind="primary"
                 disabled={!selectedDate}
+                size="small"
               >
                 Save Date
               </Button>
