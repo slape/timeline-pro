@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import getMarkerStyles from '../../functions/getMarkerStyles';
-import generateTimelineMarkers from '../../functions/generateTimelineMarkers';
+import generateTimelineMarkersWithLogging from '../../functions/generateTimelineMarkersWithLogging';
 import processBoardItemsWithMarkers from '../../functions/processBoardItemsWithMarkers';
 import calculateItemSpacing from '../../functions/calculateItemSpacing';
 import { calculateTimelineItemPositions } from '../../functions/calculateTimelineItemPositions';
@@ -71,39 +71,14 @@ const Timeline = ({
   
   // Generate timeline markers when board items, date column, date range, or hidden items change
   useEffect(() => {
-    TimelineLogger.debug('Timeline: Generating markers', {
-      boardItemCount: visibleBoardItems?.length || 0,
-      dateColumn,
-      visibleItemCount: visibleBoardItems?.length || 0
-    });
-
-    const startTime = Date.now();
-    let generatedMarkers = [];
-    // Generate markers (function handles empty board items by returning start/end markers)
-    try {
-      TimelineLogger.debug('[Timeline] Calling generateTimelineMarkers', {
-        visibleItemsCount: (visibleBoardItems || []).length,
-        dateColumnId: typeof dateColumn === 'object' ? dateColumn?.id : dateColumn,
-        hasDateColumn: !!dateColumn,
-        startDate,
-        endDate,
-        dateFormat
-      });
-      generatedMarkers = generateTimelineMarkers(visibleBoardItems, dateColumn, startDate, endDate, dateFormat);
-      setMarkers(generatedMarkers);
-      TimelineLogger.debug('[Timeline] Markers generated', { count: generatedMarkers?.length || 0, markers: generatedMarkers });
-    } catch (e) {
-      TimelineLogger.error('[Timeline] generateTimelineMarkers threw', e, {
-        visibleBoardItemsCount: (visibleBoardItems || []).length,
-        dateColumn
-      });
-    }
-    
-    const duration = Date.now() - startTime;
-    TimelineLogger.performance('generateTimelineMarkers', duration, {
-      markerCount: generatedMarkers?.length || 0,
-      visibleBoardItemCount: visibleBoardItems?.length || 0
-    });
+    const generatedMarkers = generateTimelineMarkersWithLogging(
+      visibleBoardItems, 
+      dateColumn, 
+      startDate, 
+      endDate, 
+      dateFormat
+    );
+    setMarkers(generatedMarkers);
   }, [visibleBoardItems, dateColumn, startDateString, endDateString, dateFormat]);
   
   // Handle item position changes during drag
@@ -124,12 +99,6 @@ const Timeline = ({
     if (onItemMove) {
       onItemMove(itemId, updatedPosition);
     }
-  };
-
-  // Handle item removal
-  const handleItemRemove = (itemId) => {
-    // Call the parent component's onHideItem function
-    onHideItem(itemId);
   };
 
   // Process items to map each item to its closest marker
