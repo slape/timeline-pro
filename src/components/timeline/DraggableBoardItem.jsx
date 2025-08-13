@@ -9,6 +9,7 @@ import { useDraggableItemState } from '../../hooks/useDraggableItemState';
 import { useDateHandling } from '../../hooks/useDateHandling';
 import { useMouseHandlers } from '../../hooks/useMouseHandlers';
 import { getItemColor } from '../../functions/itemColorUtils';
+import { calculateInitialSize } from '../../functions/itemSizeUtils';
 import handleItemNameChange from '../../functions/handleItemNameChange';
 import handleSaveDate from '../../functions/handleSaveDate';
 import mondaySdk from 'monday-sdk-js';
@@ -86,11 +87,8 @@ const DraggableBoardItem = ({
     getFormattedDate
   } = useDateHandling(date);
 
-  // Initialize size based on shape - circles should be square, ovals can be flexible
-  const [size, setSize] = useState(() => ({
-    width: shape === 'circle' ? 100 : 140,
-    height: shape === 'circle' ? 100 : (showItemDates ? 50 : 30)
-  }));
+  // Initialize size using utility function
+  const [size, setSize] = useState(() => calculateInitialSize(shape, showItemDates, true));
 
   // Calculate initial position based on the item's date
   useEffect(() => {
@@ -114,13 +112,8 @@ const DraggableBoardItem = ({
 
   // Update size when shape or showItemDates changes
   useEffect(() => {
-    const newWidth = shape === 'circle' ? 100 : 140; // Doubled rectangle width from 140 to 280
-    const newHeight = shape === 'circle' ? 100 : (showItemDates ? 80 : 60);
-    
-    setSize({
-      width: newWidth,
-      height: newHeight
-    });
+    const newSize = calculateInitialSize(shape, showItemDates);
+    setSize(newSize);
   }, [shape, showItemDates]);
 
   // Use custom hook for mouse handlers
