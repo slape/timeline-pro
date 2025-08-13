@@ -2,10 +2,10 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import DatePickerModal from './DatePickerModal';
 import ItemContainer from './ItemContainer';
 import { getContainerStyles, getInnerWrapperStyles } from '../../functions/draggableItemStyles';
-import TimelineLogger from '../../utils/logger';
 import { getShapeStyles } from '../../functions/getShapeStyles';
 import './DraggableBoardItem.css';
 import { useZustandStore } from '../../store/useZustand';
+import { useDraggableItemState } from '../../hooks/useDraggableItemState';
 import handleItemNameChange from '../../functions/handleItemNameChange';
 import handleSaveDate from '../../functions/handleSaveDate';
 import {
@@ -48,17 +48,24 @@ const DraggableBoardItem = ({
   onHideItem, 
   showItemDates,
   onPositionChange // New prop for notifying position changes
-}) => {  
-  // Position and drag state
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const dragStartPos = useRef({ x: 0, y: 0 });
-  const dragOffset = useRef({ x: 0, y: 0 });
-  const startSize = useRef({ width: 0, height: 0 });
-  const itemRef = useRef(null);
-  const containerRef = useRef(null);
+}) => {
+  // Use custom hook for draggable item state management
+  const {
+    position,
+    setPosition,
+    isDragging,
+    setIsDragging,
+    isResizing,
+    setIsResizing,
+    isHovered,
+    setIsHovered,
+    dragStartPos,
+    dragOffset,
+    startSize,
+    itemRef,
+    containerRef
+  } = useDraggableItemState();
+  
   // Timeline items are processed objects; original monday item is nested under originalItem
   const { id } = item;
   const groupColor = item?.originalItem?.group?.color;
