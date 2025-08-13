@@ -1,4 +1,4 @@
-import { DRAGGABLE_ITEM, UI_COMPONENTS } from './configConstants';
+import { DRAGGABLE_ITEM, UI_COMPONENTS } from '../utils/configConstants';
 
 /**
  * Styling utilities for draggable timeline items

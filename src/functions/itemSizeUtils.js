@@ -1,4 +1,4 @@
-import { DRAGGABLE_ITEM } from './configConstants';
+import { DRAGGABLE_ITEM } from '../utils/configConstants';
 
 /**
  * Utility functions for calculating item sizes

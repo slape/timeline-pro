@@ -1,5 +1,5 @@
 import TimelineLogger from '../utils/logger';
-import { DRAGGABLE_ITEM, ITEM_POSITIONING, UI_COMPONENTS, getTimelinePositionRatio, calculateDragBounds } from './configConstants';
+import { DRAGGABLE_ITEM, ITEM_POSITIONING, UI_COMPONENTS, getTimelinePositionRatio, calculateDragBounds } from '../utils/configConstants';
 
 /**
  * Mouse handling functions for draggable board items

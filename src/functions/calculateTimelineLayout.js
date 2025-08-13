@@ -1,7 +1,7 @@
 /**
  * Utility functions for timeline layout calculations
  */
-import { TIMELINE_LAYOUT, UI_COMPONENTS, getTimelineTopCSS } from './configConstants';
+import { TIMELINE_LAYOUT, UI_COMPONENTS, getTimelineTopCSS } from '../utils/configConstants';
 
 /**
  * Calculate timeline layout and container styles
