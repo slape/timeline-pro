@@ -3,9 +3,8 @@ import { EditableText, Box, DatePicker, Modal, Button, DialogContentContainer, T
 import { getShapeStyles } from '../../functions/getShapeStyles';
 import './DraggableBoardItem.css';
 import { useZustandStore } from '../../store/useZustand';
-import updateItemName from '../../functions/updateItemName';
 import updateItemDate from '../../functions/updateItemDate';
-import sanitizeItemName from '../../functions/sanitizeItemName';
+import handleItemNameChange from '../../functions/handleItemNameChange';
 import { applyPositionBounds } from '../../functions/resolveItemPositions';
 import {
   createHandleMouseDown,
@@ -169,66 +168,13 @@ const DraggableBoardItem = ({
   
   // Handle item name change
   const handleNameChange = async (newName) => {
-    if (!newName || newName.trim() === '') {
-      TimelineLogger.warn('Attempted to set empty item name', { itemId: item.id });
-      return;
-    }
-    
-    const trimmedName = newName.trim();
-    const sanitizedName = sanitizeItemName(trimmedName);
-    
-    // Check if sanitization resulted in an empty string
-    if (!sanitizedName) {
-      TimelineLogger.warn('Item name became empty after sanitization', { 
-        itemId: item.id, 
-        originalName: newName,
-        trimmedName 
-      });
-      return;
-    }
-    
-    // Don't update if the name hasn't actually changed
-    if (sanitizedName === item?.originalItem?.name) {
-      return;
-    }
-    
-    if (!context?.boardId) {
-      TimelineLogger.error('Cannot update item name: board ID not available', { 
-        itemId: item.id, 
-        newName: sanitizedName 
-      });
-      return;
-    }
-    
-    TimelineLogger.debug('Updating item name', {
-      itemId: item.id,
-      boardId: context.boardId,
-      oldName: item?.originalItem?.name,
-      originalInput: newName,
-      sanitizedName: sanitizedName
+    await handleItemNameChange({
+      newName,
+      item,
+      context,
+      monday,
+      onLabelChange
     });
-    
-    const result = await updateItemName(monday, item.id, context.boardId, sanitizedName);
-    
-    if (result.success) {
-      TimelineLogger.debug('Item name updated successfully', {
-        itemId: item.id,
-        newName: sanitizedName
-      });
-      
-      // Optionally trigger a callback to refresh board data
-      // This could be passed as a prop if needed
-      onLabelChange?.(item.id, sanitizedName);
-    } else {
-      TimelineLogger.error('Failed to update item name', {
-        itemId: item.id,
-        newName: sanitizedName,
-        error: result.error
-      });
-      
-      // You might want to show a toast notification or revert the change
-      // For now, we'll just log the error
-    }
   };
   
   // Handle date picker selection
