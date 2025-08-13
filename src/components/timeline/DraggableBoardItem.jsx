@@ -8,6 +8,7 @@ import { useZustandStore } from '../../store/useZustand';
 import { useDraggableItemState } from '../../hooks/useDraggableItemState';
 import { useDateHandling } from '../../hooks/useDateHandling';
 import { useMouseHandlers } from '../../hooks/useMouseHandlers';
+import { getItemColor } from '../../functions/itemColorUtils';
 import handleItemNameChange from '../../functions/handleItemNameChange';
 import handleSaveDate from '../../functions/handleSaveDate';
 import mondaySdk from 'monday-sdk-js';
@@ -62,7 +63,6 @@ const DraggableBoardItem = ({
   
   // Timeline items are processed objects; original monday item is nested under originalItem
   const { id } = item;
-  const groupColor = item?.originalItem?.group?.color;
   
   // Get context, settings, and store methods from zustand store for board ID, date column, and timeline refresh
   const { 
@@ -104,8 +104,8 @@ const DraggableBoardItem = ({
     }
   }, [size.width]);
 
-  // Use the monday group color for background; fall back to theme primary color
-  const itemColor = groupColor || 'var(--primary-color)';
+  // Get item color using utility function
+  const itemColor = getItemColor(item);
 
   // Format date using hook utility
   const formattedDate = getFormattedDate(date);
