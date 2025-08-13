@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { EditableText, Box, Text } from '@vibe/core';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import DatePickerModal from './DatePickerModal';
+import ItemContainer from './ItemContainer';
+import { getContainerStyles, getInnerWrapperStyles } from '../../functions/draggableItemStyles';
+import TimelineLogger from '../../utils/logger';
 import { getShapeStyles } from '../../functions/getShapeStyles';
 import './DraggableBoardItem.css';
 import { useZustandStore } from '../../store/useZustand';
 import handleItemNameChange from '../../functions/handleItemNameChange';
 import handleSaveDate from '../../functions/handleSaveDate';
-import DatePickerModal from './DatePickerModal';
 import {
   createHandleMouseDown,
   createHandleMouseMove,
@@ -212,6 +214,9 @@ const DraggableBoardItem = ({
     };
   }, []);
 
+  const containerStyles = getContainerStyles(position, size, isDragging);
+  const innerWrapperStyles = getInnerWrapperStyles();
+
   return (
     <div
       ref={el => {
@@ -221,203 +226,27 @@ const DraggableBoardItem = ({
           containerRef.current = el.closest('.timeline-container');
         }
       }}
-      style={{
-        position: 'absolute',
-        left: `${position.x}%`,
-        top: `${position.y}px`,
-        width: `${size.width}px`,
-        height: `${size.height}px`,
-        cursor: isDragging ? 'grabbing' : 'grab',
-        zIndex: isDragging ? 1000 : 'auto',
-        transform: 'translateX(-50%)', // Center the item horizontally
-        transition: isDragging ? 'none' : 'transform 0.2s ease, box-shadow 0.2s ease, left 0.2s ease',
-      }}
+      style={containerStyles}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-      }}>
-        <Box
-          className={shape === 'circle' ? 'circle-shape' : ''}
-          style={{
-            opacity: isDragging ? 0.8 : 1,
-            cursor: 'grab',
-            backgroundColor: itemColor,
-            ...shapeStyles,
-            border: '1px solid rgba(0, 0, 0, 0.1)',
-            boxShadow: isDragging 
-              ? '0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05)' 
-              : '0 2px 6px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.03)',
-            transition: 'box-shadow 0.2s, opacity 0.2s, border-color 0.2s',
-            userSelect: 'none',
-            width: '100%',
-            height: '100%',
-            boxSizing: 'border-box',
-            position: 'relative',
-            overflow: 'visible' // Allow button to overflow
-          }}
-          onClick={onClick}
-        >
-
-        {/* Remove button container - positioned outside the main shape */}
-        <div style={{
-          position: 'absolute',
-          top: '-6px',
-          right: '-6px',
-          width: '20px',
-          height: '20px',
-          display: isHovered && onHideItem ? 'flex' : 'none',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1001,
-          pointerEvents: 'auto',
-          transform: 'translateZ(0)' // Force hardware acceleration
-        }}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onHideItem?.(item.id);
-            }}
-            style={{
-              width: '20px',
-              height: '20px',
-              borderRadius: '50%',
-              background: '#fff',
-              border: '1px solid #ccc',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 0,
-              margin: 0,
-              cursor: 'pointer',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-              outline: 'none',
-              position: 'relative',
-              zIndex: 1002
-            }}
-            onMouseDown={e => e.stopPropagation()}
-          >
-            <span style={{
-              display: 'block',
-              width: '12px',
-              height: '12px',
-              position: 'relative',
-              pointerEvents: 'none'
-            }}>
-              <span style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                width: '12px',
-                height: '2px',
-                background: '#333',
-                margin: '-1px -6px',
-                transform: 'rotate(45deg)'
-              }} />
-              <span style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                width: '12px',
-                height: '2px',
-                background: '#333',
-                margin: '-1px -6px',
-                transform: 'rotate(-45deg)'
-              }} />
-            </span>
-          </button>
-        </div>
-        
-        {/* Resize Handle */}
-        <div 
-          onMouseDown={handleResizeMouseDown}
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            right: 0,
-            width: '16px',
-            height: '16px',
-            cursor: 'nwse-resize',
-            zIndex: 1001,
-            pointerEvents: 'auto',
-            background: 'transparent',
-            opacity: 0
-          }}
-        />
-        
-        <div 
-          className="text-center"
-          style={{ 
-            width: '100%', 
-            height: '100%',
-            position: 'relative',
-            zIndex: 1,
-            userSelect: 'none' // Prevent text selection during drag
-          }}
-          onMouseDown={handleMouseDown}
-        >
-          <div style={{
-            width: '100%',
-            fontSize: '0.75em',
-            fontWeight: '500',
-            wordBreak: 'break-word',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            display: '-webkit-box',
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: 'vertical'
-          }}>
-            <EditableText
-              value={item?.originalItem?.name}
-              onChange={handleNameChange}
-              style={{
-                width: '100%',
-                textAlign: 'center',
-                display: 'inline-block'
-              }}
-              multiline
-            />
-          </div>
-          
-          {showItemDates && (
-            <div style={{
-              width: '100%',
-              marginTop: '4px',
-              textAlign: 'center',
-              fontSize: '0.7em',
-              lineHeight: '1.1',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              padding: '0 2px'
-            }}>
-              <Text
-                element="div"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleOpenDatePicker();
-                }}
-                style={{
-                  cursor: 'pointer',
-                  padding: '2px 4px',
-                  borderRadius: '3px',
-                  transition: 'background-color 0.2s',
-                  fontSize: 'inherit',
-                  lineHeight: 'inherit'
-                }}
-                onMouseDown={e => e.stopPropagation()}
-              >
-                {formattedDate || 'Click to set date'}
-              </Text>
-            </div>
-          )}
-        </div>
-        </Box>
-      </div>
+      <ItemContainer
+        shape={shape}
+        isDragging={isDragging}
+        itemColor={itemColor}
+        shapeStyles={shapeStyles}
+        onClick={onClick}
+        isHovered={isHovered}
+        onHideItem={onHideItem}
+        item={item}
+        handleResizeMouseDown={handleResizeMouseDown}
+        showItemDates={showItemDates}
+        formattedDate={formattedDate}
+        handleNameChange={handleNameChange}
+        handleMouseDown={handleMouseDown}
+        handleOpenDatePicker={handleOpenDatePicker}
+      />
       
       {/* Date Picker Modal */}
       <DatePickerModal
