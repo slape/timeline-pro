@@ -6,6 +6,7 @@ import { getShapeStyles } from '../../functions/getShapeStyles';
 import './DraggableBoardItem.css';
 import { useZustandStore } from '../../store/useZustand';
 import { useDraggableItemState } from '../../hooks/useDraggableItemState';
+import { useDateHandling } from '../../hooks/useDateHandling';
 import handleItemNameChange from '../../functions/handleItemNameChange';
 import handleSaveDate from '../../functions/handleSaveDate';
 import {
@@ -80,9 +81,17 @@ const DraggableBoardItem = ({
   // Get position setting for bounds calculation
   const timelinePosition = settings?.position || 'below';
   
-  // State for date picker modal
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
+  // Use custom hook for date handling
+  const {
+    isDatePickerOpen,
+    selectedDate,
+    openDatePicker,
+    closeDatePicker,
+    handleDateChange,
+    setIsDatePickerOpen,
+    setSelectedDate,
+    getFormattedDate
+  } = useDateHandling(date);
 
   // Initialize size based on shape - circles should be square, ovals can be flexible
   const [size, setSize] = useState(() => ({
@@ -105,11 +114,8 @@ const DraggableBoardItem = ({
   // Use the monday group color for background; fall back to theme primary color
   const itemColor = groupColor || 'var(--primary-color)';
 
-  // Format date as needed, e.g., "Jul 18, 2025"
-  const isValidDate = (d) => d instanceof Date && !isNaN(d);
-  const formattedDate = isValidDate(date)
-    ? new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(date)
-    : null;
+  // Format date using hook utility
+  const formattedDate = getFormattedDate(date);
 
   const shapeStyles = getShapeStyles(shape);
 
@@ -185,16 +191,9 @@ const DraggableBoardItem = ({
     });
   };
   
-  // Handle date picker selection
-  const handleDatePickerChange = (newDate) => {
-    setSelectedDate(newDate);
-  };
-  
   // Handle opening the date picker modal
   const handleOpenDatePicker = () => {
-    // Initialize selected date with current date
-    setSelectedDate(date ? moment(date) : moment());
-    setIsDatePickerOpen(true);
+    openDatePicker(date);
   };
   
   // Handle saving the selected date
@@ -258,13 +257,10 @@ const DraggableBoardItem = ({
       {/* Date Picker Modal */}
       <DatePickerModal
         isOpen={isDatePickerOpen}
-        onClose={() => {
-          setIsDatePickerOpen(false);
-          setSelectedDate(null);
-        }}
+        onClose={closeDatePicker}
         item={item}
         selectedDate={selectedDate}
-        onDateChange={handleDatePickerChange}
+        onDateChange={handleDateChange}
         onSave={handleSaveDateWrapper}
       />
     </div>
