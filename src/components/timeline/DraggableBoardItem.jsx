@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import DatePickerModal from './DatePickerModal';
 import ItemContainer from './ItemContainer';
 import { getContainerStyles, getInnerWrapperStyles } from '../../functions/draggableItemStyles';
@@ -13,7 +13,6 @@ import { calculateInitialSize } from '../../functions/itemSizeUtils';
 import handleItemNameChange from '../../functions/handleItemNameChange';
 import handleSaveDate from '../../functions/handleSaveDate';
 import mondaySdk from 'monday-sdk-js';
-import moment from 'moment';
 
 const monday = mondaySdk();
 

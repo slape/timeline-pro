@@ -1,3 +1,5 @@
+import { DRAGGABLE_ITEM, UI_COMPONENTS } from './configConstants';
+
 /**
  * Styling utilities for draggable timeline items
  * Centralizes style calculations and constants
@@ -13,8 +15,8 @@ export const getContainerStyles = (position, size, isDragging) => ({
   width: `${size.width}px`,
   height: `${size.height}px`,
   cursor: isDragging ? 'grabbing' : 'grab',
-  zIndex: isDragging ? 1000 : 'auto',
-  transform: 'translateX(-50%)', // Center the item horizontally
+  zIndex: isDragging ? DRAGGABLE_ITEM.Z_INDEX_DRAGGING : DRAGGABLE_ITEM.Z_INDEX_NORMAL,
+  transform: DRAGGABLE_ITEM.CENTER_TRANSFORM, // Center the item horizontally
   transition: isDragging ? 'none' : 'transform 0.2s ease, box-shadow 0.2s ease, left 0.2s ease',
 });
 
@@ -23,8 +25,8 @@ export const getContainerStyles = (position, size, isDragging) => ({
  */
 export const getInnerWrapperStyles = () => ({
   position: 'relative',
-  width: '100%',
-  height: '100%',
+  width: UI_COMPONENTS.FULL_WIDTH,
+  height: UI_COMPONENTS.FULL_HEIGHT,
 });
 
 /**
@@ -41,8 +43,8 @@ export const getBoxStyles = (isDragging, itemColor, shapeStyles) => ({
     : '0 2px 6px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.03)',
   transition: 'box-shadow 0.2s, opacity 0.2s, border-color 0.2s',
   userSelect: 'none',
-  width: '100%',
-  height: '100%',
+  width: UI_COMPONENTS.FULL_WIDTH,
+  height: UI_COMPONENTS.FULL_HEIGHT,
   boxSizing: 'border-box',
   position: 'relative',
   overflow: 'visible' // Allow button to overflow

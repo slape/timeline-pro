@@ -1,9 +1,11 @@
 /**
  * Utility functions for timeline layout calculations
  */
+import { TIMELINE_LAYOUT, UI_COMPONENTS, getTimelineTopCSS } from './configConstants';
 
 /**
- * Calculate timeline positioning values based on settings
+ * Calculate timeline layout and container styles
+ * Centralizes timeline positioning and styling logic
  * @param {string} position - Timeline position ('above', 'below', 'center')
  * @param {string} datePosition - Date position setting
  * @returns {Object} Layout calculations
@@ -14,7 +16,7 @@ export const calculateTimelineLayout = (position, datePosition) => {
   const shouldFlipScaleMarkers = datePosition === 'none' ? false : !datePosition.includes('below');
   
   // Calculate the position for timeline and scale markers
-  const timelineTop = position === 'above' ? '75%' : position === 'below' ? '25%' : '50%';
+  const timelineTop = getTimelineTopCSS(position);
   
   return {
     shouldFlipScaleMarkers,
@@ -29,8 +31,8 @@ export const TIMELINE_CONTAINER_STYLES = {
   position: 'relative',
   width: '90%', // Use 90% width to ensure padding on both sides
   margin: '0 auto', // Center the timeline
-  height: '300px', // Increased height for the timeline container
-  padding: '100px 0', // Increased padding to accommodate items above and below
+  height: `${TIMELINE_LAYOUT.CONTAINER_HEIGHT}px`, // Timeline container height
+  padding: `${TIMELINE_LAYOUT.CONTAINER_PADDING}px 0`, // Padding to accommodate items above and below
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'stretch',

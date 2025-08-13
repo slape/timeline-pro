@@ -1,15 +1,25 @@
+import { DRAGGABLE_ITEM } from './configConstants';
+
 /**
- * Utility functions for calculating item sizes and configurations
- * Centralizes size-related constants and calculations
+ * Utility functions for calculating item sizes
+ * Centralizes size calculation logic and constants
  */
 
-// Size constants - eliminates magic numbers
-export const ITEM_SIZE_CONSTANTS = {
+// Size constants - using centralized configuration
+export const SIZE_CONSTANTS = {
+  DEFAULT_WIDTH: DRAGGABLE_ITEM.DEFAULT_WIDTH,
+  DEFAULT_HEIGHT: DRAGGABLE_ITEM.DEFAULT_HEIGHT,
+  LARGE_WIDTH: DRAGGABLE_ITEM.LARGE_WIDTH,
+  LARGE_HEIGHT: DRAGGABLE_ITEM.LARGE_HEIGHT,
+  MIN_SIZE: DRAGGABLE_ITEM.MIN_SIZE,
+  // Circle size - must be equal width and height for perfect circle
   CIRCLE_SIZE: 100,
   RECTANGLE_WIDTH: 140,
   RECTANGLE_HEIGHT_WITH_DATES: 80,
   RECTANGLE_HEIGHT_WITHOUT_DATES: 60,
-  // Legacy constants for backward compatibility
+  // Legacy size constants for backward compatibility
+  LEGACY_WIDTH: DRAGGABLE_ITEM.DEFAULT_WIDTH,
+  LEGACY_HEIGHT: DRAGGABLE_ITEM.DEFAULT_HEIGHT,
   LEGACY_RECTANGLE_HEIGHT_WITH_DATES: 50,
   LEGACY_RECTANGLE_HEIGHT_WITHOUT_DATES: 30
 };
@@ -24,22 +34,22 @@ export const ITEM_SIZE_CONSTANTS = {
 export const calculateInitialSize = (shape, showItemDates, useLegacySizes = false) => {
   if (shape === 'circle') {
     return {
-      width: ITEM_SIZE_CONSTANTS.CIRCLE_SIZE,
-      height: ITEM_SIZE_CONSTANTS.CIRCLE_SIZE
+      width: SIZE_CONSTANTS.CIRCLE_SIZE,
+      height: SIZE_CONSTANTS.CIRCLE_SIZE
     };
   }
   
   // For rectangles, use legacy or new height values
   const heightWithDates = useLegacySizes 
-    ? ITEM_SIZE_CONSTANTS.LEGACY_RECTANGLE_HEIGHT_WITH_DATES 
-    : ITEM_SIZE_CONSTANTS.RECTANGLE_HEIGHT_WITH_DATES;
+    ? SIZE_CONSTANTS.LEGACY_RECTANGLE_HEIGHT_WITH_DATES 
+    : SIZE_CONSTANTS.RECTANGLE_HEIGHT_WITH_DATES;
     
   const heightWithoutDates = useLegacySizes 
-    ? ITEM_SIZE_CONSTANTS.LEGACY_RECTANGLE_HEIGHT_WITHOUT_DATES 
-    : ITEM_SIZE_CONSTANTS.RECTANGLE_HEIGHT_WITHOUT_DATES;
+    ? SIZE_CONSTANTS.LEGACY_RECTANGLE_HEIGHT_WITHOUT_DATES 
+    : SIZE_CONSTANTS.RECTANGLE_HEIGHT_WITHOUT_DATES;
   
   return {
-    width: ITEM_SIZE_CONSTANTS.RECTANGLE_WIDTH,
+    width: SIZE_CONSTANTS.RECTANGLE_WIDTH,
     height: showItemDates ? heightWithDates : heightWithoutDates
   };
 };

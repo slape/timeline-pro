@@ -1,6 +1,6 @@
 import moment from 'moment';
 import TimelineLogger from '../utils/logger';
-import { updateItemDate } from './updateItemDate';
+import updateItemDate from './updateItemDate';
 import { 
   validateDateInput, 
   convertToDate, 
