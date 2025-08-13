@@ -7,16 +7,9 @@ import './DraggableBoardItem.css';
 import { useZustandStore } from '../../store/useZustand';
 import { useDraggableItemState } from '../../hooks/useDraggableItemState';
 import { useDateHandling } from '../../hooks/useDateHandling';
+import { useMouseHandlers } from '../../hooks/useMouseHandlers';
 import handleItemNameChange from '../../functions/handleItemNameChange';
 import handleSaveDate from '../../functions/handleSaveDate';
-import {
-  createHandleMouseDown,
-  createHandleMouseMove,
-  createHandleMouseUp,
-  createHandleResizeMouseDown,
-  createHandleResizeMouseMove,
-  createHandleResizeMouseUp
-} from '../../functions/draggableMouseHandlers';
 import mondaySdk from 'monday-sdk-js';
 import moment from 'moment';
 
@@ -130,55 +123,27 @@ const DraggableBoardItem = ({
     });
   }, [shape, showItemDates]);
 
-  // Create mouse handlers using extracted functions
-  const handleMouseMove = React.useMemo(() => createHandleMouseMove({
+  // Use custom hook for mouse handlers
+  const {
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    handleResizeMouseDown
+  } = useMouseHandlers({
     containerRef,
     dragStartPos,
     dragOffset,
+    startSize,
     position,
     setPosition,
+    size,
+    setSize,
+    setIsDragging,
+    setIsResizing,
     onPositionChange,
     item,
     timelinePosition
-  }), [position, onPositionChange, item, timelinePosition]);
-
-  const handleMouseUp = React.useMemo(() => createHandleMouseUp({
-    setIsDragging,
-    handleMouseMove,
-    handleMouseUp: () => {}, // Will be set by the function itself
-    onPositionChange,
-    item,
-    position
-  }), [handleMouseMove, onPositionChange, item, position]);
-
-  const handleMouseDown = React.useMemo(() => createHandleMouseDown({
-    dragStartPos,
-    dragOffset,
-    setIsDragging,
-    handleMouseMove,
-    handleMouseUp
-  }), [handleMouseMove, handleMouseUp]);
-
-  const handleResizeMouseMove = React.useMemo(() => createHandleResizeMouseMove({
-    dragStartPos,
-    startSize,
-    setSize
-  }), []);
-
-  const handleResizeMouseUp = React.useMemo(() => createHandleResizeMouseUp({
-    setIsResizing,
-    handleResizeMouseMove,
-    handleResizeMouseUp: () => {} // Will be set by the function itself
-  }), [handleResizeMouseMove]);
-
-  const handleResizeMouseDown = React.useMemo(() => createHandleResizeMouseDown({
-    dragStartPos,
-    startSize,
-    size,
-    setIsResizing,
-    handleResizeMouseMove,
-    handleResizeMouseUp
-  }), [size, handleResizeMouseMove, handleResizeMouseUp]);
+  });
   
   // Handle item name change
   const handleNameChange = async (newName) => {
