@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { EditableText, Box, DatePicker, Modal, Button, DialogContentContainer, Text, AlertBanner, AlertBannerText } from '@vibe/core';
+import { EditableText, Box, Text } from '@vibe/core';
 import { getShapeStyles } from '../../functions/getShapeStyles';
 import './DraggableBoardItem.css';
 import { useZustandStore } from '../../store/useZustand';
-import updateItemDate from '../../functions/updateItemDate';
 import handleItemNameChange from '../../functions/handleItemNameChange';
 import handleSaveDate from '../../functions/handleSaveDate';
-import { applyPositionBounds } from '../../functions/resolveItemPositions';
+import DatePickerModal from './DatePickerModal';
 import {
   createHandleMouseDown,
   createHandleMouseMove,
@@ -16,7 +15,6 @@ import {
   createHandleResizeMouseUp
 } from '../../functions/draggableMouseHandlers';
 import mondaySdk from 'monday-sdk-js';
-import TimelineLogger from '../../utils/logger';
 import moment from 'moment';
 
 const monday = mondaySdk();
@@ -422,63 +420,17 @@ const DraggableBoardItem = ({
       </div>
       
       {/* Date Picker Modal */}
-      {isDatePickerOpen && (
-        <Modal
-          show={isDatePickerOpen}
-          onClose={() => {
-            setIsDatePickerOpen(false);
-            setSelectedDate(null);
-          }}
-          title={
-            <Text size="text-size-medium" weight="medium">
-              Change Date: {item?.originalItem?.name || 'Item'}
-            </Text>
-          }
-          size="small"
-          width="400px"
-        >
-          <DialogContentContainer>
-            <DatePicker
-              date={selectedDate}
-              onPickDate={handleDatePickerChange}
-              firstDayOfWeek={1}
-              data-testid="date-picker"
-            />
-            <AlertBanner
-              isCloseHidden={true}
-            >
-            <AlertBannerText
-              text="Changing this date will update your board."
-            />
-            </AlertBanner>
-            <div style={{ 
-              marginTop: '16px', 
-              display: 'flex', 
-              justifyContent: 'flex-end', 
-              gap: '8px' 
-            }}>
-              <Button
-                onClick={() => {
-                  setIsDatePickerOpen(false);
-                  setSelectedDate(null);
-                }}
-                kind="tertiary"
-                size="small"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSaveDateWrapper}
-                kind="primary"
-                disabled={!selectedDate}
-                size="small"
-              >
-                Save Date
-              </Button>
-            </div>
-          </DialogContentContainer>
-        </Modal>
-      )}
+      <DatePickerModal
+        isOpen={isDatePickerOpen}
+        onClose={() => {
+          setIsDatePickerOpen(false);
+          setSelectedDate(null);
+        }}
+        item={item}
+        selectedDate={selectedDate}
+        onDateChange={handleDatePickerChange}
+        onSave={handleSaveDateWrapper}
+      />
     </div>
   );
 };
