@@ -1,6 +1,12 @@
 import moment from 'moment';
 import TimelineLogger from '../utils/logger';
-import updateItemDate from './updateItemDate';
+import { updateItemDate } from './updateItemDate';
+import { 
+  validateDateInput, 
+  convertToDate, 
+  formatDateForAPI, 
+  createColumnValue 
+} from './dateFormatUtils';
 
 /**
  * Handles saving a selected date for a timeline item
@@ -38,19 +44,23 @@ export default async function handleSaveDate({
       isMoment: moment.isMoment(selectedDate)
     });
     
-    if (!selectedDate) {
-      TimelineLogger.warn('No date selected', { itemId: item.id });
+    // Validate and convert date using centralized utility
+    const validation = validateDateInput(selectedDate);
+    if (!validation.isValid) {
+      TimelineLogger.warn('Invalid date selected', { 
+        itemId: item.id, 
+        error: validation.error 
+      });
       return;
     }
     
-    // Convert moment to Date if needed
-    const dateToUpdate = moment.isMoment(selectedDate) ? selectedDate.toDate() : selectedDate;
+    const dateToUpdate = validation.date;
     
-    TimelineLogger.debug('🎯 Date conversion completed', { 
+    TimelineLogger.debug('🎯 Date validation and conversion completed', { 
       itemId: item.id, 
       originalSelectedDate: selectedDate,
       dateToUpdate: dateToUpdate,
-      dateToUpdateType: typeof dateToUpdate
+      validationResult: validation
     });
   
     // Extract date column ID (handle both string and object formats)
@@ -153,23 +163,17 @@ export default async function handleSaveDate({
       // Update the local board item data in the zustand store
       // This will cause the timeline to re-render automatically with the new date
       
-      // Convert dateToUpdate to YYYY-MM-DD format for the column value
-      let dateString;
-      if (dateToUpdate instanceof Date) {
-        const year = dateToUpdate.getUTCFullYear();
-        const month = String(dateToUpdate.getUTCMonth() + 1).padStart(2, '0');
-        const day = String(dateToUpdate.getUTCDate()).padStart(2, '0');
-        dateString = `${year}-${month}-${day}`;
-      } else if (typeof dateToUpdate === 'string') {
-        dateString = dateToUpdate;
-      } else {
-        TimelineLogger.error('Invalid date format for local store update', { dateToUpdate });
+      // Create column value using centralized utility
+      const newColumnValue = createColumnValue(dateToUpdate, columnType, currentColumnValue);
+      
+      if (!newColumnValue) {
+        TimelineLogger.error('Failed to create column value for local store update', { 
+          dateToUpdate, 
+          columnType, 
+          currentColumnValue 
+        });
         return;
       }
-      
-      const newColumnValue = columnType === 'timeline' 
-        ? JSON.stringify({ from: currentColumnValue?.value ? JSON.parse(currentColumnValue.value).from : null, to: dateString })
-        : JSON.stringify({ date: dateString });
         
       updateBoardItemDate(item.id, dateColumnId, newColumnValue);
       
@@ -177,7 +181,8 @@ export default async function handleSaveDate({
         itemId: item.id,
         columnId: dateColumnId,
         newDate: dateToUpdate,
-        newColumnValue: newColumnValue
+        newColumnValue: newColumnValue,
+        formattedDate: formatDateForAPI(dateToUpdate)
       });
       
       // Optionally trigger a callback to refresh timeline data

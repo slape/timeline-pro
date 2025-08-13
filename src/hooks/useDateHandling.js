@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import moment from 'moment';
+import { formatDateForDisplay, getCurrentMoment } from '../functions/dateFormatUtils';
 
 /**
  * Custom hook to manage date picker and date formatting logic
@@ -9,18 +9,14 @@ export const useDateHandling = (initialDate) => {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
 
-  // Date validation utility
-  const isValidDate = (d) => d instanceof Date && !isNaN(d);
-
-  // Format date for display
+  // Format date for display using centralized utility
   const getFormattedDate = (date) => {
-    if (!isValidDate(date)) return null;
-    return new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(date);
+    return formatDateForDisplay(date);
   };
 
   // Open date picker with current or default date
   const openDatePicker = (currentDate) => {
-    setSelectedDate(currentDate ? moment(currentDate) : moment());
+    setSelectedDate(getCurrentMoment(currentDate));
     setIsDatePickerOpen(true);
   };
 
@@ -48,7 +44,6 @@ export const useDateHandling = (initialDate) => {
     setSelectedDate,
     
     // Utilities
-    isValidDate,
     getFormattedDate
   };
 };
