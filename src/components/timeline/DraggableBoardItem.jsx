@@ -184,6 +184,32 @@ const DraggableBoardItem = ({
       const availableSpaceAbove = timelinePixelPosition - containerTop - 20; // Reduced buffer from top
       minYFromTimeline = Math.max(-availableSpaceAbove, -MAX_DRAG_DISTANCE * 0.7); // Allow 100px upward (50% of 200px)
       maxYFromTimeline = Math.min(containerBottom - timelinePixelPosition, MAX_DRAG_DISTANCE);
+    } else if (timelinePosition === 'alternate') {
+      // For 'alternate' position: determine if THIS item is above or below the timeline
+      // Check the item's current Y position to determine if it's above or below timeline
+      const currentItemY = position.y;
+      const isItemAboveTimeline = currentItemY < 0;
+      
+      // Debug logging to understand item positioning
+      TimelineLogger.debug('Alternate bounds calculation', {
+        itemId: item.id,
+        currentItemY,
+        isItemAboveTimeline,
+        timelinePixelPosition,
+        containerHeight: containerRect.height
+      });
+      
+      if (isItemAboveTimeline) {
+        // Item is above timeline - limit upward movement, allow downward to timeline
+        const availableSpaceAbove = timelinePixelPosition - containerTop - 20; // Buffer from top
+        minYFromTimeline = Math.max(-availableSpaceAbove, -MAX_DRAG_DISTANCE * 0.7); // Limit upward movement
+        maxYFromTimeline = Math.min(50, MAX_DRAG_DISTANCE); // Allow movement down to near timeline
+      } else {
+        // Item is below timeline - limit downward movement, allow upward to timeline  
+        minYFromTimeline = Math.max(-50, -MAX_DRAG_DISTANCE); // Allow movement up to near timeline
+        const availableSpaceBelow = containerBottom - timelinePixelPosition - 20; // Buffer from bottom
+        maxYFromTimeline = Math.min(availableSpaceBelow, MAX_DRAG_DISTANCE * 0.6); // More restrictive for below items
+      }
     } else {
       // For 'center' position: use full drag distance in both directions
       minYFromTimeline = Math.max(containerTop - timelinePixelPosition, -MAX_DRAG_DISTANCE);
