@@ -4,8 +4,9 @@ import { MondayStorageService } from './MondayStorageService';
 
 // console.log('Zustand store created (should appear only once per reload)'); // Suppressed for focused debugging
 
-// Monday.com storage key for hidden items
+// Monday.com storage keys
 const HIDDEN_ITEMS_KEY = 'timeline-pro-hidden-items';
+const ITEM_POSITIONS_KEY_PREFIX = 'timeline-pro-item-positions';
 
 // Storage service instance (will be initialized when Monday SDK is available)
 let storageService = null;
@@ -82,6 +83,71 @@ const saveHiddenItemsToStorage = async (hiddenItemIds) => {
   }
 };
 
+// Helper functions for item positions storage
+const loadItemPositionsFromStorage = async (boardId) => {
+  if (!storageService || !boardId) {
+    TimelineLogger.debug('Storage service not initialized or no boardId, returning empty object');
+    return {};
+  }
+  
+  try {
+    const storageKey = `${ITEM_POSITIONS_KEY_PREFIX}-${boardId}`;
+    const response = await storageService.getInstanceItem(storageKey);
+    
+    if (response?.data?.success && response.data.value) {
+      const positionData = response.data.value;
+      
+      // Validate the structure
+      if (positionData && typeof positionData === 'object' && positionData.itemPositions) {
+        TimelineLogger.debug('Loaded item positions from Monday storage', {
+          boardId,
+          positionSetting: positionData.positionSetting,
+          itemCount: Object.keys(positionData.itemPositions).length
+        });
+        return positionData;
+      }
+    }
+    return { boardId, positionSetting: null, itemPositions: {} };
+  } catch (error) {
+    TimelineLogger.error('Failed to load item positions from Monday storage', error);
+    return { boardId, positionSetting: null, itemPositions: {} };
+  }
+};
+
+const saveItemPositionsToStorage = async (boardId, positionSetting, itemPositions) => {
+  if (!storageService || !boardId) {
+    TimelineLogger.debug('Storage service not initialized or no boardId, skipping save');
+    return;
+  }
+  
+  try {
+    const storageKey = `${ITEM_POSITIONS_KEY_PREFIX}-${boardId}`;
+    const dataToSave = {
+      boardId,
+      positionSetting,
+      itemPositions: itemPositions || {}
+    };
+    
+    TimelineLogger.debug('Saving item positions to Monday storage', {
+      boardId,
+      positionSetting,
+      itemCount: Object.keys(dataToSave.itemPositions).length
+    });
+    
+    const response = await storageService.setInstanceItem(storageKey, dataToSave);
+    if (response?.data?.success) {
+      TimelineLogger.debug('Successfully saved item positions to Monday storage', {
+        boardId,
+        itemCount: Object.keys(dataToSave.itemPositions).length
+      });
+    } else {
+      TimelineLogger.error('Failed to save item positions to Monday storage', response?.data?.error);
+    }
+  } catch (error) {
+    TimelineLogger.error('Failed to save item positions to Monday storage', error);
+  }
+};
+
 export const useZustandStore = create((set, get) => ({
   settings: {},
   context: {},
@@ -89,6 +155,13 @@ export const useZustandStore = create((set, get) => ({
   itemIds: [],
   hiddenItemIds: [], // Will be loaded asynchronously from Monday storage
   hiddenItemsLoaded: false, // Track if hidden items have been loaded from Monday storage
+  
+  // Item position persistence
+  customItemPositions: {}, // { itemId: { x, y } }
+  currentPositionSetting: null, // Track position setting changes
+  itemPositionsLoaded: false, // Loading state
+  itemPositionsError: null, // Error handling
+  
   timelineParams: {},
   timelineItems: [],
   setSettings: (settings) => {
@@ -225,6 +298,153 @@ export const useZustandStore = create((set, get) => ({
     } else {
       set({ timelineItems });
       TimelineLogger.debug('timelineItems set directly in store', timelineItems);
+    }
+  },
+
+  // Item position persistence methods
+  saveCustomItemPosition: (itemId, position) => {
+    const { customItemPositions, context } = get();
+    const boardId = context?.boardId;
+    
+    if (!boardId) {
+      TimelineLogger.warn('Cannot save item position: no boardId available');
+      return;
+    }
+    
+    const updatedPositions = {
+      ...customItemPositions,
+      [itemId]: { x: position.x, y: position.y }
+    };
+    
+    TimelineLogger.debug('Saving custom item position', { itemId, position, boardId });
+    
+    // Update store immediately
+    set({ customItemPositions: updatedPositions });
+    
+    // Save to Monday storage (async)
+    const { currentPositionSetting } = get();
+    saveItemPositionsToStorage(boardId, currentPositionSetting, updatedPositions);
+  },
+
+  updatePositionSetting: (newSetting) => {
+    const { currentPositionSetting, customItemPositions, context } = get();
+    const boardId = context?.boardId;
+    
+    if (!boardId) {
+      TimelineLogger.warn('Cannot update position setting: no boardId available');
+      return;
+    }
+    
+    TimelineLogger.debug('Position setting changed', { 
+      from: currentPositionSetting, 
+      to: newSetting 
+    });
+    
+    // Handle position setting changes
+    let updatedPositions = customItemPositions;
+    
+    if (currentPositionSetting && currentPositionSetting !== newSetting) {
+      // Check if this is a simple above/below flip (mirror positions)
+      const isAboveBelowFlip = 
+        (currentPositionSetting === 'above' && newSetting === 'below') ||
+        (currentPositionSetting === 'below' && newSetting === 'above');
+      
+      if (isAboveBelowFlip) {
+        // Mirror Y coordinates for above/below flip
+        updatedPositions = Object.fromEntries(
+          Object.entries(customItemPositions).map(([itemId, pos]) => [
+            itemId,
+            { x: pos.x, y: -pos.y }
+          ])
+        );
+        TimelineLogger.debug('Mirrored positions for above/below flip', { 
+          itemCount: Object.keys(updatedPositions).length 
+        });
+      } else {
+        // Reset positions for other setting changes
+        updatedPositions = {};
+        TimelineLogger.debug('Reset positions for position setting change', { 
+          from: currentPositionSetting, 
+          to: newSetting 
+        });
+      }
+    }
+    
+    // Update store
+    set({ 
+      currentPositionSetting: newSetting,
+      customItemPositions: updatedPositions
+    });
+    
+    // Save to Monday storage (async)
+    saveItemPositionsToStorage(boardId, newSetting, updatedPositions);
+  },
+
+  clearCustomPositions: () => {
+    const { context } = get();
+    const boardId = context?.boardId;
+    
+    if (!boardId) {
+      TimelineLogger.warn('Cannot clear positions: no boardId available');
+      return;
+    }
+    
+    TimelineLogger.debug('Clearing all custom item positions', { boardId });
+    
+    // Update store
+    set({ customItemPositions: {} });
+    
+    // Save to Monday storage (async)
+    const { currentPositionSetting } = get();
+    saveItemPositionsToStorage(boardId, currentPositionSetting, {});
+  },
+
+  initializeItemPositions: async (mondaySDK) => {
+    const { context } = get();
+    const boardId = context?.boardId;
+    
+    if (!boardId) {
+      TimelineLogger.warn('Cannot initialize item positions: no boardId available');
+      set({ itemPositionsLoaded: true, itemPositionsError: 'No board ID available' });
+      return;
+    }
+    
+    try {
+      TimelineLogger.debug('🔄 Loading item positions from Monday storage...', { boardId });
+      
+      // Ensure storage service is available
+      if (!storageService) {
+        TimelineLogger.warn('Storage service not initialized for item positions');
+        set({ itemPositionsLoaded: true, itemPositionsError: 'Storage service not available' });
+        return;
+      }
+      
+      const positionData = await loadItemPositionsFromStorage(boardId);
+      
+      TimelineLogger.debug('✅ Setting item positions in store', {
+        boardId,
+        positionSetting: positionData.positionSetting,
+        itemCount: Object.keys(positionData.itemPositions || {}).length,
+        itemPositionsLoaded: true
+      });
+      
+      set({
+        customItemPositions: positionData.itemPositions || {},
+        currentPositionSetting: positionData.positionSetting,
+        itemPositionsLoaded: true,
+        itemPositionsError: null
+      });
+      
+      TimelineLogger.debug('✅ Item positions loaded and store updated', {
+        itemCount: Object.keys(positionData.itemPositions || {}).length,
+        itemPositionsLoaded: true
+      });
+    } catch (error) {
+      TimelineLogger.error('❌ Failed to initialize item positions', error);
+      set({ 
+        itemPositionsLoaded: true, 
+        itemPositionsError: error.message || 'Failed to load positions'
+      });
     }
   },
 }));

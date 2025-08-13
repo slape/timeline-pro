@@ -2,10 +2,6 @@
 
 A React-based timeline visualization app for Monday.com that automatically generates interactive timeline graphics from board data. Built for project managers to visualize project timelines with drag-and-drop functionality and real-time synchronization.
 
-## 🏗️ Architecture Overview
-
-This app follows a modular React architecture specifically designed for Monday.com platform integration, featuring real-time data synchronization, interactive timeline visualization, and comprehensive state management.
-
 ## 🛠️ Technology Stack
 
 - **Frontend Framework**: React 18 with Vite build tool
@@ -14,7 +10,7 @@ This app follows a modular React architecture specifically designed for Monday.c
 - **Platform Integration**: monday-sdk-js for Monday.com API integration
 - **Visualization**: Custom timeline rendering with leader-line for visual connections
 - **Drag & Drop**: react-rnd for draggable timeline items
-- **Utilities**: lodash.isequal for performance optimizations
+- **Utilities**: lodash.isequal for performance optimizations, validator.js for input sanitization
 
 ## 📁 Project Structure
 
@@ -95,29 +91,6 @@ Modular utility functions handling core timeline operations:
 - **Monday.com Integration**: `fetchBoardItems.js`
 - **Event Handlers**: `timelineHandlers.js`
 
-## ✨ Key Features & Capabilities
-
-### Timeline Visualization
-- Interactive timeline with configurable scales (days, weeks, months)
-- Drag-and-drop repositioning of timeline items
-- Visual leader lines connecting board items to timeline markers
-- Group-based color coding and legends
-- Real-time updates and responsive design
-
-### Monday.com Integration
-- Real-time sync with Monday.com boards
-- Configurable date column selection
-- Responsive to board changes and settings updates
-- Theme integration with Monday.com's design system
-- OAuth integration with proper permissions
-
-### User Interactions
-- Hide/show timeline items
-- Drag items to reposition on timeline
-- Editable item labels
-- Export timeline as image
-- Responsive touch and mouse interactions
-
 ## ⚡ Performance Optimizations
 
 - **Selective Re-rendering**: Uses `lodash.isequal` for deep equality checks to prevent unnecessary renders
@@ -125,33 +98,6 @@ Modular utility functions handling core timeline operations:
 - **Modular Functions**: Separated business logic for better maintainability and code splitting
 - **Logging System**: Comprehensive logging for debugging and performance monitoring
 - **Optimized Calculations**: Cached timeline calculations and efficient position updates
-
-## 🚀 Development & Build
-
-### Development Setup
-```bash
-npm install
-npm start  # Starts Vite dev server with Monday.com tunnel
-```
-
-### Build & Deployment
-```bash
-npm run build  # Creates optimized production build
-# Zip the ./build folder and upload to Monday.com platform
-```
-
-- **Development**: Vite dev server with Monday.com tunnel integration
-- **Build**: Vite build system producing optimized bundle
-- **Deployment**: Zip-based deployment to Monday.com platform
-
-## 🎯 Architecture Strengths
-
-- **Modular Design**: Clear separation of concerns between components and business logic
-- **State Management**: Centralized Zustand store with proper action patterns and logging
-- **Platform Integration**: Robust Monday.com SDK integration with proper event handling
-- **UI Consistency**: Leverages @vibe/core for consistent Monday.com design language
-- **Performance**: Optimized rendering with selective updates and efficient state management
-- **Maintainability**: Well-structured codebase with clear file organization and naming conventions
 
 ## 📝 Development Notes for LLMs
 
@@ -163,5 +109,3 @@ This architecture follows modern React patterns while being specifically tailore
 4. **Performance**: Always use equality checks before state updates to prevent unnecessary re-renders
 5. **UI Components**: Use @vibe/core components exclusively for consistency with Monday.com design system
 6. **Logging**: Utilize the TimelineLogger for debugging and performance monitoring
-
-The app creates a maintainable and scalable timeline visualization tool specifically designed for project managers working within the Monday.com ecosystem.
