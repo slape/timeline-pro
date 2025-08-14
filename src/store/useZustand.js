@@ -12,50 +12,9 @@ const ITEM_POSITIONS_KEY_PREFIX = 'timeline-pro-item-positions';
 // Storage service instance (will be initialized when Monday SDK is available)
 let storageService = null;
 
+import loadHiddenItemsFromStorage from '../functions/loadHiddenItemsFromStorage';
 // Helper functions for Monday.com storage persistence
-const loadHiddenItemsFromStorage = async () => {
-  if (!storageService) {
-    TimelineLogger.debug('Storage service not initialized, returning empty array');
-    return [];
-  }
-  
-  try {
-    const response = await storageService.getInstanceItem(HIDDEN_ITEMS_KEY);
-    if (response?.data?.success && response.data.value) {
-      let hiddenItems = response.data.value;
-      
-      // Handle case where Monday storage returns a string instead of array
-      if (typeof hiddenItems === 'string') {
-        TimelineLogger.debug('Monday storage returned string, converting to array', { rawValue: hiddenItems });
-        // If it's a comma-separated string, split it
-        if (hiddenItems.includes(',')) {
-          hiddenItems = hiddenItems.split(',').map(id => id.trim()).filter(id => id.length > 0);
-        } else if (hiddenItems.length > 0) {
-          // Single item as string
-          hiddenItems = [hiddenItems];
-        } else {
-          hiddenItems = [];
-        }
-      }
-      
-      // Ensure it's an array
-      if (!Array.isArray(hiddenItems)) {
-        TimelineLogger.warn('Hidden items from storage is not an array, converting', { type: typeof hiddenItems, value: hiddenItems });
-        hiddenItems = [];
-      }
-      
-      TimelineLogger.debug('Loaded hidden items from Monday storage', { 
-        count: hiddenItems.length,
-        items: hiddenItems 
-      });
-      return hiddenItems;
-    }
-    return [];
-  } catch (error) {
-    TimelineLogger.error('Failed to load hidden items from Monday storage', error);
-    return [];
-  }
-};
+// loadHiddenItemsFromStorage now imported from functions directory and called with (storageService, HIDDEN_ITEMS_KEY)
 
 const saveHiddenItemsToStorage = async (hiddenItemIds) => {
   if (!storageService) {
@@ -229,7 +188,7 @@ export const useZustandStore = create((set, get) => ({
       
       // Load existing hidden items from Monday storage
       TimelineLogger.debug('🔄 Loading hidden items from Monday storage...');
-      const hiddenItemIds = await loadHiddenItemsFromStorage();
+      const hiddenItemIds = await loadHiddenItemsFromStorage(storageService, HIDDEN_ITEMS_KEY);
       
       TimelineLogger.debug('✅ Setting hidden items in store', { 
         hiddenItemIds, 
