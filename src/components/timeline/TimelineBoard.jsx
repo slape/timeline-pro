@@ -116,7 +116,7 @@ const TimelineBoard = () => {
 
 
       {settings?.title && (
-        <Flex justify="center" width="100%" marginBottom="medium">
+        <Flex justify="center" width="100%" >
           <EditableHeading
             type="h3"
             value={settings?.titleText || 'Timeline Title'}
@@ -128,8 +128,7 @@ const TimelineBoard = () => {
       {/* Timeline container */}
       <Box 
         style={{
-          marginTop: settings?.title ? '10px' : '0',
-          minHeight: '200px'
+          minHeight: '400px'
         }}
       >
         {timelineItems?.length > 0 ? (

@@ -48,19 +48,8 @@ class TimelineLogger {
    * @param {Object} [metadata] - Additional metadata to include
    */
   static info(message: string, metadata: LogMetadata = {}): void {
-    // Suppress most info logs during focused debugging
-    const allowedInfoMessages = [
-      'Setting up monday.com context listeners',
-      'Timeline Builder app initialized'
-    ];
-    
-    const isAllowed = allowedInfoMessages.some(allowed => message.includes(allowed));
-    
-    if (isAllowed) {
-      const formattedMeta = this.formatMetadata(metadata);
-      console.log(`%c[INFO] ${message}`, 'color: #0066cc', formattedMeta || '');
-    }
-    // All other info messages are suppressed
+    // Suppress ALL info logs during focused debugging
+    // All info messages are suppressed for clean console
   }
 
   /**
@@ -79,19 +68,11 @@ class TimelineLogger {
    * @param {Object} [metadata] - Additional metadata to include
    */
   static debug(message: string, metadata: LogMetadata = {}): void {
-    // Only show critical debugging logs for hidden items issue
+    // FOCUSED DEBUG MODE: Only show alternate bounds debugging
     const criticalKeywords = [
-      '🔄 Initializing Monday storage',
-      '✅ Monday storage service initialized',
-      '🔄 Loading hidden items from Monday storage',
-      '✅ Setting hidden items in store',
-      '✅ Hidden items loaded and store updated',
-      '🎯 App render decision',
-      '✅ Rendering timeline with hidden items',
-      '🔍 useVisibleItems: Filtered items',
-      '🔍 Dynamic dates calculation',
-      '🔍 Timeline markers generated',
-      'Fetched board items'
+      '🎯 ALTERNATE MODE DETECTED',
+      '🔍 ALTERNATE BOUNDS',
+      '🚨 ALTERNATE BOUNDS ENFORCED'
     ];
     
     const isCritical = criticalKeywords.some(keyword => message.includes(keyword));
@@ -100,7 +81,7 @@ class TimelineLogger {
       const formattedMeta = this.formatMetadata(metadata);
       console.debug(`%c[DEBUG] ${message}`, 'color: #666666', formattedMeta || '');
     }
-    // All other debug messages are suppressed
+    // All other debug messages are suppressed for clean console
   }
 
   /**

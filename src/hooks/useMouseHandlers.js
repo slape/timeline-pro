@@ -53,8 +53,9 @@ export const useMouseHandlers = ({
     dragOffset,
     setIsDragging,
     handleMouseMove,
-    handleMouseUp
-  }), [handleMouseMove, handleMouseUp]);
+    handleMouseUp,
+    position
+  }), [handleMouseMove, handleMouseUp, position]);
 
   const handleResizeMouseMove = React.useMemo(() => createHandleResizeMouseMove({
     dragStartPos,

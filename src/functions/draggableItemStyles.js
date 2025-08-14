@@ -1,4 +1,4 @@
-import { DRAGGABLE_ITEM, UI_COMPONENTS } from '../utils/configConstants';
+import { DRAGGABLE_ITEM_STYLES, UI_COMPONENTS } from '../utils/configConstants';
 
 /**
  * Styling utilities for draggable timeline items
@@ -15,8 +15,8 @@ export const getContainerStyles = (position, size, isDragging) => ({
   width: `${size.width}px`,
   height: `${size.height}px`,
   cursor: isDragging ? 'grabbing' : 'grab',
-  zIndex: isDragging ? DRAGGABLE_ITEM.Z_INDEX_DRAGGING : DRAGGABLE_ITEM.Z_INDEX_NORMAL,
-  transform: DRAGGABLE_ITEM.CENTER_TRANSFORM, // Center the item horizontally
+  zIndex: isDragging ? DRAGGABLE_ITEM_STYLES.Z_INDEX_DRAGGING : DRAGGABLE_ITEM_STYLES.Z_INDEX_NORMAL,
+  transform: DRAGGABLE_ITEM_STYLES.CENTER_TRANSFORM, // Center the item horizontally
   transition: isDragging ? 'none' : 'transform 0.2s ease, box-shadow 0.2s ease, left 0.2s ease',
 });
 
