@@ -52,6 +52,7 @@ export function renderTimelineItems(
         }}
       >
         <DraggableBoardItem
+          key={`${item.id}-${settings?.position || 'default'}`}
           item={item}
           date={isValidDate(itemDate) ? itemDate : null}
           shape={shape}
