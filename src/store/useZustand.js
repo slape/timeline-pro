@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import TimelineLogger from '../utils/logger';
 import { MondayStorageService } from './MondayStorageService';
+import TimelineLogger from '../utils/logger';
+import { generateDefaultPositions, applyDefaultsForOutOfBoundsItems } from '../functions/generateDefaultPositions';
 
 // console.log('Zustand store created (should appear only once per reload)'); // Suppressed for focused debugging
 
@@ -327,7 +328,7 @@ export const useZustandStore = create((set, get) => ({
   },
 
   updatePositionSetting: (newSetting) => {
-    const { currentPositionSetting, customItemPositions, context } = get();
+    const { currentPositionSetting, customItemPositions, context, boardItems } = get();
     const boardId = context?.boardId;
     
     if (!boardId) {
@@ -344,30 +345,16 @@ export const useZustandStore = create((set, get) => ({
     let updatedPositions = customItemPositions;
     
     if (currentPositionSetting && currentPositionSetting !== newSetting) {
-      // Check if this is a simple above/below flip (mirror positions)
-      const isAboveBelowFlip = 
-        (currentPositionSetting === 'above' && newSetting === 'below') ||
-        (currentPositionSetting === 'below' && newSetting === 'above');
+      // Always generate fresh default positions for any position setting change
+      // This ensures items are never pushed off-screen regardless of the change
+      updatedPositions = generateDefaultPositions(boardItems, newSetting);
       
-      if (isAboveBelowFlip) {
-        // Mirror Y coordinates for above/below flip
-        updatedPositions = Object.fromEntries(
-          Object.entries(customItemPositions).map(([itemId, pos]) => [
-            itemId,
-            { x: pos.x, y: -pos.y }
-          ])
-        );
-        TimelineLogger.debug('Mirrored positions for above/below flip', { 
-          itemCount: Object.keys(updatedPositions).length 
-        });
-      } else {
-        // Reset positions for other setting changes
-        updatedPositions = {};
-        TimelineLogger.debug('Reset positions for position setting change', { 
-          from: currentPositionSetting, 
-          to: newSetting 
-        });
-      }
+      TimelineLogger.debug('Applied default positions for position setting change', { 
+        from: currentPositionSetting, 
+        to: newSetting,
+        defaultPositionCount: Object.keys(updatedPositions).length,
+        reason: 'Always reset to prevent off-screen items'
+      });
     }
     
     // Update store

@@ -3,6 +3,7 @@ import { calculateTimelineItemPositions } from '../../functions/calculateTimelin
 import { renderTimelineItems } from './renderTimelineItems.jsx';
 import { calculateTimelineLayout, TIMELINE_CONTAINER_STYLES } from '../../functions/calculateTimelineLayout';
 import TimelineLogger from '../../utils/logger';
+import { useZustandStore } from '../../store/useZustand';
 
 // Custom hooks
 import { useTimelineSettings } from '../../hooks/useTimelineSettings';
@@ -32,6 +33,9 @@ const Timeline = ({
   onHideItem,
   onLabelChange,
 }) => {
+  // Access Zustand store for position setting change detection
+  const { updatePositionSetting, currentPositionSetting } = useZustandStore();
+  
   // Extract timeline settings
   const {
     startDate,
@@ -87,6 +91,26 @@ const Timeline = ({
       visibleTimelineItemsCount: visibleTimelineItems?.length || 0
     });
   }, [startDate, endDate, dynamicStartDate, dynamicEndDate, isAdjusted, visibleTimelineItems]);
+
+  // Detect position setting changes and trigger reset
+  React.useEffect(() => {
+    TimelineLogger.debug('🔍 Position change detection check', {
+      position,
+      currentPositionSetting,
+      positionType: typeof position,
+      currentPositionSettingType: typeof currentPositionSetting,
+      areEqual: position === currentPositionSetting,
+      willTriggerReset: position && position !== currentPositionSetting
+    });
+    
+    if (position && position !== currentPositionSetting) {
+      TimelineLogger.debug('🔄 Position setting changed, triggering reset', {
+        from: currentPositionSetting,
+        to: position
+      });
+      updatePositionSetting(position);
+    }
+  }, [position, currentPositionSetting, updatePositionSetting]);
 
   // Use dynamic dates for all timeline calculations
   const effectiveStartDate = dynamicStartDate;

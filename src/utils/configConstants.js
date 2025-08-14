@@ -56,6 +56,19 @@ export const DRAGGABLE_ITEM = {
   CONTAINER_PADDING: 20,             // Minimum padding from container edges
   CONTAINER_TOP_REFERENCE: 0,        // Container top reference point
   MOUSE_POSITION_TOLERANCE: 1,       // Tolerance for mouse position comparisons (pixels)
+  
+  // Default positions when position setting changes - AFFECTS RESET BEHAVIOR
+  // 'Above' position defaults (timeline at 25% from top)
+  ABOVE_DEFAULT_Y_UP: -80,           // Default upward position from timeline
+  ABOVE_DEFAULT_Y_DOWN: 60,          // Default downward position from timeline
+  
+  // 'Below' position defaults (timeline at 75% from top)
+  BELOW_DEFAULT_Y_UP: -60,           // Default upward position from timeline
+  BELOW_DEFAULT_Y_DOWN: 80,          // Default downward position from timeline
+  
+  // 'Alternate' position defaults (timeline at center ~50%)
+  ALTERNATE_DEFAULT_Y_UP: -40,       // Default upward position from timeline
+  ALTERNATE_DEFAULT_Y_DOWN: 40,      // Default downward position from timeline
 };
 
 // ============================================================================
