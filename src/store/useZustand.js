@@ -1,3 +1,8 @@
+import { saveCustomItemPosition as saveCustomItemPositionFn } from '../functions/saveCustomItemPosition';
+import { updatePositionSetting as updatePositionSettingFn } from '../functions/updatePositionSetting';
+import { clearCustomPositions as clearCustomPositionsFn } from '../functions/clearCustomPositions';
+import { initializeItemPositions as initializeItemPositionsFn } from '../functions/initializeItemPositions';
+
 import { create } from 'zustand';
 import { MondayStorageService } from './MondayStorageService';
 import TimelineLogger from '../utils/logger';
@@ -30,13 +35,11 @@ export const useZustandStore = create((set, get) => ({
   itemIds: [],
   hiddenItemIds: [], // Will be loaded asynchronously from Monday storage
   hiddenItemsLoaded: false, // Track if hidden items have been loaded from Monday storage
-  
   // Item position persistence
   customItemPositions: {}, // { itemId: { x, y } }
   currentPositionSetting: null, // Track position setting changes
   itemPositionsLoaded: false, // Loading state
   itemPositionsError: null, // Error handling
-  
   timelineParams: {},
   timelineItems: [],
   setSettings: (settings) => {
@@ -176,136 +179,20 @@ export const useZustandStore = create((set, get) => ({
     }
   },
 
-  // Item position persistence methods
+// Item position persistence methods
   saveCustomItemPosition: (itemId, position) => {
-    const { customItemPositions, context } = get();
-    const boardId = context?.boardId;
-    
-    if (!boardId) {
-      TimelineLogger.warn('Cannot save item position: no boardId available');
-      return;
-    }
-    
-    const updatedPositions = {
-      ...customItemPositions,
-      [itemId]: { x: position.x, y: position.y }
-    };
-    
-    TimelineLogger.debug('Saving custom item position', { itemId, position, boardId });
-    
-    // Update store immediately
-    set({ customItemPositions: updatedPositions });
-    
-    // Save to Monday storage (async)
-    const { currentPositionSetting } = get();
-    saveItemPositionsToStorage(storageService, boardId, currentPositionSetting, updatedPositions);
+    return saveCustomItemPositionFn({ get, set, itemId, position, storageService });
   },
 
   updatePositionSetting: (newSetting) => {
-    const { currentPositionSetting, customItemPositions, context, boardItems } = get();
-    const boardId = context?.boardId;
-    
-    if (!boardId) {
-      TimelineLogger.warn('Cannot update position setting: no boardId available');
-      return;
-    }
-    
-    TimelineLogger.debug('Position setting changed', { 
-      from: currentPositionSetting, 
-      to: newSetting 
-    });
-    
-    // Handle position setting changes
-    let updatedPositions = customItemPositions;
-    
-    if (currentPositionSetting && currentPositionSetting !== newSetting) {
-      // Always generate fresh default positions for any position setting change
-      // This ensures items are never pushed off-screen regardless of the change
-      updatedPositions = generateDefaultPositions(boardItems, newSetting);
-      
-      TimelineLogger.debug('Applied default positions for position setting change', { 
-        from: currentPositionSetting, 
-        to: newSetting,
-        defaultPositionCount: Object.keys(updatedPositions).length,
-        reason: 'Always reset to prevent off-screen items'
-      });
-    }
-    
-    // Update store
-    set({ 
-      currentPositionSetting: newSetting,
-      customItemPositions: updatedPositions
-    });
-    
-    // Save to Monday storage (async)
-    saveItemPositionsToStorage(storageService, boardId, newSetting, updatedPositions);
+    return updatePositionSettingFn({ get, set, newSetting, storageService });
   },
 
   clearCustomPositions: () => {
-    const { context } = get();
-    const boardId = context?.boardId;
-    
-    if (!boardId) {
-      TimelineLogger.warn('Cannot clear positions: no boardId available');
-      return;
-    }
-    
-    TimelineLogger.debug('Clearing all custom item positions', { boardId });
-    
-    // Update store
-    set({ customItemPositions: {} });
-    
-    // Save to Monday storage (async)
-    const { currentPositionSetting } = get();
-    saveItemPositionsToStorage(storageService, boardId, currentPositionSetting, {});
+    return clearCustomPositionsFn({ get, set, storageService });
   },
 
-  initializeItemPositions: async (mondaySDK) => {
-    const { context } = get();
-    const boardId = context?.boardId;
-    
-    if (!boardId) {
-      TimelineLogger.warn('Cannot initialize item positions: no boardId available');
-      set({ itemPositionsLoaded: true, itemPositionsError: 'No board ID available' });
-      return;
-    }
-    
-    try {
-      TimelineLogger.debug('🔄 Loading item positions from Monday storage...', { boardId });
-      
-      // Ensure storage service is available
-      if (!storageService) {
-        TimelineLogger.warn('Storage service not initialized for item positions');
-        set({ itemPositionsLoaded: true, itemPositionsError: 'Storage service not available' });
-        return;
-      }
-      
-      const positionData = await loadItemPositionsFromStorage(storageService, boardId);
-      
-      TimelineLogger.debug('✅ Setting item positions in store', {
-        boardId,
-        positionSetting: positionData.positionSetting,
-        itemCount: Object.keys(positionData.itemPositions || {}).length,
-        itemPositionsLoaded: true
-      });
-      
-      set({
-        customItemPositions: positionData.itemPositions || {},
-        currentPositionSetting: positionData.positionSetting,
-        itemPositionsLoaded: true,
-        itemPositionsError: null
-      });
-      
-      TimelineLogger.debug('✅ Item positions loaded and store updated', {
-        itemCount: Object.keys(positionData.itemPositions || {}).length,
-        itemPositionsLoaded: true
-      });
-    } catch (error) {
-      TimelineLogger.error('❌ Failed to initialize item positions', error);
-      set({ 
-        itemPositionsLoaded: true, 
-        itemPositionsError: error.message || 'Failed to load positions'
-      });
-    }
+  initializeItemPositions: async () => {
+    return initializeItemPositionsFn({ get, set, storageService });
   },
 }));
