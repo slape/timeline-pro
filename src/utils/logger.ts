@@ -68,10 +68,12 @@ class TimelineLogger {
    * @param {Object} [metadata] - Additional metadata to include
    */
   static debug(message: string, metadata: LogMetadata = {}): void {
-    // FOCUSED DEBUG MODE: Only show alternate bounds debugging
+    // FOCUSED DEBUG MODE: Show all bounds debugging for constants verification
     const criticalKeywords = [
       '🎯 ALTERNATE MODE DETECTED',
       '🔍 ALTERNATE BOUNDS',
+      '🔍 ABOVE BOUNDS',
+      '🔍 BELOW BOUNDS',
       '🚨 ALTERNATE BOUNDS ENFORCED'
     ];
     

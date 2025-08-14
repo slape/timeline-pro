@@ -33,6 +33,29 @@ export const DRAGGABLE_ITEM = {
   BOUNDS_MAX_X: 95,         // Maximum X position percentage
   BOUNDS_MIN_Y: -250,       // Minimum Y position in pixels
   BOUNDS_MAX_Y: 250,        // Maximum Y position in pixels
+  
+  // Position-specific drag distances - AFFECTS DRAG DISTANCE BY TIMELINE POSITION
+  // 'Above' position (timeline at 25% from top)
+  ABOVE_MAX_DISTANCE_UP: 200,        // Maximum upward drag distance in 'above' position
+  ABOVE_MAX_DISTANCE_DOWN: 189,      // Maximum downward drag distance in 'above' position
+  
+  // 'Below' position (timeline at 75% from top)  
+  BELOW_MAX_DISTANCE_UP: 240,        // Maximum upward drag distance in 'below' position
+  BELOW_MAX_DISTANCE_DOWN: 145,      // Maximum downward drag distance in 'below' position
+  
+  // 'Alternate' position (timeline at center ~50%)
+  ALTERNATE_MAX_DISTANCE_UP: 90,     // Maximum upward drag distance in 'alternate' position
+  ALTERNATE_MAX_DISTANCE_DOWN: 60,   // Maximum downward drag distance in 'alternate' position
+  
+  // Buffer zones from container edges - AFFECTS DRAG BOUNDS NEAR EDGES
+  ABOVE_BOTTOM_BUFFER: 20,           // Buffer from bottom edge in 'above' position
+  BELOW_TOP_BUFFER: 10,              // Buffer from top edge in 'below' position
+  ALTERNATE_EDGE_BUFFER: 30,         // Buffer from edges in 'alternate' position
+  
+  // Container and positioning constants - AFFECTS DRAG CALCULATIONS
+  CONTAINER_PADDING: 20,             // Minimum padding from container edges
+  CONTAINER_TOP_REFERENCE: 0,        // Container top reference point
+  MOUSE_POSITION_TOLERANCE: 1,       // Tolerance for mouse position comparisons (pixels)
 };
 
 // ============================================================================

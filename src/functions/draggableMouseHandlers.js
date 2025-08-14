@@ -1,5 +1,5 @@
 import TimelineLogger from '../utils/logger';
-import { DRAGGABLE_ITEM, UI_COMPONENTS, getTimelinePositionRatio } from '../utils/configConstants';
+import { DRAGGABLE_ITEM, UI_COMPONENTS, TIMELINE_LAYOUT, getTimelinePositionRatio } from '../utils/configConstants';
 
 /**
  * Mouse handling functions for draggable board items
@@ -90,8 +90,8 @@ export const createHandleMouseMove = ({
     const dy = e.clientY - dragStartPos.current.y;
     
     // Enhanced bounds calculation accounting for item size and timeline position
-    const PADDING = 20; // Minimum padding from container edges
-    const newY = Math.max(DRAGGABLE_ITEM.BOUNDS_MIN_Y, Math.min(DRAGGABLE_ITEM.BOUNDS_MAX_Y, dragOffset.current.y + dy));
+    const PADDING = DRAGGABLE_ITEM.CONTAINER_PADDING; // Minimum padding from container edges
+    // Remove hardcoded bounds - let position-specific bounds handle this later
     
     const itemWidth = itemRect.width;
     const itemHeight = itemRect.height;
@@ -100,13 +100,20 @@ export const createHandleMouseMove = ({
     const getTimelinePosition = (pos) => {
       switch (pos) {
         case 'above':
-          return 0.25; // Timeline at 25% of container height
+          return TIMELINE_LAYOUT.POSITION_ABOVE; // Timeline at 25% of container height
         case 'below':
-          return 0.75; // Timeline at 75% of container height
+          return TIMELINE_LAYOUT.POSITION_BELOW; // Timeline at 75% of container height
         default:
           return getTimelinePositionRatio('center'); // Timeline at 50% of container height (center)
       }
     };
+    
+    // AGGRESSIVE DEBUG: Always log constants to verify import
+    console.log('🚨 CONSTANTS IMPORT CHECK:', {
+      ALTERNATE_MAX_DISTANCE: DRAGGABLE_ITEM.ALTERNATE_MAX_DISTANCE,
+      ALTERNATE_EDGE_BUFFER: DRAGGABLE_ITEM.ALTERNATE_EDGE_BUFFER,
+      timelinePosition: timelinePosition
+    });
     
     // Only log timeline position for alternate mode
     if (timelinePosition === 'alternate') {
@@ -120,42 +127,61 @@ export const createHandleMouseMove = ({
     const timelinePixelPosition = containerRect.height * timelineRatio;
     
     // Calculate position-aware Y bounds relative to timeline position
-    const containerTop = 0;
+    const containerTop = DRAGGABLE_ITEM.CONTAINER_TOP_REFERENCE;
     const containerBottom = containerRect.height;
     
     // Y bounds are relative to timeline position, with position-specific constraints
     let minYFromTimeline, maxYFromTimeline;
     
     if (timelinePosition === 'above') {
-      // For 'above' position: timeline at 25%, limit downward movement more strictly
-      minYFromTimeline = Math.max(containerTop - timelinePixelPosition, -DRAGGABLE_ITEM.MAX_DRAG_DISTANCE);
-      // Reduce available space below timeline to prevent going too far down
-      const availableSpaceBelow = containerBottom - timelinePixelPosition - 80; // 80px buffer from bottom
-      maxYFromTimeline = Math.min(availableSpaceBelow, DRAGGABLE_ITEM.MAX_DRAG_DISTANCE * 0.7); // Reduce max distance for below
-    } else if (timelinePosition === 'below') {
-      // For 'below' position: timeline at 75%, allow more upward movement (100px higher)
-      const availableSpaceAbove = timelinePixelPosition - containerTop - 20; // Reduced buffer from top
-      minYFromTimeline = Math.max(-availableSpaceAbove, -DRAGGABLE_ITEM.MAX_DRAG_DISTANCE * 0.7); // Allow upward movement
-      maxYFromTimeline = Math.min(containerBottom - timelinePixelPosition, DRAGGABLE_ITEM.MAX_DRAG_DISTANCE);
-    } else if (timelinePosition === 'alternate') {
-      // For 'alternate' position: use much more restrictive bounds to prevent off-screen dragging
-      // Items should stay close to the timeline in alternate mode
+      // For 'above' position: timeline at 25%, use granular up/down limits
+      minYFromTimeline = -DRAGGABLE_ITEM.ABOVE_MAX_DISTANCE_UP;
+      // Limit downward movement with buffer from bottom edge
+      const availableSpaceBelow = containerBottom - timelinePixelPosition - DRAGGABLE_ITEM.ABOVE_BOTTOM_BUFFER;
+      maxYFromTimeline = Math.min(availableSpaceBelow, DRAGGABLE_ITEM.ABOVE_MAX_DISTANCE_DOWN);
       
-      // Use very restrictive bounds - only allow small movement from timeline
-      const maxDistance = 100; // Much more restrictive: only 100px from timeline
+      // Debug logging for above position
+      TimelineLogger.debug('🔍 ABOVE BOUNDS', {
+        itemId: item.id,
+        minY: minYFromTimeline,
+        maxY: maxYFromTimeline,
+        maxDistanceUp: DRAGGABLE_ITEM.ABOVE_MAX_DISTANCE_UP,
+        maxDistanceDown: DRAGGABLE_ITEM.ABOVE_MAX_DISTANCE_DOWN,
+        bottomBuffer: DRAGGABLE_ITEM.ABOVE_BOTTOM_BUFFER
+      });
+    } else if (timelinePosition === 'below') {
+      // For 'below' position: timeline at 75%, use granular up/down limits
+      const availableSpaceAbove = timelinePixelPosition - containerTop - DRAGGABLE_ITEM.BELOW_TOP_BUFFER;
+      minYFromTimeline = Math.max(-availableSpaceAbove, -DRAGGABLE_ITEM.BELOW_MAX_DISTANCE_UP);
+      maxYFromTimeline = DRAGGABLE_ITEM.BELOW_MAX_DISTANCE_DOWN;
+      
+      // Debug logging for below position
+      TimelineLogger.debug('🔍 BELOW BOUNDS', {
+        itemId: item.id,
+        minY: minYFromTimeline,
+        maxY: maxYFromTimeline,
+        maxDistanceUp: DRAGGABLE_ITEM.BELOW_MAX_DISTANCE_UP,
+        maxDistanceDown: DRAGGABLE_ITEM.BELOW_MAX_DISTANCE_DOWN,
+        topBuffer: DRAGGABLE_ITEM.BELOW_TOP_BUFFER
+      });
+    } else if (timelinePosition === 'alternate') {
+      // For 'alternate' position: use granular up/down limits for fine control
       
       // Calculate bounds relative to timeline position with container constraints
-      const availableSpaceAbove = timelinePixelPosition - containerTop - 20; // Buffer from top
-      const availableSpaceBelow = containerBottom - timelinePixelPosition - 20; // Buffer from bottom
+      const availableSpaceAbove = timelinePixelPosition - containerTop - DRAGGABLE_ITEM.ALTERNATE_EDGE_BUFFER;
+      const availableSpaceBelow = containerBottom - timelinePixelPosition - DRAGGABLE_ITEM.ALTERNATE_EDGE_BUFFER;
       
-      minYFromTimeline = Math.max(-availableSpaceAbove, -maxDistance);
-      maxYFromTimeline = Math.min(availableSpaceBelow, maxDistance);
+      minYFromTimeline = Math.max(-availableSpaceAbove, -DRAGGABLE_ITEM.ALTERNATE_MAX_DISTANCE_UP);
+      maxYFromTimeline = Math.min(availableSpaceBelow, DRAGGABLE_ITEM.ALTERNATE_MAX_DISTANCE_DOWN);
       
       // Log bounds calculation for alternate mode only
       TimelineLogger.debug('🔍 ALTERNATE BOUNDS', {
         itemId: item.id,
         minY: minYFromTimeline,
-        maxY: maxYFromTimeline
+        maxY: maxYFromTimeline,
+        maxDistanceUp: DRAGGABLE_ITEM.ALTERNATE_MAX_DISTANCE_UP,
+        maxDistanceDown: DRAGGABLE_ITEM.ALTERNATE_MAX_DISTANCE_DOWN,
+        edgeBuffer: DRAGGABLE_ITEM.ALTERNATE_EDGE_BUFFER
       });
     } else {
       // For 'center' position: use full drag distance in both directions
@@ -188,7 +214,7 @@ export const createHandleMouseMove = ({
     const boundedY = Math.max(bounds.minY, Math.min(proposedY, bounds.maxY));
     
     // Only log when bounds are actually enforced in alternate mode
-    if (timelinePosition === 'alternate' && (boundedY !== proposedY || Math.abs(boundedMouseX - mouseXInContainer) > 1)) {
+    if (timelinePosition === 'alternate' && (boundedY !== proposedY || Math.abs(boundedMouseX - mouseXInContainer) > DRAGGABLE_ITEM.MOUSE_POSITION_TOLERANCE)) {
       TimelineLogger.debug('🚨 ALTERNATE BOUNDS ENFORCED', {
         itemId: item.id,
         proposedY,
