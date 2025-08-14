@@ -16,97 +16,12 @@ import loadHiddenItemsFromStorage from '../functions/loadHiddenItemsFromStorage'
 // Helper functions for Monday.com storage persistence
 // loadHiddenItemsFromStorage now imported from functions directory and called with (storageService, HIDDEN_ITEMS_KEY)
 
-const saveHiddenItemsToStorage = async (hiddenItemIds) => {
-  if (!storageService) {
-    TimelineLogger.debug('Storage service not initialized, skipping save');
-    return;
-  }
-  
-  try {
-    // Ensure we're saving an array
-    const itemsToSave = Array.isArray(hiddenItemIds) ? hiddenItemIds : [];
-    
-    TimelineLogger.debug('Saving hidden items to Monday storage', { 
-      count: itemsToSave.length,
-      items: itemsToSave,
-      type: typeof itemsToSave
-    });
-    
-    const response = await storageService.setInstanceItem(HIDDEN_ITEMS_KEY, itemsToSave);
-    if (response?.data?.success) {
-      TimelineLogger.debug('Successfully saved hidden items to Monday storage', { count: itemsToSave.length });
-    } else {
-      TimelineLogger.error('Failed to save hidden items to Monday storage', response?.data?.error);
-    }
-  } catch (error) {
-    TimelineLogger.error('Failed to save hidden items to Monday storage', error);
-  }
-};
+import saveHiddenItemsToStorage from '../functions/saveHiddenItemsToStorage';
 
 // Helper functions for item positions storage
-const loadItemPositionsFromStorage = async (boardId) => {
-  if (!storageService || !boardId) {
-    TimelineLogger.debug('Storage service not initialized or no boardId, returning empty object');
-    return {};
-  }
-  
-  try {
-    const storageKey = `${ITEM_POSITIONS_KEY_PREFIX}-${boardId}`;
-    const response = await storageService.getInstanceItem(storageKey);
-    
-    if (response?.data?.success && response.data.value) {
-      const positionData = response.data.value;
-      
-      // Validate the structure
-      if (positionData && typeof positionData === 'object' && positionData.itemPositions) {
-        TimelineLogger.debug('Loaded item positions from Monday storage', {
-          boardId,
-          positionSetting: positionData.positionSetting,
-          itemCount: Object.keys(positionData.itemPositions).length
-        });
-        return positionData;
-      }
-    }
-    return { boardId, positionSetting: null, itemPositions: {} };
-  } catch (error) {
-    TimelineLogger.error('Failed to load item positions from Monday storage', error);
-    return { boardId, positionSetting: null, itemPositions: {} };
-  }
-};
+import loadItemPositionsFromStorage from '../functions/loadItemPositionsFromStorage';
 
-const saveItemPositionsToStorage = async (boardId, positionSetting, itemPositions) => {
-  if (!storageService || !boardId) {
-    TimelineLogger.debug('Storage service not initialized or no boardId, skipping save');
-    return;
-  }
-  
-  try {
-    const storageKey = `${ITEM_POSITIONS_KEY_PREFIX}-${boardId}`;
-    const dataToSave = {
-      boardId,
-      positionSetting,
-      itemPositions: itemPositions || {}
-    };
-    
-    TimelineLogger.debug('Saving item positions to Monday storage', {
-      boardId,
-      positionSetting,
-      itemCount: Object.keys(dataToSave.itemPositions).length
-    });
-    
-    const response = await storageService.setInstanceItem(storageKey, dataToSave);
-    if (response?.data?.success) {
-      TimelineLogger.debug('Successfully saved item positions to Monday storage', {
-        boardId,
-        itemCount: Object.keys(dataToSave.itemPositions).length
-      });
-    } else {
-      TimelineLogger.error('Failed to save item positions to Monday storage', response?.data?.error);
-    }
-  } catch (error) {
-    TimelineLogger.error('Failed to save item positions to Monday storage', error);
-  }
-};
+import saveItemPositionsToStorage from '../functions/saveItemPositionsToStorage';
 
 export const useZustandStore = create((set, get) => ({
   settings: {},
@@ -176,7 +91,7 @@ export const useZustandStore = create((set, get) => ({
   },
   setHiddenItemIds: (hiddenItemIds) => {
     TimelineLogger.debug('setHiddenItemIds called', hiddenItemIds);
-    saveHiddenItemsToStorage(hiddenItemIds); // Persist to Monday storage (async)
+    saveHiddenItemsToStorage(storageService, hiddenItemIds); // Persist to Monday storage (async)
     set({ hiddenItemIds });
   },
   // Initialize Monday storage service and load hidden items
@@ -215,7 +130,7 @@ export const useZustandStore = create((set, get) => ({
     if (!hiddenItemIds.includes(itemId)) {
       const newHiddenIds = [...hiddenItemIds, itemId];
       TimelineLogger.userAction('timelineItemHidden', { itemId });
-      saveHiddenItemsToStorage(newHiddenIds); // Async save to Monday storage
+      saveHiddenItemsToStorage(storageService, newHiddenIds); // Async save to Monday storage
       set({ hiddenItemIds: newHiddenIds });
     }
   },
@@ -230,7 +145,7 @@ export const useZustandStore = create((set, get) => ({
   // Helper function to unhide all items
   unhideAllItems: () => {
     TimelineLogger.userAction('allItemsUnhidden');
-    saveHiddenItemsToStorage([]); // Async save to Monday storage
+    saveHiddenItemsToStorage(storageService, []); // Async save to Monday storage
     set({ hiddenItemIds: [] });
   },
   // Helper function to get count of hidden items
@@ -283,7 +198,7 @@ export const useZustandStore = create((set, get) => ({
     
     // Save to Monday storage (async)
     const { currentPositionSetting } = get();
-    saveItemPositionsToStorage(boardId, currentPositionSetting, updatedPositions);
+    saveItemPositionsToStorage(storageService, boardId, currentPositionSetting, updatedPositions);
   },
 
   updatePositionSetting: (newSetting) => {
@@ -323,7 +238,7 @@ export const useZustandStore = create((set, get) => ({
     });
     
     // Save to Monday storage (async)
-    saveItemPositionsToStorage(boardId, newSetting, updatedPositions);
+    saveItemPositionsToStorage(storageService, boardId, newSetting, updatedPositions);
   },
 
   clearCustomPositions: () => {
@@ -342,7 +257,7 @@ export const useZustandStore = create((set, get) => ({
     
     // Save to Monday storage (async)
     const { currentPositionSetting } = get();
-    saveItemPositionsToStorage(boardId, currentPositionSetting, {});
+    saveItemPositionsToStorage(storageService, boardId, currentPositionSetting, {});
   },
 
   initializeItemPositions: async (mondaySDK) => {
@@ -365,7 +280,7 @@ export const useZustandStore = create((set, get) => ({
         return;
       }
       
-      const positionData = await loadItemPositionsFromStorage(boardId);
+      const positionData = await loadItemPositionsFromStorage(storageService, boardId);
       
       TimelineLogger.debug('✅ Setting item positions in store', {
         boardId,

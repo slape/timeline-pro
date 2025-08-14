@@ -91,6 +91,10 @@ export const UI_COMPONENTS = {
   TIMELINE_TOP_CENTER: '50%',
 };
 
+// Storage keys for Monday.com instance storage
+export const HIDDEN_ITEMS_KEY = 'timeline-pro-hidden-items';
+export const ITEM_POSITIONS_KEY_PREFIX = 'timeline-pro-item-positions';
+
 export const DRAGGABLE_ITEM_STYLES = {
   // Z-index and visual effects
   Z_INDEX_DRAGGING: 1000,
