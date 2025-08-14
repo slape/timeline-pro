@@ -29,6 +29,7 @@ export const useZustandStore = create((set, get) => ({
   hiddenItemsLoaded: false, // Track if hidden items have been loaded from Monday storage
   // Item position persistence
   customItemPositions: {}, // { itemId: { x, y } }
+  customItemYDelta: {}, // { itemId: number } - Y-axis delta persistence
   currentPositionSetting: null, // Track position setting changes
   itemPositionsLoaded: false, // Loading state
   itemPositionsError: null, // Error handling
@@ -135,6 +136,11 @@ export const useZustandStore = create((set, get) => ({
 // Item position persistence methods
   saveCustomItemPosition: (itemId, position) => {
     return saveCustomItemPositionFn({ get, set, itemId, position, storageService });
+  },
+  // Y delta persistence method
+  saveCustomItemYDelta: (itemId, yDelta) => {
+    const { saveCustomItemYDelta } = require('../functions/saveCustomItemYDelta');
+    return saveCustomItemYDelta({ get, set, itemId, yDelta, storageService });
   },
 
   updatePositionSetting: (newSetting) => {

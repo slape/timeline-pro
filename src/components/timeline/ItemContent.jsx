@@ -62,10 +62,7 @@ const ItemContent = ({
         }}>
           <Text
             element="div"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenDatePicker();
-            }}
+            onClick={handleOpenDatePicker}
             style={{
               cursor: 'pointer',
               padding: '2px 4px',
@@ -74,7 +71,6 @@ const ItemContent = ({
               fontSize: 'inherit',
               lineHeight: 'inherit'
             }}
-            onMouseDown={e => e.stopPropagation()}
           >
             {formattedDate || 'Click to set date'}
           </Text>

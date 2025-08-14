@@ -11,7 +11,7 @@ import saveItemPositionsToStorage from './saveItemPositionsToStorage';
  * @param {any} storageService - Monday storage service
  */
 export function saveCustomItemPosition({ get, set, itemId, position, storageService }) {
-  const { customItemPositions, context } = get();
+  const { customItemPositions, customItemYDelta, context } = get();
   const boardId = context?.boardId;
 
   if (!boardId) {
@@ -28,5 +28,5 @@ export function saveCustomItemPosition({ get, set, itemId, position, storageServ
   set({ customItemPositions: updatedPositions });
 
   const { currentPositionSetting } = get();
-  saveItemPositionsToStorage(storageService, boardId, currentPositionSetting, updatedPositions);
+  saveItemPositionsToStorage(storageService, boardId, currentPositionSetting, updatedPositions, customItemYDelta);
 }

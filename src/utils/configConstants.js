@@ -33,6 +33,11 @@ export const DRAGGABLE_ITEM = {
   BOUNDS_MAX_X: 95,         // Maximum X position percentage
   BOUNDS_MIN_Y: -250,       // Minimum Y position in pixels
   BOUNDS_MAX_Y: 250,        // Maximum Y position in pixels
+
+  CIRCLE_SIZE: 90,
+  RECTANGLE_WIDTH: 110,
+  RECTANGLE_HEIGHT_WITH_DATES: 90,
+  RECTANGLE_HEIGHT_WITHOUT_DATES: 70,
   
   // Position-specific drag distances - AFFECTS DRAG DISTANCE BY TIMELINE POSITION
   // 'Above' position (timeline at 25% from top)

@@ -1,7 +1,8 @@
 import TimelineLogger from '../utils/logger';
 import { ITEM_POSITIONS_KEY_PREFIX } from '../utils/configConstants';
 
-const saveItemPositionsToStorage = async (storageService, boardId, positionSetting, itemPositions) => {
+const saveItemPositionsToStorage = async (storageService, boardId, positionSetting, itemPositions, itemYDelta = {}) => {
+  TimelineLogger.debug('[Y-DELTA] saveItemPositionsToStorage called', { boardId, positionSetting, itemPositions, itemYDelta });
   if (!storageService || !boardId) {
     TimelineLogger.debug('Storage service not initialized or no boardId, skipping save');
     return;
@@ -11,12 +12,14 @@ const saveItemPositionsToStorage = async (storageService, boardId, positionSetti
     const dataToSave = {
       boardId,
       positionSetting,
-      itemPositions: itemPositions || {}
+      itemPositions: itemPositions || {},
+      itemYDelta: itemYDelta || {}
     };
     TimelineLogger.debug('Saving item positions to Monday storage', {
       boardId,
       positionSetting,
-      itemCount: Object.keys(dataToSave.itemPositions).length
+      itemCount: Object.keys(dataToSave.itemPositions).length,
+      yDeltaCount: Object.keys(dataToSave.itemYDelta || {}).length
     });
     const response = await storageService.setInstanceItem(storageKey, dataToSave);
     if (response?.data?.success) {

@@ -25,6 +25,7 @@ export const createHandleMouseDown = ({
   position
 }) => {
   return (e) => {
+    TimelineLogger.debug('[DRAG-DEBUG] createHandleMouseDown fired', {});
     // Only start drag on primary mouse button
     if (e.button !== 0) return;
     
@@ -73,6 +74,7 @@ export const createHandleMouseMove = ({
   timelinePosition
 }) => {
   return (e) => {
+    TimelineLogger.debug('[DRAG-DEBUG] createHandleMouseMove fired', {});
     if (!containerRef.current) return;
     
     // Get timeline container dimensions dynamically
@@ -109,11 +111,11 @@ export const createHandleMouseMove = ({
     };
     
     // AGGRESSIVE DEBUG: Always log constants to verify import
-    console.log('🚨 CONSTANTS IMPORT CHECK:', {
-      ALTERNATE_MAX_DISTANCE: DRAGGABLE_ITEM.ALTERNATE_MAX_DISTANCE,
-      ALTERNATE_EDGE_BUFFER: DRAGGABLE_ITEM.ALTERNATE_EDGE_BUFFER,
-      timelinePosition: timelinePosition
-    });
+    // console.log('🚨 CONSTANTS IMPORT CHECK:', {
+    //   ALTERNATE_MAX_DISTANCE: DRAGGABLE_ITEM.ALTERNATE_MAX_DISTANCE,
+    //   ALTERNATE_EDGE_BUFFER: DRAGGABLE_ITEM.ALTERNATE_EDGE_BUFFER,
+    //   timelinePosition: timelinePosition
+    // });
     
     // Only log timeline position for alternate mode
     if (timelinePosition === 'alternate') {
@@ -156,14 +158,14 @@ export const createHandleMouseMove = ({
       maxYFromTimeline = DRAGGABLE_ITEM.BELOW_MAX_DISTANCE_DOWN;
       
       // Debug logging for below position
-      TimelineLogger.debug('🔍 BELOW BOUNDS', {
-        itemId: item.id,
-        minY: minYFromTimeline,
-        maxY: maxYFromTimeline,
-        maxDistanceUp: DRAGGABLE_ITEM.BELOW_MAX_DISTANCE_UP,
-        maxDistanceDown: DRAGGABLE_ITEM.BELOW_MAX_DISTANCE_DOWN,
-        topBuffer: DRAGGABLE_ITEM.BELOW_TOP_BUFFER
-      });
+      // TimelineLogger.debug('🔍 BELOW BOUNDS', {
+      //   itemId: item.id,
+      //   minY: minYFromTimeline,
+      //   maxY: maxYFromTimeline,
+      //   maxDistanceUp: DRAGGABLE_ITEM.BELOW_MAX_DISTANCE_UP,
+      //   maxDistanceDown: DRAGGABLE_ITEM.BELOW_MAX_DISTANCE_DOWN,
+      //   topBuffer: DRAGGABLE_ITEM.BELOW_TOP_BUFFER
+      // });
     } else if (timelinePosition === 'alternate') {
       // For 'alternate' position: use granular up/down limits for fine control
       
@@ -259,6 +261,7 @@ export const createHandleMouseUp = ({
   position
 }) => {
   return () => {
+    TimelineLogger.debug('[DRAG-DEBUG] createHandleMouseUp fired', {});
     setIsDragging(false);
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);

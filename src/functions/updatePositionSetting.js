@@ -39,7 +39,8 @@ export function updatePositionSetting({ get, set, newSetting, storageService }) 
 
   set({
     currentPositionSetting: newSetting,
-    customItemPositions: updatedPositions
+    customItemPositions: updatedPositions,
+    customItemYDelta: {}, // Reset all Y deltas on position setting change
   });
 
   saveItemPositionsToStorage(storageService, boardId, newSetting, updatedPositions);

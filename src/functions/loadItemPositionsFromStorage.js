@@ -16,9 +16,13 @@ const loadItemPositionsFromStorage = async (storageService, boardId) => {
         TimelineLogger.debug('Loaded item positions from Monday storage', {
           boardId,
           positionSetting: positionData.positionSetting,
-          itemCount: Object.keys(positionData.itemPositions).length
+          itemCount: Object.keys(positionData.itemPositions).length,
+          yDeltaCount: Object.keys(positionData.itemYDelta || {}).length
         });
-        return positionData;
+        return {
+          ...positionData,
+          itemYDelta: positionData.itemYDelta || {}
+        };
       }
     }
     return { boardId, positionSetting: null, itemPositions: {} };

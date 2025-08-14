@@ -18,8 +18,11 @@ export function clearCustomPositions({ get, set, storageService }) {
   }
 
   TimelineLogger.debug('Clearing all custom item positions', { boardId });
-  set({ customItemPositions: {} });
+  set({ customItemPositions: {}, customItemYDelta: {} });
 
   const { currentPositionSetting } = get();
   saveItemPositionsToStorage(storageService, boardId, currentPositionSetting, {});
+  // Persist cleared deltas if you add delta storage persistence in the future
+  // e.g. saveItemYDeltaToStorage(storageService, boardId, {})
+
 }

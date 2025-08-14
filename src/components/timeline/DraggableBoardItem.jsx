@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import TimelineLogger from '../../utils/logger';
 import DatePickerModal from './DatePickerModal';
 import ItemContainer from './ItemContainer';
 import { getContainerStyles, getInnerWrapperStyles } from '../../functions/draggableItemStyles';
 import { getShapeStyles } from '../../functions/getShapeStyles';
 import './DraggableBoardItem.css';
 import { useZustandStore } from '../../store/useZustand';
+import { getDefaultItemYPosition } from '../../functions/getDefaultItemYPosition';
 import { useDraggableItemState } from '../../hooks/useDraggableItemState';
 import { useDateHandling } from '../../hooks/useDateHandling';
 import { useMouseHandlers } from '../../hooks/useMouseHandlers';
@@ -65,10 +67,13 @@ const DraggableBoardItem = ({
   const { id } = item;
   
   // Get context, settings, and store methods from zustand store for board ID, date column, and timeline refresh
-  const { 
+  const {
     settings, 
     context, 
-    updateBoardItemDate
+    updateBoardItemDate,
+    saveCustomItemYDelta,
+    boardItems,
+    timelineParams
   } = useZustandStore();
   
   // Get position setting for bounds calculation
@@ -116,6 +121,43 @@ const DraggableBoardItem = ({
   }, [shape, showItemDates]);
 
   // Use custom hook for mouse handlers
+  // --- Custom drag end logic for Y delta persistence ---
+  // Wrap the position change callback to persist Y delta on drag end
+  const handlePositionChangeWithYDelta = (itemId, newPosition) => {
+  TimelineLogger.debug('[Y-DELTA] handlePositionChangeWithYDelta called', { itemId, newPosition });
+    // Call the original position change logic
+    if (onPositionChange) {
+    TimelineLogger.debug('[Y-DELTA] Calling onPositionChange', { itemId, newPosition });
+    onPositionChange(itemId, newPosition);
+    }
+    // Calculate and persist Y delta
+    if (boardItems && timelineParams?.startDate && timelineParams?.endDate && settings?.position) {
+    TimelineLogger.debug('[Y-DELTA] Calculating default Y position', {
+      itemId,
+      boardItems,
+      startDate: timelineParams.startDate,
+      endDate: timelineParams.endDate,
+      position: settings.position
+    });
+      const defaultY = getDefaultItemYPosition({
+      items: boardItems,
+      itemId,
+      startDate: timelineParams.startDate,
+      endDate: timelineParams.endDate,
+      position: settings.position
+    });
+    TimelineLogger.debug('[Y-DELTA] Default Y position calculated', { itemId, defaultY });
+      if (typeof defaultY === 'number' && typeof newPosition.y === 'number') {
+      TimelineLogger.debug('[Y-DELTA] Calculating Y delta', { itemId, draggedY: newPosition.y, defaultY });
+        const yDelta = newPosition.y - defaultY;
+      TimelineLogger.debug('[Y-DELTA] Calculated Y delta', { itemId, yDelta });
+      TimelineLogger.debug('[Y-DELTA] Saving Y delta', { itemId, yDelta });
+      saveCustomItemYDelta(itemId, yDelta);
+      TimelineLogger.debug('[Y-DELTA] Called saveCustomItemYDelta', { itemId, yDelta });
+      }
+    }
+  };
+
   const {
     handleMouseDown,
     handleMouseMove,
@@ -132,7 +174,7 @@ const DraggableBoardItem = ({
     setSize,
     setIsDragging,
     setIsResizing,
-    onPositionChange,
+    onPositionChange: handlePositionChangeWithYDelta,
     item,
     timelinePosition
   });
@@ -190,7 +232,10 @@ const DraggableBoardItem = ({
         }
       }}
       style={containerStyles}
-      onMouseDown={handleMouseDown}
+      onMouseDown={e => {
+        TimelineLogger.debug('[DRAG-DEBUG] handleMouseDown fired on outer div', { itemId: item.id });
+        handleMouseDown(e);
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -207,7 +252,10 @@ const DraggableBoardItem = ({
         showItemDates={showItemDates}
         formattedDate={formattedDate}
         handleNameChange={handleNameChange}
-        handleMouseDown={handleMouseDown}
+        handleMouseDown={e => {
+          TimelineLogger.debug('[DRAG-DEBUG] handleMouseDown fired in ItemContainer', { itemId: item.id });
+          handleMouseDown(e);
+        }}
         handleOpenDatePicker={handleOpenDatePicker}
       />
       

@@ -12,7 +12,8 @@ import TimelineLogger from '../utils/logger';
  * @param {Object} customPositions - Custom user positions { itemId: { x, y } }
  * @returns {Array} Array of items with resolved render positions
  */
-export function resolveItemPositions(items, startDate, endDate, position, customPositions = {}) {
+// Accepts customItemYDelta as an additional argument
+export function resolveItemPositions(items, startDate, endDate, position, customPositions = {}, customItemYDelta = {}) {
   if (!items || items.length === 0) {
     TimelineLogger.debug('resolveItemPositions: No items provided');
     return [];
@@ -41,22 +42,16 @@ export function resolveItemPositions(items, startDate, endDate, position, custom
   // Step 2: Override with custom positions where they exist
   const resolvedItems = itemsWithDefaultPositions.map(item => {
     const customPosition = customPositions[item.id];
+    const yDelta = customItemYDelta[item.id] || 0;
     
     if (customPosition) {
       // Use custom position, but preserve other render position properties
       const resolvedPosition = {
         ...item.renderPosition,
         x: customPosition.x,
-        y: customPosition.y,
+        y: customPosition.y + yDelta,
         isCustom: true // Mark as custom for debugging/UI purposes
       };
-      
-      TimelineLogger.debug('resolveItemPositions: Applied custom position', {
-        itemId: item.id,
-        defaultPosition: { x: item.renderPosition.x, y: item.renderPosition.y },
-        customPosition: { x: customPosition.x, y: customPosition.y }
-      });
-      
       return {
         ...item,
         renderPosition: resolvedPosition
@@ -67,6 +62,7 @@ export function resolveItemPositions(items, startDate, endDate, position, custom
         ...item,
         renderPosition: {
           ...item.renderPosition,
+          y: item.renderPosition.y + yDelta,
           isCustom: false
         }
       };

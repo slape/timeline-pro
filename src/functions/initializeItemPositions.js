@@ -9,6 +9,7 @@ import loadItemPositionsFromStorage from './loadItemPositionsFromStorage';
  * @param {any} storageService - Monday storage service
  */
 export async function initializeItemPositions({ get, set, storageService }) {
+  TimelineLogger.debug('[Y-DELTA] initializeItemPositions called', { hasStorageService: !!storageService });
   const { context } = get();
   const boardId = context?.boardId;
 
@@ -34,9 +35,15 @@ export async function initializeItemPositions({ get, set, storageService }) {
     });
     set({
       customItemPositions: positionData.itemPositions || {},
+      customItemYDelta: positionData.itemYDelta || {},
       currentPositionSetting: positionData.positionSetting,
       itemPositionsLoaded: true,
       itemPositionsError: null
+    });
+    TimelineLogger.debug('[Y-DELTA] Zustand store updated in initializeItemPositions', {
+      customItemPositions: positionData.itemPositions || {},
+      customItemYDelta: positionData.itemYDelta || {},
+      currentPositionSetting: positionData.positionSetting
     });
     TimelineLogger.debug('✅ Item positions loaded and store updated', {
       itemCount: Object.keys(positionData.itemPositions || {}).length,

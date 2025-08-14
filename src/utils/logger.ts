@@ -74,7 +74,9 @@ class TimelineLogger {
       '🔍 ALTERNATE BOUNDS',
       '🔍 ABOVE BOUNDS',
       '🔍 BELOW BOUNDS',
-      '🚨 ALTERNATE BOUNDS ENFORCED'
+      '🚨 ALTERNATE BOUNDS ENFORCED',
+      '[DRAG-DEBUG]',
+      '[Y-DELTA]'
     ];
     
     const isCritical = criticalKeywords.some(keyword => message.includes(keyword));
