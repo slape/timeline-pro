@@ -1,11 +1,14 @@
-import { useState } from 'react';
-import { formatDateForDisplay, getCurrentMoment } from '../functions/dateFormatUtils';
+import { useState } from "react";
+import {
+  formatDateForDisplay,
+  getCurrentMoment,
+} from "../functions/dateFormatUtils";
 
 /**
  * Custom hook to manage date picker and date formatting logic
  * Consolidates all date-related state and operations
  */
-export const useDateHandling = (initialDate) => {
+export const useDateHandling = () => {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -35,15 +38,15 @@ export const useDateHandling = (initialDate) => {
     // State
     isDatePickerOpen,
     selectedDate,
-    
+
     // Actions
     openDatePicker,
     closeDatePicker,
     handleDateChange,
     setIsDatePickerOpen,
     setSelectedDate,
-    
+
     // Utilities
-    getFormattedDate
+    getFormattedDate,
   };
 };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 /**
  * Resize handle component for timeline items
@@ -6,19 +6,19 @@ import React from 'react';
  */
 const ItemResizeHandle = ({ onMouseDown }) => {
   return (
-    <div 
+    <div
       onMouseDown={onMouseDown}
       style={{
-        position: 'absolute',
+        position: "absolute",
         bottom: 0,
         right: 0,
-        width: '16px',
-        height: '16px',
-        cursor: 'nwse-resize',
+        width: "16px",
+        height: "16px",
+        cursor: "nwse-resize",
         zIndex: 1001,
-        pointerEvents: 'auto',
-        background: 'transparent',
-        opacity: 0
+        pointerEvents: "auto",
+        background: "transparent",
+        opacity: 0,
       }}
     />
   );

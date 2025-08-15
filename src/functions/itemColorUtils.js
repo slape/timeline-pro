@@ -10,7 +10,7 @@
  */
 export const getItemColor = (item) => {
   const groupColor = item?.originalItem?.group?.color;
-  return groupColor || 'var(--primary-color)';
+  return groupColor || "var(--primary-color)";
 };
 
 /**

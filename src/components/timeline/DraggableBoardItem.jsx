@@ -1,26 +1,26 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import TimelineLogger from '../../utils/logger';
-import DatePickerModal from './DatePickerModal';
-import ItemContainer from './ItemContainer';
-import { getContainerStyles, getInnerWrapperStyles } from '../../functions/draggableItemStyles';
-import { getShapeStyles } from '../../functions/getShapeStyles';
-import './DraggableBoardItem.css';
-import { useZustandStore } from '../../store/useZustand';
-import { getDefaultItemYPosition } from '../../functions/getDefaultItemYPosition';
-import { useDraggableItemState } from '../../hooks/useDraggableItemState';
-import { useDateHandling } from '../../hooks/useDateHandling';
-import { useMouseHandlers } from '../../hooks/useMouseHandlers';
-import { getItemColor } from '../../functions/itemColorUtils';
-import { calculateInitialSize } from '../../functions/itemSizeUtils';
-import handleItemNameChange from '../../functions/handleItemNameChange';
-import handleSaveDate from '../../functions/handleSaveDate';
-import mondaySdk from 'monday-sdk-js';
+import React, { useState, useEffect } from "react";
+import TimelineLogger from "../../utils/logger";
+import DatePickerModal from "./DatePickerModal";
+import ItemContainer from "./ItemContainer";
+import { getContainerStyles } from "../../functions/draggableItemStyles";
+import { getShapeStyles } from "../../functions/getShapeStyles";
+import "./DraggableBoardItem.css";
+import { useZustandStore } from "../../store/useZustand";
+import { getDefaultItemYPosition } from "../../functions/getDefaultItemYPosition";
+import { useDraggableItemState } from "../../hooks/useDraggableItemState";
+import { useDateHandling } from "../../hooks/useDateHandling";
+import { useMouseHandlers } from "../../hooks/useMouseHandlers";
+import { getItemColor } from "../../functions/itemColorUtils";
+import { calculateInitialSize } from "../../functions/itemSizeUtils";
+import handleItemNameChange from "../../functions/handleItemNameChange";
+import handleSaveDate from "../../functions/handleSaveDate";
+import mondaySdk from "monday-sdk-js";
 
 const monday = mondaySdk();
 
 /**
  * DraggableBoardItem component that renders a draggable item from monday.com board
- * 
+ *
  * @param {Object} props - Component props
  * @param {Object} props.item - The board item data from monday.com
  * @param {string} props.item.id - Unique identifier for the item
@@ -36,15 +36,15 @@ const monday = mondaySdk();
  * @param {Function} props.onPositionChange - Callback when item position changes (id, {x, y})
  * @returns {JSX.Element} - Draggable board item component
  */
-const DraggableBoardItem = ({ 
+const DraggableBoardItem = ({
   onClick,
   item,
   date,
   shape,
-  onLabelChange, 
-  onHideItem, 
+  onLabelChange,
+  onHideItem,
   showItemDates,
-  onPositionChange // New prop for notifying position changes
+  onPositionChange, // New prop for notifying position changes
 }) => {
   // Use custom hook for draggable item state management
   const {
@@ -52,33 +52,28 @@ const DraggableBoardItem = ({
     setPosition,
     isDragging,
     setIsDragging,
-    isResizing,
-    setIsResizing,
     isHovered,
     setIsHovered,
     dragStartPos,
     dragOffset,
     startSize,
     itemRef,
-    containerRef
+    containerRef,
   } = useDraggableItemState();
-  
-  // Timeline items are processed objects; original monday item is nested under originalItem
-  const { id } = item;
-  
+
   // Get context, settings, and store methods from zustand store for board ID, date column, and timeline refresh
   const {
-    settings, 
-    context, 
+    settings,
+    context,
     updateBoardItemDate,
     saveCustomItemYDelta,
     boardItems,
-    timelineParams
+    timelineParams,
   } = useZustandStore();
-  
+
   // Get position setting for bounds calculation
-  const timelinePosition = settings?.position || 'below';
-  
+  const timelinePosition = settings?.position || "below";
+
   // Use custom hook for date handling
   const {
     isDatePickerOpen,
@@ -88,20 +83,22 @@ const DraggableBoardItem = ({
     handleDateChange,
     setIsDatePickerOpen,
     setSelectedDate,
-    getFormattedDate
+    getFormattedDate,
   } = useDateHandling(date);
 
   // Initialize size using utility function
-  const [size, setSize] = useState(() => calculateInitialSize(shape, showItemDates, true));
+  const [size, setSize] = useState(() =>
+    calculateInitialSize(shape, showItemDates, true),
+  );
 
   // Calculate initial position based on the item's date
   useEffect(() => {
     if (itemRef.current && containerRef.current) {
       // Center the item horizontally by default (50% of the container)
       const initialX = 50;
-      setPosition(prev => ({
+      setPosition((prev) => ({
         x: initialX,
-        y: prev.y
+        y: prev.y,
       }));
     }
   }, [size.width]);
@@ -124,36 +121,60 @@ const DraggableBoardItem = ({
   // --- Custom drag end logic for Y delta persistence ---
   // Wrap the position change callback to persist Y delta on drag end
   const handlePositionChangeWithYDelta = (itemId, newPosition) => {
-  TimelineLogger.debug('[Y-DELTA] handlePositionChangeWithYDelta called', { itemId, newPosition });
+    TimelineLogger.debug("[Y-DELTA] handlePositionChangeWithYDelta called", {
+      itemId,
+      newPosition,
+    });
     // Call the original position change logic
     if (onPositionChange) {
-    TimelineLogger.debug('[Y-DELTA] Calling onPositionChange', { itemId, newPosition });
-    onPositionChange(itemId, newPosition);
+      TimelineLogger.debug("[Y-DELTA] Calling onPositionChange", {
+        itemId,
+        newPosition,
+      });
+      onPositionChange(itemId, newPosition);
     }
     // Calculate and persist Y delta
-    if (boardItems && timelineParams?.startDate && timelineParams?.endDate && settings?.position) {
-    TimelineLogger.debug('[Y-DELTA] Calculating default Y position', {
-      itemId,
-      boardItems,
-      startDate: timelineParams.startDate,
-      endDate: timelineParams.endDate,
-      position: settings.position
-    });
+    if (
+      boardItems &&
+      timelineParams?.startDate &&
+      timelineParams?.endDate &&
+      settings?.position
+    ) {
+      TimelineLogger.debug("[Y-DELTA] Calculating default Y position", {
+        itemId,
+        boardItems,
+        startDate: timelineParams.startDate,
+        endDate: timelineParams.endDate,
+        position: settings.position,
+      });
       const defaultY = getDefaultItemYPosition({
-      items: boardItems,
-      itemId,
-      startDate: timelineParams.startDate,
-      endDate: timelineParams.endDate,
-      position: settings.position
-    });
-    TimelineLogger.debug('[Y-DELTA] Default Y position calculated', { itemId, defaultY });
-      if (typeof defaultY === 'number' && typeof newPosition.y === 'number') {
-      TimelineLogger.debug('[Y-DELTA] Calculating Y delta', { itemId, draggedY: newPosition.y, defaultY });
+        items: boardItems,
+        itemId,
+        startDate: timelineParams.startDate,
+        endDate: timelineParams.endDate,
+        position: settings.position,
+      });
+      TimelineLogger.debug("[Y-DELTA] Default Y position calculated", {
+        itemId,
+        defaultY,
+      });
+      if (typeof defaultY === "number" && typeof newPosition.y === "number") {
+        TimelineLogger.debug("[Y-DELTA] Calculating Y delta", {
+          itemId,
+          draggedY: newPosition.y,
+          defaultY,
+        });
         const yDelta = newPosition.y - defaultY;
-      TimelineLogger.debug('[Y-DELTA] Calculated Y delta', { itemId, yDelta });
-      TimelineLogger.debug('[Y-DELTA] Saving Y delta', { itemId, yDelta });
-      saveCustomItemYDelta(itemId, yDelta);
-      TimelineLogger.debug('[Y-DELTA] Called saveCustomItemYDelta', { itemId, yDelta });
+        TimelineLogger.debug("[Y-DELTA] Calculated Y delta", {
+          itemId,
+          yDelta,
+        });
+        TimelineLogger.debug("[Y-DELTA] Saving Y delta", { itemId, yDelta });
+        saveCustomItemYDelta(itemId, yDelta);
+        TimelineLogger.debug("[Y-DELTA] Called saveCustomItemYDelta", {
+          itemId,
+          yDelta,
+        });
       }
     }
   };
@@ -162,7 +183,7 @@ const DraggableBoardItem = ({
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
-    handleResizeMouseDown
+    handleResizeMouseDown,
   } = useMouseHandlers({
     containerRef,
     dragStartPos,
@@ -173,12 +194,11 @@ const DraggableBoardItem = ({
     size,
     setSize,
     setIsDragging,
-    setIsResizing,
     onPositionChange: handlePositionChangeWithYDelta,
     item,
-    timelinePosition
+    timelinePosition,
   });
-  
+
   // Handle item name change
   const handleNameChange = async (newName) => {
     await handleItemNameChange({
@@ -186,15 +206,15 @@ const DraggableBoardItem = ({
       item,
       context,
       monday,
-      onLabelChange
+      onLabelChange,
     });
   };
-  
+
   // Handle opening the date picker modal
   const handleOpenDatePicker = () => {
     openDatePicker(date);
   };
-  
+
   // Handle saving the selected date
   const handleSaveDateWrapper = () => {
     return handleSaveDate({
@@ -207,33 +227,35 @@ const DraggableBoardItem = ({
       setIsDatePickerOpen,
       setSelectedDate,
       onLabelChange,
-      date
+      date,
     });
   };
 
   // Clean up event listeners on unmount
   useEffect(() => {
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
 
   const containerStyles = getContainerStyles(position, size, isDragging);
-  const innerWrapperStyles = getInnerWrapperStyles();
 
   return (
     <div
-      ref={el => {
+      ref={(el) => {
         itemRef.current = el;
         // Also set the container ref when the element mounts/updates
         if (el) {
-          containerRef.current = el.closest('.timeline-container');
+          containerRef.current = el.closest(".timeline-container");
         }
       }}
       style={containerStyles}
-      onMouseDown={e => {
-        TimelineLogger.debug('[DRAG-DEBUG] handleMouseDown fired on outer div', { itemId: item.id });
+      onMouseDown={(e) => {
+        TimelineLogger.debug(
+          "[DRAG-DEBUG] handleMouseDown fired on outer div",
+          { itemId: item.id },
+        );
         handleMouseDown(e);
       }}
       onMouseEnter={() => setIsHovered(true)}
@@ -252,13 +274,16 @@ const DraggableBoardItem = ({
         showItemDates={showItemDates}
         formattedDate={formattedDate}
         handleNameChange={handleNameChange}
-        handleMouseDown={e => {
-          TimelineLogger.debug('[DRAG-DEBUG] handleMouseDown fired in ItemContainer', { itemId: item.id });
+        handleMouseDown={(e) => {
+          TimelineLogger.debug(
+            "[DRAG-DEBUG] handleMouseDown fired in ItemContainer",
+            { itemId: item.id },
+          );
           handleMouseDown(e);
         }}
         handleOpenDatePicker={handleOpenDatePicker}
       />
-      
+
       {/* Date Picker Modal */}
       <DatePickerModal
         isOpen={isDatePickerOpen}

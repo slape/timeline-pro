@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import handleTimelineItemPositionChange from '../functions/handleTimelineItemPositionChange';
+import { useCallback } from "react";
+import handleTimelineItemPositionChange from "../functions/handleTimelineItemPositionChange";
 
 /**
  * Custom hook to manage timeline callback functions
@@ -10,9 +10,18 @@ import handleTimelineItemPositionChange from '../functions/handleTimelineItemPos
  */
 export const useTimelineCallbacks = (startDate, endDate, onItemMove) => {
   // Handle item position changes during drag
-  const onPositionChange = useCallback((itemId, newPosition) => {
-    handleTimelineItemPositionChange(itemId, newPosition, startDate, endDate, onItemMove);
-  }, [startDate, endDate, onItemMove]);
+  const onPositionChange = useCallback(
+    (itemId, newPosition) => {
+      handleTimelineItemPositionChange(
+        itemId,
+        newPosition,
+        startDate,
+        endDate,
+        onItemMove,
+      );
+    },
+    [startDate, endDate, onItemMove],
+  );
 
   return {
     onPositionChange,

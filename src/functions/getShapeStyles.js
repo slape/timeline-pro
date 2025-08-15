@@ -5,19 +5,18 @@
  */
 export const getShapeStyles = (shape) => {
   switch (shape) {
-    case 'circle':
+    case "circle":
       return {
-        borderRadius: '50%',
-        aspectRatio: '1 / 1',
-        width: '100%',
-        height: '100%',
+        borderRadius: "50%",
+        aspectRatio: "1 / 1",
+        width: "100%",
+        height: "100%",
       };
 
-
-    case 'rectangle':
+    case "rectangle":
     default:
       return {
-        borderRadius: '6px',
+        borderRadius: "6px",
       };
   }
 };

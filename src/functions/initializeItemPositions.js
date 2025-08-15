@@ -1,5 +1,5 @@
-import TimelineLogger from '../utils/logger';
-import loadItemPositionsFromStorage from './loadItemPositionsFromStorage';
+import TimelineLogger from "../utils/logger";
+import loadItemPositionsFromStorage from "./loadItemPositionsFromStorage";
 
 /**
  * Initializes item positions from Monday.com storage and updates the store.
@@ -9,51 +9,69 @@ import loadItemPositionsFromStorage from './loadItemPositionsFromStorage';
  * @param {any} storageService - Monday storage service
  */
 export async function initializeItemPositions({ get, set, storageService }) {
-  TimelineLogger.debug('[Y-DELTA] initializeItemPositions called', { hasStorageService: !!storageService });
+  TimelineLogger.debug("[Y-DELTA] initializeItemPositions called", {
+    hasStorageService: !!storageService,
+  });
   const { context } = get();
   const boardId = context?.boardId;
 
   if (!boardId) {
-    TimelineLogger.warn('Cannot initialize item positions: no boardId available');
-    set({ itemPositionsLoaded: true, itemPositionsError: 'No board ID available' });
+    TimelineLogger.warn(
+      "Cannot initialize item positions: no boardId available",
+    );
+    set({
+      itemPositionsLoaded: true,
+      itemPositionsError: "No board ID available",
+    });
     return;
   }
 
   try {
-    TimelineLogger.debug('🔄 Loading item positions from Monday storage...', { boardId });
+    TimelineLogger.debug("🔄 Loading item positions from Monday storage...", {
+      boardId,
+    });
     if (!storageService) {
-      TimelineLogger.warn('Storage service not initialized for item positions');
-      set({ itemPositionsLoaded: true, itemPositionsError: 'Storage service not available' });
+      TimelineLogger.warn("Storage service not initialized for item positions");
+      set({
+        itemPositionsLoaded: true,
+        itemPositionsError: "Storage service not available",
+      });
       return;
     }
-    const positionData = await loadItemPositionsFromStorage(storageService, boardId);
-    TimelineLogger.debug('✅ Setting item positions in store', {
+    const positionData = await loadItemPositionsFromStorage(
+      storageService,
+      boardId,
+    );
+    TimelineLogger.debug("✅ Setting item positions in store", {
       boardId,
       positionSetting: positionData.positionSetting,
       itemCount: Object.keys(positionData.itemPositions || {}).length,
-      itemPositionsLoaded: true
+      itemPositionsLoaded: true,
     });
     set({
       customItemPositions: positionData.itemPositions || {},
       customItemYDelta: positionData.itemYDelta || {},
       currentPositionSetting: positionData.positionSetting,
       itemPositionsLoaded: true,
-      itemPositionsError: null
+      itemPositionsError: null,
     });
-    TimelineLogger.debug('[Y-DELTA] Zustand store updated in initializeItemPositions', {
-      customItemPositions: positionData.itemPositions || {},
-      customItemYDelta: positionData.itemYDelta || {},
-      currentPositionSetting: positionData.positionSetting
-    });
-    TimelineLogger.debug('✅ Item positions loaded and store updated', {
+    TimelineLogger.debug(
+      "[Y-DELTA] Zustand store updated in initializeItemPositions",
+      {
+        customItemPositions: positionData.itemPositions || {},
+        customItemYDelta: positionData.itemYDelta || {},
+        currentPositionSetting: positionData.positionSetting,
+      },
+    );
+    TimelineLogger.debug("✅ Item positions loaded and store updated", {
       itemCount: Object.keys(positionData.itemPositions || {}).length,
-      itemPositionsLoaded: true
+      itemPositionsLoaded: true,
     });
   } catch (error) {
-    TimelineLogger.error('❌ Failed to initialize item positions', error);
+    TimelineLogger.error("❌ Failed to initialize item positions", error);
     set({
       itemPositionsLoaded: true,
-      itemPositionsError: error.message || 'Failed to load positions'
+      itemPositionsError: error.message || "Failed to load positions",
     });
   }
 }

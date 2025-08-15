@@ -2,16 +2,16 @@ import React from "react";
 import { useState, useEffect, useRef } from "react";
 import mondaySdk from "monday-sdk-js";
 import "@vibe/core/tokens";
-import TimelineBoard from './components/timeline/TimelineBoard';
+import TimelineBoard from "./components/timeline/TimelineBoard";
 import { Box, ThemeProvider, Flex } from "@vibe/core";
-import fetchBoardItems from './functions/fetchBoardItems';
-import ExportButton from './components/export/ExportButton';
-import HiddenItemsManager from './components/HiddenItemsManager';
-import TimelineLogger from './utils/logger';
-import Loading from './components/common/Loading';
-import { useZustandStore } from './store/useZustand';
-import IsViewOnly from './components/errors/IsViewOnly';
-import TooManyItems from './components/errors/TooManyItems';
+import fetchBoardItems from "./functions/fetchBoardItems";
+import ExportButton from "./components/export/ExportButton";
+import HiddenItemsManager from "./components/HiddenItemsManager";
+import TimelineLogger from "./utils/logger";
+import Loading from "./components/common/Loading";
+import { useZustandStore } from "./store/useZustand";
+import IsViewOnly from "./components/errors/IsViewOnly";
+import TooManyItems from "./components/errors/TooManyItems";
 
 // Usage of mondaySDK example, for more information visit here: https://developer.monday.com/apps/docs/introduction-to-the-sdk/
 const monday = mondaySdk();
@@ -47,7 +47,7 @@ const monday = mondaySdk();
  * @property {boolean} showDates - Show item dates setting
  */
 
-/** context type 
+/** context type
  * @typedef {Object} AppContext
  * @property {int} boardId - ID of the current board
  * @property {Object.<string, boolean>} user - User information
@@ -58,12 +58,25 @@ const monday = mondaySdk();
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { setContext, setSettings, setBoardItems, setItemIds, initializeMondayStorage } = useZustandStore();
-  const { context, itemIds, settings, boardItems, hiddenItemsLoaded, hiddenItemIds } = useZustandStore();
-  
+  const {
+    setContext,
+    setSettings,
+    setBoardItems,
+    setItemIds,
+    initializeMondayStorage,
+  } = useZustandStore();
+  const {
+    context,
+    itemIds,
+    settings,
+    boardItems,
+    hiddenItemsLoaded,
+    hiddenItemIds,
+  } = useZustandStore();
+
   // Debug logging for loading states
   React.useEffect(() => {
-    TimelineLogger.debug('🔍 App render state check', {
+    TimelineLogger.debug("🔍 App render state check", {
       hasContext: !!context,
       hasBoardItems: !!boardItems,
       hasSettings: !!settings,
@@ -71,9 +84,17 @@ const App = () => {
       hiddenItemsLoaded,
       hiddenItemsCount: hiddenItemIds?.length || 0,
       boardItemsCount: boardItems?.length || 0,
-      itemIdsCount: itemIds?.length || 0
+      itemIdsCount: itemIds?.length || 0,
     });
-  }, [context, boardItems, settings, isLoading, hiddenItemsLoaded, hiddenItemIds, itemIds]);
+  }, [
+    context,
+    boardItems,
+    settings,
+    isLoading,
+    hiddenItemsLoaded,
+    hiddenItemIds,
+    itemIds,
+  ]);
 
   // Track previous IDs to avoid unnecessary refetching (some SDKs re-emit same values)
   const prevBoardIdRef = useRef();
@@ -89,66 +110,70 @@ const App = () => {
 
   // Set up context listener
   useEffect(() => {
-    TimelineLogger.info('Setting up monday.com context listeners');
-    
+    TimelineLogger.info("Setting up monday.com context listeners");
+
     // Initialize Monday storage service for hidden items persistence
     initializeMondayStorage(monday);
-    
+
     // Notice this method notifies the monday platform that user gains a first value in an app.
     // Read more about it here: https://developer.monday.com/apps/docs/mondayexecute#value-created-for-user/
     monday.execute("valueCreatedForUser");
-    
+
     // Set up event listeners for context changes
     monday.listen("context", (res) => {
-      TimelineLogger.info('Context updated', { context: res.data });
+      TimelineLogger.info("Context updated", { context: res.data });
       TimelineLogger.appInitialized(res.data);
       setContext(res.data);
     });
     monday.listen("settings", (res) => {
-      TimelineLogger.info('Settings updated', { settings: res.data });
-      if (res.data.dateColumn 
-        && res.data.titleText === ''
-        && res.data.title === false
-        && res.data.dateFormat === null
-        && res.data.datePosition === null
-        && res.data.scale === null
-        && res.data.position === null
-        && res.data.shape === null
-        && res.data.ledger === false
-        && res.data.itemDates === false) {
-        monday.set('settings', {
+      TimelineLogger.info("Settings updated", { settings: res.data });
+      if (
+        res.data.dateColumn &&
+        res.data.titleText === "" &&
+        res.data.title === false &&
+        res.data.dateFormat === null &&
+        res.data.datePosition === null &&
+        res.data.scale === null &&
+        res.data.position === null &&
+        res.data.shape === null &&
+        res.data.ledger === false &&
+        res.data.itemDates === false
+      ) {
+        monday.set("settings", {
           titleText: "Timeline Title",
           title: true,
-          dateFormat: "md", 
+          dateFormat: "md",
           datePosition: "angled-below",
           scale: "weeks",
-          position: "above", 
+          position: "above",
           shape: "circle",
           ledger: true,
-          itemDates: true
-        })
+          itemDates: true,
+        });
         setSettings({
           dateColumn: res.data.dateColumn,
           titleText: "Timeline Title",
           title: true,
-          dateFormat: "md", 
+          dateFormat: "md",
           datePosition: "angled-below",
           scale: "weeks",
-          position: "above", 
+          position: "above",
           shape: "circle",
           ledger: true,
-          itemDates: true
-        })
+          itemDates: true,
+        });
       } else {
         setSettings(res.data);
       }
     });
     monday.listen("itemIds", (res) => {
-      TimelineLogger.info('Item IDs received', { count: res.data?.length || 0 });
+      TimelineLogger.info("Item IDs received", {
+        count: res.data?.length || 0,
+      });
       setItemIds(res.data);
     });
   }, []);
-  
+
   // Fetch board items when context changes and has a boardId, and itemIds are available
   useEffect(() => {
     // Call the imported fetchBoardItems function
@@ -158,69 +183,83 @@ const App = () => {
       const boardIdChanged = prevBoardIdRef.current !== context.boardId;
       const itemIdsChanged = !arraysEqual(prevItemIdsRef.current, itemIds);
       if (!boardIdChanged && !itemIdsChanged) {
-        TimelineLogger.debug('Skipping fetch - boardId/itemIds unchanged after settings update');
+        TimelineLogger.debug(
+          "Skipping fetch - boardId/itemIds unchanged after settings update",
+        );
         return;
       }
-      TimelineLogger.dataOperation('fetchBoardItems', {
+      TimelineLogger.dataOperation("fetchBoardItems", {
         boardId: context.boardId,
-        itemCount: itemIds.length
+        itemCount: itemIds.length,
       });
-      fetchBoardItems(settings.dateColumn, context, itemIds, setBoardItems, setIsLoading, setError);
-      TimelineLogger.debug('Fetched board items', boardItems );
+      fetchBoardItems(
+        settings.dateColumn,
+        context,
+        itemIds,
+        setBoardItems,
+        setIsLoading,
+        setError,
+      );
+      TimelineLogger.debug("Fetched board items", boardItems);
       // Update refs
       prevBoardIdRef.current = context.boardId;
       prevItemIdsRef.current = itemIds;
     } else {
-      TimelineLogger.debug('Skipping fetch - missing context or itemIds', {
+      TimelineLogger.debug("Skipping fetch - missing context or itemIds", {
         hasBoardId: !!context?.boardId,
         hasItemIds: !!itemIds,
-        itemCount: itemIds?.length || 0
+        itemCount: itemIds?.length || 0,
       });
     }
     setIsLoading(false);
   }, [context?.boardId, itemIds, settings]); // Fetch only when boardId or itemIds change
 
   return (
-    <Box padding='medium' style={{ position: 'relative', minHeight: '300px' }}>
-      <ThemeProvider systemTheme={context?.theme ?? 'light'}>
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-      {(() => {
-        const shouldShowLoading = !boardItems || !context || !settings || isLoading || !hiddenItemsLoaded;
-        
-        TimelineLogger.debug('🎯 App render decision', {
-          shouldShowLoading,
-          reasons: {
-            noBoardItems: !boardItems,
-            noContext: !context,
-            noSettings: !settings,
-            isLoading,
-            hiddenItemsNotLoaded: !hiddenItemsLoaded
-          },
-          hiddenItemsCount: hiddenItemIds?.length || 0
-        });
-        
-        if (shouldShowLoading) {
-          return <Loading />;
-        } else if (context?.user?.isViewOnly) {
-          return <IsViewOnly />;
-        } else if (itemIds.length > 15 || boardItems.length > 15) {
-          return <TooManyItems />;
-        } else {
-          TimelineLogger.debug('✅ Rendering timeline with hidden items', {
+    <Box padding="medium" style={{ position: "relative", minHeight: "300px" }}>
+      <ThemeProvider systemTheme={context?.theme ?? "light"}>
+        {error && <div style={{ color: "red" }}>{error}</div>}
+        {(() => {
+          const shouldShowLoading =
+            !boardItems ||
+            !context ||
+            !settings ||
+            isLoading ||
+            !hiddenItemsLoaded;
+
+          TimelineLogger.debug("🎯 App render decision", {
+            shouldShowLoading,
+            reasons: {
+              noBoardItems: !boardItems,
+              noContext: !context,
+              noSettings: !settings,
+              isLoading,
+              hiddenItemsNotLoaded: !hiddenItemsLoaded,
+            },
             hiddenItemsCount: hiddenItemIds?.length || 0,
-            boardItemsCount: boardItems?.length || 0
           });
-          return (
-            <>
-              <TimelineBoard />
-              <Flex justify="start" align="center">
-                <ExportButton />
-                <HiddenItemsManager />
-              </Flex>
-            </>
-          );
-        }
-      })()}
+
+          if (shouldShowLoading) {
+            return <Loading />;
+          } else if (context?.user?.isViewOnly) {
+            return <IsViewOnly />;
+          } else if (itemIds.length > 15 || boardItems.length > 15) {
+            return <TooManyItems />;
+          } else {
+            TimelineLogger.debug("✅ Rendering timeline with hidden items", {
+              hiddenItemsCount: hiddenItemIds?.length || 0,
+              boardItemsCount: boardItems?.length || 0,
+            });
+            return (
+              <>
+                <TimelineBoard />
+                <Flex justify="start" align="center">
+                  <ExportButton />
+                  <HiddenItemsManager />
+                </Flex>
+              </>
+            );
+          }
+        })()}
       </ThemeProvider>
     </Box>
   );

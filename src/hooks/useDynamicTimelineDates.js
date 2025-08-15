@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
-import { useZustandStore } from '../store/useZustand';
-import TimelineLogger from '../utils/logger';
+import { useMemo } from "react";
+import { useZustandStore } from "../store/useZustand";
+import TimelineLogger from "../utils/logger";
 
 /**
  * Custom hook to calculate dynamic timeline start/end dates based on visible items
@@ -10,50 +10,66 @@ import TimelineLogger from '../utils/logger';
  * @param {Date} originalEndDate - Original timeline end date
  * @returns {Object} Object containing adjusted startDate and endDate
  */
-export const useDynamicTimelineDates = (visibleTimelineItems, originalStartDate, originalEndDate) => {
+export const useDynamicTimelineDates = (
+  visibleTimelineItems,
+  originalStartDate,
+  originalEndDate,
+) => {
   // Get hidden items loaded state to ensure dates are only adjusted after hidden items are loaded
-  const hiddenItemsLoaded = useZustandStore(state => state.hiddenItemsLoaded);
-  const hiddenItemIds = useZustandStore(state => state.hiddenItemIds);
+  const hiddenItemsLoaded = useZustandStore((state) => state.hiddenItemsLoaded);
+  const hiddenItemIds = useZustandStore((state) => state.hiddenItemIds);
 
   return useMemo(() => {
     // If hidden items haven't been loaded yet, return original dates to prevent premature adjustment
     if (!hiddenItemsLoaded) {
-      TimelineLogger.debug('useDynamicTimelineDates: Hidden items not loaded yet, using original dates');
+      TimelineLogger.debug(
+        "useDynamicTimelineDates: Hidden items not loaded yet, using original dates",
+      );
       return {
         startDate: originalStartDate,
         endDate: originalEndDate,
-        isAdjusted: false
+        isAdjusted: false,
       };
     }
 
     // If no visible items or no original dates, return original dates
-    if (!visibleTimelineItems || visibleTimelineItems.length === 0 || !originalStartDate || !originalEndDate) {
-      TimelineLogger.debug('useDynamicTimelineDates: Using original dates (no visible items or original dates)', {
-        visibleItemCount: visibleTimelineItems?.length || 0,
-        hasOriginalStartDate: !!originalStartDate,
-        hasOriginalEndDate: !!originalEndDate,
-        hiddenItemsLoaded,
-        hiddenItemsCount: hiddenItemIds?.length || 0
-      });
+    if (
+      !visibleTimelineItems ||
+      visibleTimelineItems.length === 0 ||
+      !originalStartDate ||
+      !originalEndDate
+    ) {
+      TimelineLogger.debug(
+        "useDynamicTimelineDates: Using original dates (no visible items or original dates)",
+        {
+          visibleItemCount: visibleTimelineItems?.length || 0,
+          hasOriginalStartDate: !!originalStartDate,
+          hasOriginalEndDate: !!originalEndDate,
+          hiddenItemsLoaded,
+          hiddenItemsCount: hiddenItemIds?.length || 0,
+        },
+      );
       return {
         startDate: originalStartDate,
         endDate: originalEndDate,
-        isAdjusted: false
+        isAdjusted: false,
       };
     }
 
     // Extract valid dates from visible items
     const visibleDates = visibleTimelineItems
-      .map(item => item.date)
-      .filter(date => date && !isNaN(new Date(date)))
-      .map(date => new Date(date));
+      .map((item) => item.date)
+      .filter((date) => date && !isNaN(new Date(date)))
+      .map((date) => new Date(date));
 
     if (visibleDates.length === 0) {
-      TimelineLogger.debug('useDynamicTimelineDates: No valid dates in visible items, using original dates');
+      TimelineLogger.debug(
+        "useDynamicTimelineDates: No valid dates in visible items, using original dates",
+      );
       return {
         startDate: originalStartDate,
         endDate: originalEndDate,
-        isAdjusted: false
+        isAdjusted: false,
       };
     }
 
@@ -67,49 +83,66 @@ export const useDynamicTimelineDates = (visibleTimelineItems, originalStartDate,
     const adjustedEndDate = new Date(maxVisibleDate.getTime() + paddingInMs);
 
     // Check if adjustment is needed (if the adjusted range is significantly different from original)
-    const originalRange = originalEndDate.getTime() - originalStartDate.getTime();
-    const adjustedRange = adjustedEndDate.getTime() - adjustedStartDate.getTime();
-    const rangeDifference = Math.abs(originalRange - adjustedRange) / originalRange;
-    
+    const originalRange =
+      originalEndDate.getTime() - originalStartDate.getTime();
+    const adjustedRange =
+      adjustedEndDate.getTime() - adjustedStartDate.getTime();
+    const rangeDifference =
+      Math.abs(originalRange - adjustedRange) / originalRange;
+
     // Only adjust if the range difference is significant (more than 10%) or if the visible range
     // is much smaller than the original range (indicating hidden edge items)
-    const shouldAdjust = rangeDifference > 0.1 || 
-                        (adjustedStartDate > originalStartDate || adjustedEndDate < originalEndDate);
+    const shouldAdjust =
+      rangeDifference > 0.1 ||
+      adjustedStartDate > originalStartDate ||
+      adjustedEndDate < originalEndDate;
 
     if (shouldAdjust) {
-      TimelineLogger.debug('useDynamicTimelineDates: Adjusting timeline dates based on visible items', {
-        originalStart: originalStartDate.toISOString(),
-        originalEnd: originalEndDate.toISOString(),
-        adjustedStart: adjustedStartDate.toISOString(),
-        adjustedEnd: adjustedEndDate.toISOString(),
-        visibleItemCount: visibleTimelineItems.length,
-        hiddenItemsCount: hiddenItemIds?.length || 0,
-        hiddenItemsLoaded,
-        visibleDateRange: {
-          min: minVisibleDate.toISOString(),
-          max: maxVisibleDate.toISOString()
+      TimelineLogger.debug(
+        "useDynamicTimelineDates: Adjusting timeline dates based on visible items",
+        {
+          originalStart: originalStartDate.toISOString(),
+          originalEnd: originalEndDate.toISOString(),
+          adjustedStart: adjustedStartDate.toISOString(),
+          adjustedEnd: adjustedEndDate.toISOString(),
+          visibleItemCount: visibleTimelineItems.length,
+          hiddenItemsCount: hiddenItemIds?.length || 0,
+          hiddenItemsLoaded,
+          visibleDateRange: {
+            min: minVisibleDate.toISOString(),
+            max: maxVisibleDate.toISOString(),
+          },
+          rangeDifference: Math.round(rangeDifference * 100) + "%",
         },
-        rangeDifference: Math.round(rangeDifference * 100) + '%'
-      });
+      );
 
       return {
         startDate: adjustedStartDate,
         endDate: adjustedEndDate,
-        isAdjusted: true
+        isAdjusted: true,
       };
     }
 
-    TimelineLogger.debug('useDynamicTimelineDates: No adjustment needed, using original dates', {
-      rangeDifference: Math.round(rangeDifference * 100) + '%',
-      visibleItemCount: visibleTimelineItems.length,
-      hiddenItemsCount: hiddenItemIds?.length || 0,
-      hiddenItemsLoaded
-    });
+    TimelineLogger.debug(
+      "useDynamicTimelineDates: No adjustment needed, using original dates",
+      {
+        rangeDifference: Math.round(rangeDifference * 100) + "%",
+        visibleItemCount: visibleTimelineItems.length,
+        hiddenItemsCount: hiddenItemIds?.length || 0,
+        hiddenItemsLoaded,
+      },
+    );
 
     return {
       startDate: originalStartDate,
       endDate: originalEndDate,
-      isAdjusted: false
+      isAdjusted: false,
     };
-  }, [visibleTimelineItems, originalStartDate, originalEndDate, hiddenItemsLoaded, hiddenItemIds]);
+  }, [
+    visibleTimelineItems,
+    originalStartDate,
+    originalEndDate,
+    hiddenItemsLoaded,
+    hiddenItemIds,
+  ]);
 };

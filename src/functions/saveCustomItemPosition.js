@@ -1,5 +1,5 @@
-import TimelineLogger from '../utils/logger';
-import saveItemPositionsToStorage from './saveItemPositionsToStorage';
+import TimelineLogger from "../utils/logger";
+import saveItemPositionsToStorage from "./saveItemPositionsToStorage";
 
 /**
  * Persists a custom item position for a board item, both in store and Monday storage.
@@ -10,23 +10,39 @@ import saveItemPositionsToStorage from './saveItemPositionsToStorage';
  * @param {{x: number, y: number}} position - The new position
  * @param {any} storageService - Monday storage service
  */
-export function saveCustomItemPosition({ get, set, itemId, position, storageService }) {
+export function saveCustomItemPosition({
+  get,
+  set,
+  itemId,
+  position,
+  storageService,
+}) {
   const { customItemPositions, customItemYDelta, context } = get();
   const boardId = context?.boardId;
 
   if (!boardId) {
-    TimelineLogger.warn('Cannot save item position: no boardId available');
+    TimelineLogger.warn("Cannot save item position: no boardId available");
     return;
   }
 
   const updatedPositions = {
     ...customItemPositions,
-    [itemId]: { x: position.x, y: position.y }
+    [itemId]: { x: position.x, y: position.y },
   };
 
-  TimelineLogger.debug('Saving custom item position', { itemId, position, boardId });
+  TimelineLogger.debug("Saving custom item position", {
+    itemId,
+    position,
+    boardId,
+  });
   set({ customItemPositions: updatedPositions });
 
   const { currentPositionSetting } = get();
-  saveItemPositionsToStorage(storageService, boardId, currentPositionSetting, updatedPositions, customItemYDelta);
+  saveItemPositionsToStorage(
+    storageService,
+    boardId,
+    currentPositionSetting,
+    updatedPositions,
+    customItemYDelta,
+  );
 }

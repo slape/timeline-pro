@@ -10,70 +10,70 @@
 
 export const TIMELINE_LAYOUT = {
   // Timeline container dimensions - AFFECTS OVERALL LAYOUT
-  CONTAINER_HEIGHT: 400,    // Timeline container height in pixels
-  CONTAINER_PADDING: 50,    // Vertical padding for timeline container
-  
+  CONTAINER_HEIGHT: 400, // Timeline container height in pixels
+  CONTAINER_PADDING: 50, // Vertical padding for timeline container
+
   // Timeline position ratios - AFFECTS ITEM POSITIONING
-  POSITION_ABOVE: 0.25,     // Timeline at 25% when position is 'above'
-  POSITION_BELOW: 0.75,     // Timeline at 75% when position is 'below'
-  POSITION_CENTER: 0.5,     // Timeline at 50% when position is 'center'
+  POSITION_ABOVE: 0.25, // Timeline at 25% when position is 'above'
+  POSITION_BELOW: 0.75, // Timeline at 75% when position is 'below'
+  POSITION_CENTER: 0.5, // Timeline at 50% when position is 'center'
 };
 
 export const DRAGGABLE_ITEM = {
   // Item dimensions - AFFECTS VISUAL SIZE AND COLLISION
-  DEFAULT_WIDTH: 40,        // Default item width
-  DEFAULT_HEIGHT: 40,       // Default item height
-  LARGE_WIDTH: 100,         // Large item width
-  LARGE_HEIGHT: 20,         // Large item height (for text display)
-  MIN_SIZE: 50,             // Minimum item size for resizing
-  
+  DEFAULT_WIDTH: 40, // Default item width
+  DEFAULT_HEIGHT: 40, // Default item height
+  LARGE_WIDTH: 100, // Large item width
+  LARGE_HEIGHT: 20, // Large item height (for text display)
+  MIN_SIZE: 50, // Minimum item size for resizing
+
   // Drag boundaries - AFFECTS WHERE ITEMS CAN BE POSITIONED
-  MAX_DRAG_DISTANCE: 250,   // Maximum drag distance from timeline
-  BOUNDS_MIN_X: 5,          // Minimum X position percentage
-  BOUNDS_MAX_X: 95,         // Maximum X position percentage
-  BOUNDS_MIN_Y: -250,       // Minimum Y position in pixels
-  BOUNDS_MAX_Y: 250,        // Maximum Y position in pixels
+  MAX_DRAG_DISTANCE: 250, // Maximum drag distance from timeline
+  BOUNDS_MIN_X: 5, // Minimum X position percentage
+  BOUNDS_MAX_X: 95, // Maximum X position percentage
+  BOUNDS_MIN_Y: -250, // Minimum Y position in pixels
+  BOUNDS_MAX_Y: 250, // Maximum Y position in pixels
 
   CIRCLE_SIZE: 90,
   RECTANGLE_WIDTH: 110,
   RECTANGLE_HEIGHT_WITH_DATES: 90,
   RECTANGLE_HEIGHT_WITHOUT_DATES: 70,
-  
+
   // Position-specific drag distances - AFFECTS DRAG DISTANCE BY TIMELINE POSITION
   // 'Above' position (timeline at 25% from top)
-  ABOVE_MAX_DISTANCE_UP: 200,        // Maximum upward drag distance in 'above' position
-  ABOVE_MAX_DISTANCE_DOWN: 189,      // Maximum downward drag distance in 'above' position
-  
-  // 'Below' position (timeline at 75% from top)  
-  BELOW_MAX_DISTANCE_UP: 240,        // Maximum upward drag distance in 'below' position
-  BELOW_MAX_DISTANCE_DOWN: 145,      // Maximum downward drag distance in 'below' position
-  
+  ABOVE_MAX_DISTANCE_UP: 200, // Maximum upward drag distance in 'above' position
+  ABOVE_MAX_DISTANCE_DOWN: 189, // Maximum downward drag distance in 'above' position
+
+  // 'Below' position (timeline at 75% from top)
+  BELOW_MAX_DISTANCE_UP: 240, // Maximum upward drag distance in 'below' position
+  BELOW_MAX_DISTANCE_DOWN: 145, // Maximum downward drag distance in 'below' position
+
   // 'Alternate' position (timeline at center ~50%)
-  ALTERNATE_MAX_DISTANCE_UP: 90,     // Maximum upward drag distance in 'alternate' position
-  ALTERNATE_MAX_DISTANCE_DOWN: 60,   // Maximum downward drag distance in 'alternate' position
-  
+  ALTERNATE_MAX_DISTANCE_UP: 90, // Maximum upward drag distance in 'alternate' position
+  ALTERNATE_MAX_DISTANCE_DOWN: 60, // Maximum downward drag distance in 'alternate' position
+
   // Buffer zones from container edges - AFFECTS DRAG BOUNDS NEAR EDGES
-  ABOVE_BOTTOM_BUFFER: 20,           // Buffer from bottom edge in 'above' position
-  BELOW_TOP_BUFFER: 10,              // Buffer from top edge in 'below' position
-  ALTERNATE_EDGE_BUFFER: 30,         // Buffer from edges in 'alternate' position
-  
+  ABOVE_BOTTOM_BUFFER: 20, // Buffer from bottom edge in 'above' position
+  BELOW_TOP_BUFFER: 10, // Buffer from top edge in 'below' position
+  ALTERNATE_EDGE_BUFFER: 30, // Buffer from edges in 'alternate' position
+
   // Container and positioning constants - AFFECTS DRAG CALCULATIONS
-  CONTAINER_PADDING: 20,             // Minimum padding from container edges
-  CONTAINER_TOP_REFERENCE: 0,        // Container top reference point
-  MOUSE_POSITION_TOLERANCE: 1,       // Tolerance for mouse position comparisons (pixels)
-  
+  CONTAINER_PADDING: 20, // Minimum padding from container edges
+  CONTAINER_TOP_REFERENCE: 0, // Container top reference point
+  MOUSE_POSITION_TOLERANCE: 1, // Tolerance for mouse position comparisons (pixels)
+
   // Default positions when position setting changes - AFFECTS RESET BEHAVIOR
   // 'Above' position defaults (timeline at 25% from top)
-  ABOVE_DEFAULT_Y_UP: -80,           // Default upward position from timeline
-  ABOVE_DEFAULT_Y_DOWN: 60,          // Default downward position from timeline
-  
+  ABOVE_DEFAULT_Y_UP: -80, // Default upward position from timeline
+  ABOVE_DEFAULT_Y_DOWN: 60, // Default downward position from timeline
+
   // 'Below' position defaults (timeline at 75% from top)
-  BELOW_DEFAULT_Y_UP: -60,           // Default upward position from timeline
-  BELOW_DEFAULT_Y_DOWN: 80,          // Default downward position from timeline
-  
+  BELOW_DEFAULT_Y_UP: -60, // Default upward position from timeline
+  BELOW_DEFAULT_Y_DOWN: 80, // Default downward position from timeline
+
   // 'Alternate' position defaults (timeline at center ~50%)
-  ALTERNATE_DEFAULT_Y_UP: -40,       // Default upward position from timeline
-  ALTERNATE_DEFAULT_Y_DOWN: 40,      // Default downward position from timeline
+  ALTERNATE_DEFAULT_Y_UP: -40, // Default upward position from timeline
+  ALTERNATE_DEFAULT_Y_DOWN: 40, // Default downward position from timeline
 };
 
 // ============================================================================
@@ -82,32 +82,30 @@ export const DRAGGABLE_ITEM = {
 
 export const UI_COMPONENTS = {
   // CSS values for styling
-  FULL_WIDTH: '100%',
-  FULL_HEIGHT: '100%',
-  
+  FULL_WIDTH: "100%",
+  FULL_HEIGHT: "100%",
+
   // Position setting strings
-  POSITION_ABOVE_STR: 'above',
-  POSITION_BELOW_STR: 'below',
-  POSITION_CENTER_STR: 'center',
-  
+  POSITION_ABOVE_STR: "above",
+  POSITION_BELOW_STR: "below",
+  POSITION_CENTER_STR: "center",
+
   // Timeline position CSS values
-  TIMELINE_TOP_ABOVE: '75%',
-  TIMELINE_TOP_BELOW: '25%',
-  TIMELINE_TOP_CENTER: '50%',
+  TIMELINE_TOP_ABOVE: "75%",
+  TIMELINE_TOP_BELOW: "25%",
+  TIMELINE_TOP_CENTER: "50%",
 };
 
 // Storage keys for Monday.com instance storage
-export const HIDDEN_ITEMS_KEY = 'timeline-pro-hidden-items';
-export const ITEM_POSITIONS_KEY_PREFIX = 'timeline-pro-item-positions';
+export const HIDDEN_ITEMS_KEY = "timeline-pro-hidden-items";
+export const ITEM_POSITIONS_KEY_PREFIX = "timeline-pro-item-positions";
 
 export const DRAGGABLE_ITEM_STYLES = {
   // Z-index and visual effects
   Z_INDEX_DRAGGING: 1000,
-  Z_INDEX_NORMAL: 'auto',
-  CENTER_TRANSFORM: 'translateX(-50%)',
+  Z_INDEX_NORMAL: "auto",
+  CENTER_TRANSFORM: "translateX(-50%)",
 };
-
-
 
 // ============================================================================
 // HELPER FUNCTIONS

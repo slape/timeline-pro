@@ -1,9 +1,9 @@
-import React from 'react';
-import { Box } from '@vibe/core';
-import ItemRemoveButton from './ItemRemoveButton';
-import ItemResizeHandle from './ItemResizeHandle';
-import ItemContent from './ItemContent';
-import { getBoxStyles } from '../../functions/draggableItemStyles';
+import React from "react";
+import { Box } from "@vibe/core";
+import ItemRemoveButton from "./ItemRemoveButton";
+import ItemResizeHandle from "./ItemResizeHandle";
+import ItemContent from "./ItemContent";
+import { getBoxStyles } from "../../functions/draggableItemStyles";
 
 /**
  * Container component for timeline items
@@ -23,18 +23,20 @@ const ItemContainer = ({
   formattedDate,
   handleNameChange,
   handleMouseDown,
-  handleOpenDatePicker
+  handleOpenDatePicker,
 }) => {
   const boxStyles = getBoxStyles(isDragging, itemColor, shapeStyles);
 
   return (
-    <div style={{
-      position: 'relative',
-      width: '100%',
-      height: '100%',
-    }}>
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+      }}
+    >
       <Box
-        className={shape === 'circle' ? 'circle-shape' : ''}
+        className={shape === "circle" ? "circle-shape" : ""}
         style={boxStyles}
         onClick={onClick}
       >
@@ -43,9 +45,9 @@ const ItemContainer = ({
           onRemove={onHideItem}
           itemId={item.id}
         />
-        
+
         <ItemResizeHandle onMouseDown={handleResizeMouseDown} />
-        
+
         <ItemContent
           item={item}
           showItemDates={showItemDates}

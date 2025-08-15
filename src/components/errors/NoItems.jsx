@@ -1,4 +1,4 @@
-import { AttentionBox } from '@vibe/core';
+import { AttentionBox } from "@vibe/core";
 
 const NoItems = () => (
   <AttentionBox

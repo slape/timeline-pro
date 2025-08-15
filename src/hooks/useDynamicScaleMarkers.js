@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
-import calculateScaleMarkersWithLogging from '../functions/calculateScaleMarkersWithLogging';
-import TimelineLogger from '../utils/logger';
+import { useMemo } from "react";
+import calculateScaleMarkersWithLogging from "../functions/calculateScaleMarkersWithLogging";
+import TimelineLogger from "../utils/logger";
 
 /**
  * Custom hook to calculate dynamic scale markers based on effective timeline dates
@@ -10,21 +10,33 @@ import TimelineLogger from '../utils/logger';
  * @param {boolean} isAdjusted - Whether the dates have been adjusted from original
  * @returns {Array} Array of scale markers
  */
-export const useDynamicScaleMarkers = (effectiveStartDate, effectiveEndDate, scale, isAdjusted) => {
+export const useDynamicScaleMarkers = (
+  effectiveStartDate,
+  effectiveEndDate,
+  scale,
+  isAdjusted,
+) => {
   return useMemo(() => {
-    if (!effectiveStartDate || !effectiveEndDate || scale === 'none') {
+    if (!effectiveStartDate || !effectiveEndDate || scale === "none") {
       return [];
     }
 
-    const markers = calculateScaleMarkersWithLogging(effectiveStartDate, effectiveEndDate, scale);
-    
+    const markers = calculateScaleMarkersWithLogging(
+      effectiveStartDate,
+      effectiveEndDate,
+      scale,
+    );
+
     if (isAdjusted) {
-      TimelineLogger.debug('Scale markers recalculated for adjusted timeline dates', {
-        effectiveStart: effectiveStartDate.toISOString(),
-        effectiveEnd: effectiveEndDate.toISOString(),
-        scale,
-        markerCount: markers.length
-      });
+      TimelineLogger.debug(
+        "Scale markers recalculated for adjusted timeline dates",
+        {
+          effectiveStart: effectiveStartDate.toISOString(),
+          effectiveEnd: effectiveEndDate.toISOString(),
+          scale,
+          markerCount: markers.length,
+        },
+      );
     }
 
     return markers;

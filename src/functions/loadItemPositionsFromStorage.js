@@ -1,9 +1,11 @@
-import TimelineLogger from '../utils/logger';
-import { ITEM_POSITIONS_KEY_PREFIX } from '../utils/configConstants';
+import TimelineLogger from "../utils/logger";
+import { ITEM_POSITIONS_KEY_PREFIX } from "../utils/configConstants";
 
 const loadItemPositionsFromStorage = async (storageService, boardId) => {
   if (!storageService || !boardId) {
-    TimelineLogger.debug('Storage service not initialized or no boardId, returning empty object');
+    TimelineLogger.debug(
+      "Storage service not initialized or no boardId, returning empty object",
+    );
     return {};
   }
   try {
@@ -12,22 +14,29 @@ const loadItemPositionsFromStorage = async (storageService, boardId) => {
     if (response?.data?.success && response.data.value) {
       const positionData = response.data.value;
       // Validate the structure
-      if (positionData && typeof positionData === 'object' && positionData.itemPositions) {
-        TimelineLogger.debug('Loaded item positions from Monday storage', {
+      if (
+        positionData &&
+        typeof positionData === "object" &&
+        positionData.itemPositions
+      ) {
+        TimelineLogger.debug("Loaded item positions from Monday storage", {
           boardId,
           positionSetting: positionData.positionSetting,
           itemCount: Object.keys(positionData.itemPositions).length,
-          yDeltaCount: Object.keys(positionData.itemYDelta || {}).length
+          yDeltaCount: Object.keys(positionData.itemYDelta || {}).length,
         });
         return {
           ...positionData,
-          itemYDelta: positionData.itemYDelta || {}
+          itemYDelta: positionData.itemYDelta || {},
         };
       }
     }
     return { boardId, positionSetting: null, itemPositions: {} };
   } catch (error) {
-    TimelineLogger.error('Failed to load item positions from Monday storage', error);
+    TimelineLogger.error(
+      "Failed to load item positions from Monday storage",
+      error,
+    );
     return { boardId, positionSetting: null, itemPositions: {} };
   }
 };

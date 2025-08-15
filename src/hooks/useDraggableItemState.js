@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef } from "react";
 
 /**
  * Custom hook to manage draggable item state
@@ -10,7 +10,7 @@ export const useDraggableItemState = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  
+
   // Refs for drag calculations
   const dragStartPos = useRef({ x: 0, y: 0 });
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -28,12 +28,12 @@ export const useDraggableItemState = () => {
     setIsResizing,
     isHovered,
     setIsHovered,
-    
+
     // Refs
     dragStartPos,
     dragOffset,
     startSize,
     itemRef,
-    containerRef
+    containerRef,
   };
 };

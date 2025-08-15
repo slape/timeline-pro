@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Loader } from '@vibe/core';
-import NoItems from '../errors/NoItems';
+import React, { useState, useEffect } from "react";
+import { Loader } from "@vibe/core";
+import NoItems from "../errors/NoItems";
 
 /**
  * Loading component that displays a centered loader with timeout fallback
@@ -10,11 +10,7 @@ import NoItems from '../errors/NoItems';
  * @param {function} [props.onTimeout] - Callback function when timeout occurs
  * @returns {JSX.Element} - Loading component
  */
-const Loading = ({ 
-  size = 'medium', 
-  timeout = 10000,
-  onTimeout
-}) => {
+const Loading = ({ size = "medium", timeout = 10000, onTimeout }) => {
   const [hasTimedOut, setHasTimedOut] = useState(false);
 
   useEffect(() => {
@@ -30,20 +26,20 @@ const Loading = ({
   }, [timeout, onTimeout]);
 
   if (hasTimedOut) {
-    return (
-      <NoItems />
-    );
+    return <NoItems />;
   }
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column',
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      height: '600px' 
-    }}>
-      <Loader size={size} color='secondary' />
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "600px",
+      }}
+    >
+      <Loader size={size} color="secondary" />
     </div>
   );
 };

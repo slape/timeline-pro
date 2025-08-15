@@ -1,10 +1,23 @@
-import TimelineLogger from '../utils/logger';
-import { ITEM_POSITIONS_KEY_PREFIX } from '../utils/configConstants';
+import TimelineLogger from "../utils/logger";
+import { ITEM_POSITIONS_KEY_PREFIX } from "../utils/configConstants";
 
-const saveItemPositionsToStorage = async (storageService, boardId, positionSetting, itemPositions, itemYDelta = {}) => {
-  TimelineLogger.debug('[Y-DELTA] saveItemPositionsToStorage called', { boardId, positionSetting, itemPositions, itemYDelta });
+const saveItemPositionsToStorage = async (
+  storageService,
+  boardId,
+  positionSetting,
+  itemPositions,
+  itemYDelta = {},
+) => {
+  TimelineLogger.debug("[Y-DELTA] saveItemPositionsToStorage called", {
+    boardId,
+    positionSetting,
+    itemPositions,
+    itemYDelta,
+  });
   if (!storageService || !boardId) {
-    TimelineLogger.debug('Storage service not initialized or no boardId, skipping save');
+    TimelineLogger.debug(
+      "Storage service not initialized or no boardId, skipping save",
+    );
     return;
   }
   try {
@@ -13,25 +26,37 @@ const saveItemPositionsToStorage = async (storageService, boardId, positionSetti
       boardId,
       positionSetting,
       itemPositions: itemPositions || {},
-      itemYDelta: itemYDelta || {}
+      itemYDelta: itemYDelta || {},
     };
-    TimelineLogger.debug('Saving item positions to Monday storage', {
+    TimelineLogger.debug("Saving item positions to Monday storage", {
       boardId,
       positionSetting,
       itemCount: Object.keys(dataToSave.itemPositions).length,
-      yDeltaCount: Object.keys(dataToSave.itemYDelta || {}).length
+      yDeltaCount: Object.keys(dataToSave.itemYDelta || {}).length,
     });
-    const response = await storageService.setInstanceItem(storageKey, dataToSave);
+    const response = await storageService.setInstanceItem(
+      storageKey,
+      dataToSave,
+    );
     if (response?.data?.success) {
-      TimelineLogger.debug('Successfully saved item positions to Monday storage', {
-        boardId,
-        itemCount: Object.keys(dataToSave.itemPositions).length
-      });
+      TimelineLogger.debug(
+        "Successfully saved item positions to Monday storage",
+        {
+          boardId,
+          itemCount: Object.keys(dataToSave.itemPositions).length,
+        },
+      );
     } else {
-      TimelineLogger.error('Failed to save item positions to Monday storage', response?.data?.error);
+      TimelineLogger.error(
+        "Failed to save item positions to Monday storage",
+        response?.data?.error,
+      );
     }
   } catch (error) {
-    TimelineLogger.error('Failed to save item positions to Monday storage', error);
+    TimelineLogger.error(
+      "Failed to save item positions to Monday storage",
+      error,
+    );
   }
 };
 

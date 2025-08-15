@@ -1,4 +1,4 @@
-import { calculateTimelineItemPositions } from './calculateTimelineItemPositions';
+import { calculateTimelineItemPositions } from "./calculateTimelineItemPositions";
 
 /**
  * Gets the default Y position for a timeline item given timeline context.
@@ -10,13 +10,30 @@ import { calculateTimelineItemPositions } from './calculateTimelineItemPositions
  * @param {string} position - Timeline position setting
  * @returns {number|null} Default Y position or null if not found
  */
-import TimelineLogger from '../utils/logger';
+import TimelineLogger from "../utils/logger";
 
-export function getDefaultItemYPosition({ items, itemId, startDate, endDate, position }) {
-  TimelineLogger.debug('[Y-DELTA][TRACE] getDefaultItemYPosition called', { items, itemId, startDate, endDate, position });
-  const positions = calculateTimelineItemPositions(items, startDate, endDate, position);
-  TimelineLogger.debug('[Y-DELTA][TRACE] positions array', { positions });
-  const found = positions.find(i => i.id === itemId);
-  TimelineLogger.debug('[Y-DELTA][TRACE] found item', { found });
+export function getDefaultItemYPosition({
+  items,
+  itemId,
+  startDate,
+  endDate,
+  position,
+}) {
+  TimelineLogger.debug("[Y-DELTA][TRACE] getDefaultItemYPosition called", {
+    items,
+    itemId,
+    startDate,
+    endDate,
+    position,
+  });
+  const positions = calculateTimelineItemPositions(
+    items,
+    startDate,
+    endDate,
+    position,
+  );
+  TimelineLogger.debug("[Y-DELTA][TRACE] positions array", { positions });
+  const found = positions.find((i) => i.id === itemId);
+  TimelineLogger.debug("[Y-DELTA][TRACE] found item", { found });
   return found ? found.renderPosition.y : null;
 }

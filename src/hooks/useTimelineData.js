@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
-import { useZustandStore } from '../store/useZustand';
-import { useVisibleItems } from './useVisibleItems';
-import filterVisibleTimelineItems from '../functions/filterVisibleTimelineItems';
-import calculateScaleMarkersWithLogging from '../functions/calculateScaleMarkersWithLogging';
+import { useMemo } from "react";
+import { useZustandStore } from "../store/useZustand";
+import { useVisibleItems } from "./useVisibleItems";
+import filterVisibleTimelineItems from "../functions/filterVisibleTimelineItems";
+import calculateScaleMarkersWithLogging from "../functions/calculateScaleMarkersWithLogging";
 
 /**
  * Custom hook to manage timeline data and computed values
@@ -13,27 +13,27 @@ import calculateScaleMarkersWithLogging from '../functions/calculateScaleMarkers
  */
 export const useTimelineData = (startDate, endDate, scale) => {
   // Get data from store
-  const timelineItems = useZustandStore(state => state.timelineItems) || [];
-  const hiddenItemIds = useZustandStore(state => state.hiddenItemIds) || [];
-  
+  const timelineItems = useZustandStore((state) => state.timelineItems) || [];
+  const hiddenItemIds = useZustandStore((state) => state.hiddenItemIds) || [];
+
   // Get raw visible board items for marker generation
   const visibleBoardItems = useVisibleItems();
-  
+
   // Filter timeline items by hiddenItemIds
   const visibleTimelineItems = useMemo(() => {
     return filterVisibleTimelineItems(timelineItems, hiddenItemIds);
   }, [timelineItems, hiddenItemIds]);
-  
+
   // Calculate the scale markers based on scale and date range
   const scaleMarkers = useMemo(() => {
     return calculateScaleMarkersWithLogging(startDate, endDate, scale);
   }, [startDate, endDate, scale]);
-  
+
   // Convert dates and visibleBoardItems to strings for stable dependencies
   const startDateString = startDate?.toISOString();
   const endDateString = endDate?.toISOString();
   const visibleBoardItemsString = JSON.stringify(visibleBoardItems);
-  
+
   return {
     timelineItems,
     hiddenItemIds,

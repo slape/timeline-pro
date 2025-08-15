@@ -1,24 +1,24 @@
-import { create } from 'zustand';
-import { MondayStorageService } from './MondayStorageService';
+import { create } from "zustand";
+import { MondayStorageService } from "./MondayStorageService";
 
-import { saveCustomItemPosition as saveCustomItemPositionFn } from '../functions/saveCustomItemPosition';
-import { updatePositionSetting as updatePositionSettingFn } from '../functions/updatePositionSetting';
-import { clearCustomPositions as clearCustomPositionsFn } from '../functions/clearCustomPositions';
-import { initializeItemPositions as initializeItemPositionsFn } from '../functions/initializeItemPositions';
+import { saveCustomItemPosition as saveCustomItemPositionFn } from "../functions/saveCustomItemPosition";
+import { updatePositionSetting as updatePositionSettingFn } from "../functions/updatePositionSetting";
+import { clearCustomPositions as clearCustomPositionsFn } from "../functions/clearCustomPositions";
+import { initializeItemPositions as initializeItemPositionsFn } from "../functions/initializeItemPositions";
 
 // console.log('Zustand store created (should appear only once per reload)'); // Suppressed for focused debugging
 
 // Monday.com storage keys
-const HIDDEN_ITEMS_KEY = 'timeline-pro-hidden-items';
+const HIDDEN_ITEMS_KEY = "timeline-pro-hidden-items";
 
 // Storage service instance (will be initialized when Monday SDK is available)
 let storageService = null;
 
-import loadHiddenItemsFromStorage from '../functions/loadHiddenItemsFromStorage';
+import loadHiddenItemsFromStorage from "../functions/loadHiddenItemsFromStorage";
 // Helper functions for Monday.com storage persistence
 // loadHiddenItemsFromStorage now imported from functions directory and called with (storageService, HIDDEN_ITEMS_KEY)
 
-import saveHiddenItemsToStorage from '../functions/saveHiddenItemsToStorage';
+import saveHiddenItemsToStorage from "../functions/saveHiddenItemsToStorage";
 
 export const useZustandStore = create((set, get) => ({
   settings: {},
@@ -47,28 +47,31 @@ export const useZustandStore = create((set, get) => ({
   // Update a specific board item's date column value in the store
   updateBoardItemDate: (itemId, columnId, newDateValue) => {
     const { boardItems } = get();
-    const updatedBoardItems = boardItems.map(item => {
+    const updatedBoardItems = boardItems.map((item) => {
       if (item.id === itemId) {
         // Update the column value for this item
-        const updatedColumnValues = item.column_values.map(col => {
+        const updatedColumnValues = item.column_values.map((col) => {
           if (col.id === columnId) {
             return {
               ...col,
               value: newDateValue, // Update the JSON value
-              text: typeof newDateValue === 'string' ? JSON.parse(newDateValue).to || JSON.parse(newDateValue).date : col.text // Update display text
+              text:
+                typeof newDateValue === "string"
+                  ? JSON.parse(newDateValue).to || JSON.parse(newDateValue).date
+                  : col.text, // Update display text
             };
           }
           return col;
         });
-        
+
         return {
           ...item,
-          column_values: updatedColumnValues
+          column_values: updatedColumnValues,
         };
       }
       return item;
     });
-    
+
     set({ boardItems: updatedBoardItems });
   },
   setItemIds: (itemIds) => {
@@ -82,7 +85,10 @@ export const useZustandStore = create((set, get) => ({
   initializeMondayStorage: async (mondaySDK) => {
     try {
       storageService = new MondayStorageService(mondaySDK);
-      const hiddenItemIds = await loadHiddenItemsFromStorage(storageService, HIDDEN_ITEMS_KEY);
+      const hiddenItemIds = await loadHiddenItemsFromStorage(
+        storageService,
+        HIDDEN_ITEMS_KEY,
+      );
       set({ hiddenItemIds, hiddenItemsLoaded: true });
     } catch (error) {
       // Even if loading fails, mark as loaded to prevent infinite loading
@@ -101,7 +107,7 @@ export const useZustandStore = create((set, get) => ({
   // Helper function to unhide a single item
   unhideItem: (itemId) => {
     const { hiddenItemIds } = get();
-    const newHiddenIds = hiddenItemIds.filter(id => id !== itemId);
+    const newHiddenIds = hiddenItemIds.filter((id) => id !== itemId);
     saveHiddenItemsToStorage(newHiddenIds); // Async save to Monday storage
     set({ hiddenItemIds: newHiddenIds });
   },
@@ -124,22 +130,30 @@ export const useZustandStore = create((set, get) => ({
       return;
     }
     // Handle function updates (React setState pattern)
-    if (typeof timelineItems === 'function') {
-      set((state) => ({ 
-        timelineItems: timelineItems(state.timelineItems) 
+    if (typeof timelineItems === "function") {
+      set((state) => ({
+        timelineItems: timelineItems(state.timelineItems),
       }));
     } else {
       set({ timelineItems });
     }
   },
 
-// Item position persistence methods
+  // Item position persistence methods
   saveCustomItemPosition: (itemId, position) => {
-    return saveCustomItemPositionFn({ get, set, itemId, position, storageService });
+    return saveCustomItemPositionFn({
+      get,
+      set,
+      itemId,
+      position,
+      storageService,
+    });
   },
   // Y delta persistence method
   saveCustomItemYDelta: (itemId, yDelta) => {
-    const { saveCustomItemYDelta } = require('../functions/saveCustomItemYDelta');
+    const {
+      saveCustomItemYDelta,
+    } = require("../functions/saveCustomItemYDelta");
     return saveCustomItemYDelta({ get, set, itemId, yDelta, storageService });
   },
 

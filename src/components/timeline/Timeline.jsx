@@ -1,41 +1,40 @@
-import React from 'react';
-import { calculateTimelineItemPositions } from '../../functions/calculateTimelineItemPositions';
-import { renderTimelineItems } from './renderTimelineItems.jsx';
-import { calculateTimelineLayout, TIMELINE_CONTAINER_STYLES } from '../../functions/calculateTimelineLayout';
-import TimelineLogger from '../../utils/logger';
-import { useZustandStore } from '../../store/useZustand';
+import React from "react";
+import { calculateTimelineItemPositions } from "../../functions/calculateTimelineItemPositions";
+import { renderTimelineItems } from "./renderTimelineItems.jsx";
+import {
+  calculateTimelineLayout,
+  TIMELINE_CONTAINER_STYLES,
+} from "../../functions/calculateTimelineLayout";
+import TimelineLogger from "../../utils/logger";
+import { useZustandStore } from "../../store/useZustand";
 
 // Custom hooks
-import { useTimelineSettings } from '../../hooks/useTimelineSettings';
-import { useTimelineData } from '../../hooks/useTimelineData';
-import { useTimelineMarkers } from '../../hooks/useTimelineMarkers';
-import { useTimelineCallbacks } from '../../hooks/useTimelineCallbacks';
-import { useDynamicTimelineDates } from '../../hooks/useDynamicTimelineDates';
-import { useDynamicScaleMarkers } from '../../hooks/useDynamicScaleMarkers';
+import { useTimelineSettings } from "../../hooks/useTimelineSettings";
+import { useTimelineData } from "../../hooks/useTimelineData";
+import { useTimelineMarkers } from "../../hooks/useTimelineMarkers";
+import { useTimelineCallbacks } from "../../hooks/useTimelineCallbacks";
+import { useDynamicTimelineDates } from "../../hooks/useDynamicTimelineDates";
+import { useDynamicScaleMarkers } from "../../hooks/useDynamicScaleMarkers";
 
 // Timeline subcomponents
-import TimelineLine from './TimelineLine';
-import TimelineMarkers from './TimelineMarkers';
-import TimelineScaleMarkers from './TimelineScaleMarkers';
-import TimelineConnectors from './TimelineConnectors';
+import TimelineLine from "./TimelineLine";
+import TimelineMarkers from "./TimelineMarkers";
+import TimelineScaleMarkers from "./TimelineScaleMarkers";
+import TimelineConnectors from "./TimelineConnectors";
 
 /**
  * Timeline component that displays a horizontal timeline with markers and draggable items
- * 
+ *
  * @param {Function} onItemMove - Callback when an item is moved
  * @param {Function} onHideItem - Callback when an item is hidden/removed
  * @param {Function} onLabelChange - Callback when an item's label is changed
  * @returns {JSX.Element} - Timeline component
  */
 
-const Timeline = ({
-  onItemMove,
-  onHideItem,
-  onLabelChange,
-}) => {
+const Timeline = ({ onItemMove, onHideItem, onLabelChange }) => {
   // Access Zustand store for position setting change detection
   const { updatePositionSetting, currentPositionSetting } = useZustandStore();
-  
+
   // Extract timeline settings
   const {
     startDate,
@@ -48,28 +47,25 @@ const Timeline = ({
   } = useTimelineSettings();
 
   // Debug logging
-  TimelineLogger.debug('Start/End date types', { 
-    startType: typeof startDate, 
-    startDate, 
-    endType: typeof endDate, 
-    endDate 
+  TimelineLogger.debug("Start/End date types", {
+    startType: typeof startDate,
+    startDate,
+    endType: typeof endDate,
+    endDate,
   });
 
   // Get timeline data using original dates
-  const {
-    visibleBoardItems,
-    visibleTimelineItems,
-    visibleBoardItemsString,
-  } = useTimelineData(startDate, endDate, scale);
+  const { visibleBoardItems, visibleTimelineItems, visibleBoardItemsString } =
+    useTimelineData(startDate, endDate, scale);
 
   // Debug logging for timeline data
   React.useEffect(() => {
-    TimelineLogger.debug('🔍 Timeline component data check', {
+    TimelineLogger.debug("🔍 Timeline component data check", {
       visibleBoardItemsCount: visibleBoardItems?.length || 0,
       visibleTimelineItemsCount: visibleTimelineItems?.length || 0,
       hasStartDate: !!startDate,
       hasEndDate: !!endDate,
-      scale
+      scale,
     });
   }, [visibleBoardItems, visibleTimelineItems, startDate, endDate, scale]);
 
@@ -77,36 +73,43 @@ const Timeline = ({
   const {
     startDate: dynamicStartDate,
     endDate: dynamicEndDate,
-    isAdjusted
+    isAdjusted,
   } = useDynamicTimelineDates(visibleTimelineItems, startDate, endDate);
 
   // Debug logging for dynamic dates
   React.useEffect(() => {
-    TimelineLogger.debug('🔍 Dynamic dates calculation', {
+    TimelineLogger.debug("🔍 Dynamic dates calculation", {
       originalStart: startDate?.toISOString(),
       originalEnd: endDate?.toISOString(),
       dynamicStart: dynamicStartDate?.toISOString(),
       dynamicEnd: dynamicEndDate?.toISOString(),
       isAdjusted,
-      visibleTimelineItemsCount: visibleTimelineItems?.length || 0
+      visibleTimelineItemsCount: visibleTimelineItems?.length || 0,
     });
-  }, [startDate, endDate, dynamicStartDate, dynamicEndDate, isAdjusted, visibleTimelineItems]);
+  }, [
+    startDate,
+    endDate,
+    dynamicStartDate,
+    dynamicEndDate,
+    isAdjusted,
+    visibleTimelineItems,
+  ]);
 
   // Detect position setting changes and trigger reset
   React.useEffect(() => {
-    TimelineLogger.debug('🔍 Position change detection check', {
+    TimelineLogger.debug("🔍 Position change detection check", {
       position,
       currentPositionSetting,
       positionType: typeof position,
       currentPositionSettingType: typeof currentPositionSetting,
       areEqual: position === currentPositionSetting,
-      willTriggerReset: position && position !== currentPositionSetting
+      willTriggerReset: position && position !== currentPositionSetting,
     });
-    
+
     if (position && position !== currentPositionSetting) {
-      TimelineLogger.debug('🔄 Position setting changed, triggering reset', {
+      TimelineLogger.debug("🔄 Position setting changed, triggering reset", {
         from: currentPositionSetting,
-        to: position
+        to: position,
       });
       updatePositionSetting(position);
     }
@@ -117,24 +120,26 @@ const Timeline = ({
   const effectiveEndDate = dynamicEndDate;
 
   // Calculate dynamic scale markers based on effective dates
-  const dynamicScaleMarkers = useDynamicScaleMarkers(effectiveStartDate, effectiveEndDate, scale, isAdjusted);
+  const dynamicScaleMarkers = useDynamicScaleMarkers(
+    effectiveStartDate,
+    effectiveEndDate,
+    scale,
+    isAdjusted,
+  );
 
   // Log when dates are adjusted
   if (isAdjusted) {
-    TimelineLogger.debug('Timeline dates adjusted for visible items', {
+    TimelineLogger.debug("Timeline dates adjusted for visible items", {
       originalStart: startDate?.toISOString(),
       originalEnd: endDate?.toISOString(),
       adjustedStart: effectiveStartDate?.toISOString(),
       adjustedEnd: effectiveEndDate?.toISOString(),
-      visibleItemCount: visibleTimelineItems?.length || 0
+      visibleItemCount: visibleTimelineItems?.length || 0,
     });
   }
 
   // Get timeline markers and mappings using effective dates
-  const {
-    markers,
-    itemToMarkerMap,
-  } = useTimelineMarkers({
+  const { markers, itemToMarkerMap } = useTimelineMarkers({
     visibleBoardItems,
     visibleTimelineItems,
     dateColumn,
@@ -149,38 +154,48 @@ const Timeline = ({
 
   // Debug logging for timeline markers
   React.useEffect(() => {
-    TimelineLogger.debug('🔍 Timeline markers generated', {
+    TimelineLogger.debug("🔍 Timeline markers generated", {
       markersCount: markers?.length || 0,
       itemToMarkerMapSize: itemToMarkerMap?.size || 0,
       effectiveStart: effectiveStartDate?.toISOString(),
       effectiveEnd: effectiveEndDate?.toISOString(),
-      visibleBoardItemsCount: visibleBoardItems?.length || 0
+      visibleBoardItemsCount: visibleBoardItems?.length || 0,
     });
-  }, [markers, itemToMarkerMap, effectiveStartDate, effectiveEndDate, visibleBoardItems]);
+  }, [
+    markers,
+    itemToMarkerMap,
+    effectiveStartDate,
+    effectiveEndDate,
+    visibleBoardItems,
+  ]);
 
   // Get callback functions using effective dates
-  const { onPositionChange } = useTimelineCallbacks(effectiveStartDate, effectiveEndDate, onItemMove);
+  const { onPositionChange } = useTimelineCallbacks(
+    effectiveStartDate,
+    effectiveEndDate,
+    onItemMove,
+  );
 
   // Calculate layout values
-  const { shouldFlipScaleMarkers, timelineTop } = calculateTimelineLayout(position, datePosition);
-  
+  const { shouldFlipScaleMarkers, timelineTop } = calculateTimelineLayout(
+    position,
+    datePosition,
+  );
+
   return (
-    <div 
-      className="timeline-container"
-      style={TIMELINE_CONTAINER_STYLES}
-    >
+    <div className="timeline-container" style={TIMELINE_CONTAINER_STYLES}>
       {/* Timeline line */}
       <TimelineLine position={position} />
 
       {/* Timeline markers */}
-      <TimelineMarkers 
+      <TimelineMarkers
         markers={markers}
         datePosition={datePosition}
         timelineTop={timelineTop}
       />
-      
+
       {/* Scale markers */}
-      <TimelineScaleMarkers 
+      <TimelineScaleMarkers
         scale={scale}
         scaleMarkers={dynamicScaleMarkers}
         timelineTop={timelineTop}
@@ -190,8 +205,13 @@ const Timeline = ({
       {/* Board Items - Render all items chronologically with position logic */}
       {(() => {
         // Calculate positions for all items using effective dates
-        const itemsWithPositions = calculateTimelineItemPositions(visibleTimelineItems, effectiveStartDate, effectiveEndDate, position);
-        TimelineLogger.debug('itemsWithPositions', itemsWithPositions);
+        const itemsWithPositions = calculateTimelineItemPositions(
+          visibleTimelineItems,
+          effectiveStartDate,
+          effectiveEndDate,
+          position,
+        );
+        TimelineLogger.debug("itemsWithPositions", itemsWithPositions);
         // Render items using extracted function
         return renderTimelineItems(
           itemsWithPositions,
@@ -200,9 +220,9 @@ const Timeline = ({
           onPositionChange,
         );
       })()}
-      
+
       {/* LeaderLine Connectors - Connect board items to timeline markers */}
-      <TimelineConnectors 
+      <TimelineConnectors
         visibleTimelineItems={visibleTimelineItems}
         markers={markers}
         itemToMarkerMap={itemToMarkerMap}

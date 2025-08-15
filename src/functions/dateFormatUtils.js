@@ -1,4 +1,4 @@
-import moment from 'moment';
+import moment from "moment";
 
 /**
  * Utility functions for date validation, conversion, and formatting
@@ -30,23 +30,23 @@ export const isMomentObject = (value) => {
  */
 export const convertToDate = (dateInput) => {
   if (!dateInput) return null;
-  
+
   // Already a Date object
   if (isValidDate(dateInput)) {
     return dateInput;
   }
-  
+
   // Moment object
   if (isMomentObject(dateInput)) {
     return dateInput.toDate();
   }
-  
+
   // String - try to parse
-  if (typeof dateInput === 'string') {
+  if (typeof dateInput === "string") {
     const parsed = new Date(dateInput);
     return isValidDate(parsed) ? parsed : null;
   }
-  
+
   return null;
 };
 
@@ -56,14 +56,18 @@ export const convertToDate = (dateInput) => {
  * @param {Object} options - Formatting options (default: { dateStyle: 'short' })
  * @returns {string|null} Formatted date string or null if invalid
  */
-export const formatDateForDisplay = (date, options = { dateStyle: 'short' }) => {
+export const formatDateForDisplay = (
+  date,
+  options = { dateStyle: "short" },
+) => {
   const dateObj = convertToDate(date);
   if (!dateObj) return null;
-  
+
   try {
-    return new Intl.DateTimeFormat('en-US', options).format(dateObj);
+    // eslint-disable-next-line no-undef
+    return new Intl.DateTimeFormat("en-US", options).format(dateObj);
   } catch (error) {
-    console.warn('Date formatting error:', error);
+    console.warn("Date formatting error:", error);
     return null;
   }
 };
@@ -76,14 +80,14 @@ export const formatDateForDisplay = (date, options = { dateStyle: 'short' }) => 
 export const formatDateForAPI = (date) => {
   const dateObj = convertToDate(date);
   if (!dateObj) return null;
-  
+
   try {
     const year = dateObj.getUTCFullYear();
-    const month = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getUTCDate()).padStart(2, '0');
+    const month = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(dateObj.getUTCDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   } catch (error) {
-    console.warn('API date formatting error:', error);
+    console.warn("API date formatting error:", error);
     return null;
   }
 };
@@ -95,22 +99,26 @@ export const formatDateForAPI = (date) => {
  * @param {Object} currentColumnValue - Current column value for timeline columns
  * @returns {string|null} JSON string for column value or null if invalid
  */
-export const createColumnValue = (date, columnType = 'date', currentColumnValue = null) => {
+export const createColumnValue = (
+  date,
+  columnType = "date",
+  currentColumnValue = null,
+) => {
   const dateString = formatDateForAPI(date);
   if (!dateString) return null;
-  
+
   try {
-    if (columnType === 'timeline') {
-      const fromDate = currentColumnValue?.value 
-        ? JSON.parse(currentColumnValue.value).from 
+    if (columnType === "timeline") {
+      const fromDate = currentColumnValue?.value
+        ? JSON.parse(currentColumnValue.value).from
         : null;
       return JSON.stringify({ from: fromDate, to: dateString });
     }
-    
+
     // Default date column
     return JSON.stringify({ date: dateString });
   } catch (error) {
-    console.warn('Column value creation error:', error);
+    console.warn("Column value creation error:", error);
     return null;
   }
 };
@@ -121,22 +129,22 @@ export const createColumnValue = (date, columnType = 'date', currentColumnValue 
  * @param {string} columnType - Type of column ('date', 'timeline', etc.)
  * @returns {Date|null} Parsed date or null if invalid
  */
-export const parseDateFromColumnValue = (columnValue, columnType = 'date') => {
+export const parseDateFromColumnValue = (columnValue, columnType = "date") => {
   if (!columnValue) return null;
-  
+
   try {
     const parsed = JSON.parse(columnValue);
-    
-    if (columnType === 'timeline') {
+
+    if (columnType === "timeline") {
       // For timeline columns, use 'to' date or fall back to 'from'
       const dateString = parsed.to || parsed.from;
       return dateString ? new Date(dateString) : null;
     }
-    
+
     // Default date column
     return parsed.date ? new Date(parsed.date) : null;
   } catch (error) {
-    console.warn('Column value parsing error:', error);
+    console.warn("Column value parsing error:", error);
     return null;
   }
 };
@@ -161,13 +169,13 @@ export const getCurrentMoment = (fallbackDate = null) => {
  */
 export const validateDateInput = (dateInput) => {
   if (!dateInput) {
-    return { isValid: false, date: null, error: 'No date provided' };
+    return { isValid: false, date: null, error: "No date provided" };
   }
-  
+
   const convertedDate = convertToDate(dateInput);
   if (!convertedDate) {
-    return { isValid: false, date: null, error: 'Invalid date format' };
+    return { isValid: false, date: null, error: "Invalid date format" };
   }
-  
+
   return { isValid: true, date: convertedDate, error: null };
 };

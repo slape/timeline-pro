@@ -1,17 +1,17 @@
-import React from 'react';
-import { 
-  DatePicker, 
-  Modal, 
-  Button, 
-  DialogContentContainer, 
-  Text, 
-  AlertBanner, 
-  AlertBannerText 
-} from '@vibe/core';
+import React from "react";
+import {
+  DatePicker,
+  Modal,
+  Button,
+  DialogContentContainer,
+  Text,
+  AlertBanner,
+  AlertBannerText,
+} from "@vibe/core";
 
 /**
  * DatePickerModal component for changing item dates
- * 
+ *
  * @param {Object} props - Component props
  * @param {boolean} props.isOpen - Whether the modal is open
  * @param {Function} props.onClose - Handler for closing the modal
@@ -27,7 +27,7 @@ const DatePickerModal = ({
   item,
   selectedDate,
   onDateChange,
-  onSave
+  onSave,
 }) => {
   const handleClose = () => {
     onClose();
@@ -45,7 +45,7 @@ const DatePickerModal = ({
           onClose={handleClose}
           title={
             <Text size="text-size-medium" weight="medium">
-              Change Date: {item?.originalItem?.name || 'Item'}
+              Change Date: {item?.originalItem?.name || "Item"}
             </Text>
           }
           size="small"
@@ -58,24 +58,18 @@ const DatePickerModal = ({
               firstDayOfWeek={1}
               data-testid="date-picker"
             />
-            <AlertBanner
-              isCloseHidden={true}
-            >
-              <AlertBannerText
-                text="Changing this date will update your board."
-              />
+            <AlertBanner isCloseHidden={true}>
+              <AlertBannerText text="Changing this date will update your board." />
             </AlertBanner>
-            <div style={{ 
-              marginTop: '16px', 
-              display: 'flex', 
-              justifyContent: 'flex-end', 
-              gap: '8px' 
-            }}>
-              <Button
-                onClick={handleClose}
-                kind="tertiary"
-                size="small"
-              >
+            <div
+              style={{
+                marginTop: "16px",
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "8px",
+              }}
+            >
+              <Button onClick={handleClose} kind="tertiary" size="small">
                 Cancel
               </Button>
               <Button
