@@ -3,7 +3,6 @@ import TimelineLogger from '../utils/logger';
 import updateItemDate from './updateItemDate';
 import { 
   validateDateInput, 
-  convertToDate, 
   formatDateForAPI, 
   createColumnValue 
 } from './dateFormatUtils';

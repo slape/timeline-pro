@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Box, EditableHeading, Flex, Text } from '@vibe/core';
+import React, { useEffect } from 'react';
+import { Box, EditableHeading, Flex } from '@vibe/core';
 import { useZustandStore } from '../../store/useZustand';
 import { handleTimelineItemMove, handleLabelChange } from '../../functions/timelineHandlers';
 import { processTimelineData } from '../../functions/processTimelineData';
