@@ -44,8 +44,10 @@ const DraggableBoardItem = ({
   onLabelChange,
   onHideItem,
   showItemDates,
-  onPositionChange, // New prop for notifying position changes
+  onPositionChange,
 }) => {
+  // Ref to store the defaultY for this drag
+  const dragDefaultY = React.useRef(null);
   // Use custom hook for draggable item state management
   const {
     position,
@@ -120,63 +122,37 @@ const DraggableBoardItem = ({
   // Use custom hook for mouse handlers
   // --- Custom drag end logic for Y delta persistence ---
   // Wrap the position change callback to persist Y delta on drag end
+  // On drag end: calculate yDelta from dragDefaultY and save
   const handlePositionChangeWithYDelta = (itemId, newPosition) => {
-    TimelineLogger.debug("[Y-DELTA] handlePositionChangeWithYDelta called", {
-      itemId,
-      newPosition,
-    });
-    // Call the original position change logic
+    if (typeof dragDefaultY.current === "number" && typeof newPosition.y === "number") {
+      const yDelta = newPosition.y - dragDefaultY.current;
+      TimelineLogger.debug("[Y-DELTA] Drag end: saving yDelta", { itemId, yDelta, defaultY: dragDefaultY.current, finalY: newPosition.y });
+      saveCustomItemYDelta(itemId, yDelta);
+    }
     if (onPositionChange) {
-      TimelineLogger.debug("[Y-DELTA] Calling onPositionChange", {
-        itemId,
-        newPosition,
-      });
       onPositionChange(itemId, newPosition);
     }
-    // Calculate and persist Y delta
+  };
+
+  // On drag start: snapshot defaultY
+  const handleMouseDownWithDefaultY = (e) => {
     if (
       boardItems &&
       timelineParams?.startDate &&
       timelineParams?.endDate &&
       settings?.position
     ) {
-      TimelineLogger.debug("[Y-DELTA] Calculating default Y position", {
-        itemId,
-        boardItems,
-        startDate: timelineParams.startDate,
-        endDate: timelineParams.endDate,
-        position: settings.position,
-      });
       const defaultY = getDefaultItemYPosition({
         items: boardItems,
-        itemId,
+        itemId: item.id,
         startDate: timelineParams.startDate,
         endDate: timelineParams.endDate,
         position: settings.position,
       });
-      TimelineLogger.debug("[Y-DELTA] Default Y position calculated", {
-        itemId,
-        defaultY,
-      });
-      if (typeof defaultY === "number" && typeof newPosition.y === "number") {
-        TimelineLogger.debug("[Y-DELTA] Calculating Y delta", {
-          itemId,
-          draggedY: newPosition.y,
-          defaultY,
-        });
-        const yDelta = newPosition.y - defaultY;
-        TimelineLogger.debug("[Y-DELTA] Calculated Y delta", {
-          itemId,
-          yDelta,
-        });
-        TimelineLogger.debug("[Y-DELTA] Saving Y delta", { itemId, yDelta });
-        saveCustomItemYDelta(itemId, yDelta);
-        TimelineLogger.debug("[Y-DELTA] Called saveCustomItemYDelta", {
-          itemId,
-          yDelta,
-        });
-      }
+      dragDefaultY.current = defaultY;
+      TimelineLogger.debug("[Y-DELTA] Drag start: snapshotted defaultY", { itemId: item.id, defaultY });
     }
+    handleMouseDown(e);
   };
 
   const {
@@ -251,13 +227,7 @@ const DraggableBoardItem = ({
         }
       }}
       style={containerStyles}
-      onMouseDown={(e) => {
-        TimelineLogger.debug(
-          "[DRAG-DEBUG] handleMouseDown fired on outer div",
-          { itemId: item.id },
-        );
-        handleMouseDown(e);
-      }}
+      onMouseDown={handleMouseDownWithDefaultY}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

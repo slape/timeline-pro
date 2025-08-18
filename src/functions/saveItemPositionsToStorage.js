@@ -1,17 +1,13 @@
 import TimelineLogger from "../utils/logger";
 import { ITEM_POSITIONS_KEY_PREFIX } from "../utils/configConstants";
 
-const saveItemPositionsToStorage = async (
+const saveItemYDeltasToStorage = async (
   storageService,
   boardId,
-  positionSetting,
-  itemPositions,
   itemYDelta = {},
 ) => {
-  TimelineLogger.debug("[Y-DELTA] saveItemPositionsToStorage called", {
+  TimelineLogger.debug("[Y-DELTA] saveItemYDeltasToStorage called", {
     boardId,
-    positionSetting,
-    itemPositions,
     itemYDelta,
   });
   if (!storageService || !boardId) {
@@ -24,15 +20,11 @@ const saveItemPositionsToStorage = async (
     const storageKey = `${ITEM_POSITIONS_KEY_PREFIX}-${boardId}`;
     const dataToSave = {
       boardId,
-      positionSetting,
-      itemPositions: itemPositions || {},
-      itemYDelta: itemYDelta || {},
+      customItemYDelta: itemYDelta || {},
     };
-    TimelineLogger.debug("Saving item positions to Monday storage", {
+    TimelineLogger.debug("Saving item Y-deltas to Monday storage", {
       boardId,
-      positionSetting,
-      itemCount: Object.keys(dataToSave.itemPositions).length,
-      yDeltaCount: Object.keys(dataToSave.itemYDelta || {}).length,
+      yDeltaCount: Object.keys(dataToSave.customItemYDelta || {}).length,
     });
     const response = await storageService.setInstanceItem(
       storageKey,
@@ -40,24 +32,24 @@ const saveItemPositionsToStorage = async (
     );
     if (response?.data?.success) {
       TimelineLogger.debug(
-        "Successfully saved item positions to Monday storage",
+        "Successfully saved item Y-deltas to Monday storage",
         {
           boardId,
-          itemCount: Object.keys(dataToSave.itemPositions).length,
+          yDeltaCount: Object.keys(dataToSave.customItemYDelta || {}).length,
         },
       );
     } else {
       TimelineLogger.error(
-        "Failed to save item positions to Monday storage",
+        "Failed to save item Y-deltas to Monday storage",
         response?.data?.error,
       );
     }
   } catch (error) {
     TimelineLogger.error(
-      "Failed to save item positions to Monday storage",
+      "Failed to save item Y-deltas to Monday storage",
       error,
     );
   }
 };
 
-export default saveItemPositionsToStorage;
+export default saveItemYDeltasToStorage;

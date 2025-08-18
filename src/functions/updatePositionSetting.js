@@ -1,6 +1,5 @@
 import TimelineLogger from "../utils/logger";
-import saveItemPositionsToStorage from "./saveItemPositionsToStorage";
-import generateDefaultPositions from "./generateDefaultPositions";
+import saveItemYDeltasToStorage from "./saveItemPositionsToStorage";
 
 /**
  * Updates the timeline position setting and persists changes.
@@ -31,31 +30,26 @@ export function updatePositionSetting({
     to: newSetting,
   });
 
-  // Always generate fresh default positions for any position setting change
-  let updatedPositions = customItemPositions;
-  if (currentPositionSetting && currentPositionSetting !== newSetting) {
-    updatedPositions = generateDefaultPositions(boardItems, newSetting);
-    TimelineLogger.debug(
-      "Applied default positions for position setting change",
-      {
-        from: currentPositionSetting,
-        to: newSetting,
-        defaultPositionCount: Object.keys(updatedPositions).length,
-        reason: "Always reset to prevent off-screen items",
-      },
-    );
-  }
-
+  // For any position setting change, clear all Y-deltas and persist
+  TimelineLogger.debug(
+    "Clearing all custom Y-deltas for position setting change",
+    { to: newSetting }
+  );
+  set({
+    customItemYDelta: {},
+    itemPositionsLoaded: true,
+    itemPositionsError: null,
+  });
   set({
     currentPositionSetting: newSetting,
-    customItemPositions: updatedPositions,
-    customItemYDelta: {}, // Reset all Y deltas on position setting change
+    customItemYDelta: {},
+    itemPositionsLoaded: true,
+    itemPositionsError: null,
   });
 
-  saveItemPositionsToStorage(
+  saveItemYDeltasToStorage(
     storageService,
     boardId,
-    newSetting,
-    updatedPositions,
+    {},
   );
 }

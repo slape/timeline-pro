@@ -13,31 +13,28 @@ const loadItemPositionsFromStorage = async (storageService, boardId) => {
     const response = await storageService.getInstanceItem(storageKey);
     if (response?.data?.success && response.data.value) {
       const positionData = response.data.value;
-      // Validate the structure
       if (
         positionData &&
         typeof positionData === "object" &&
-        positionData.itemPositions
+        positionData.customItemYDelta
       ) {
-        TimelineLogger.debug("Loaded item positions from Monday storage", {
+        TimelineLogger.debug("Loaded item Y-deltas from Monday storage", {
           boardId,
-          positionSetting: positionData.positionSetting,
-          itemCount: Object.keys(positionData.itemPositions).length,
-          yDeltaCount: Object.keys(positionData.itemYDelta || {}).length,
+          yDeltaCount: Object.keys(positionData.customItemYDelta || {}).length,
         });
         return {
-          ...positionData,
-          itemYDelta: positionData.itemYDelta || {},
+          boardId,
+          customItemYDelta: positionData.customItemYDelta || {},
         };
       }
     }
-    return { boardId, positionSetting: null, itemPositions: {} };
+    return { boardId, customItemYDelta: {} };
   } catch (error) {
     TimelineLogger.error(
       "Failed to load item positions from Monday storage",
       error,
     );
-    return { boardId, positionSetting: null, itemPositions: {} };
+    return { boardId, customItemYDelta: {} };
   }
 };
 

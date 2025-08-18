@@ -2,7 +2,6 @@ import { create } from "zustand";
 import TimelineLogger from "../utils/logger";
 import { MondayStorageService } from "./MondayStorageService";
 
-import { saveCustomItemPosition as saveCustomItemPositionFn } from "../functions/saveCustomItemPosition";
 import { updatePositionSetting as updatePositionSettingFn } from "../functions/updatePositionSetting";
 import { clearCustomPositions as clearCustomPositionsFn } from "../functions/clearCustomPositions";
 import { initializeItemPositions as initializeItemPositionsFn } from "../functions/initializeItemPositions";
@@ -27,10 +26,8 @@ export const useZustandStore = create((set, get) => ({
   hiddenItemIds: [], // Will be loaded asynchronously from Monday storage
   hiddenItemsLoaded: false, // Track if hidden items have been loaded from Monday storage
   appLoading: true, // New state to manage initial app load
-  // Item position persistence
-  customItemPositions: {}, // { itemId: { x, y } }
+  // Y-delta persistence only
   customItemYDelta: {}, // { itemId: number } - Y-axis delta persistence
-  currentPositionSetting: null, // Track position setting changes
   itemPositionsLoaded: false, // Loading state
   itemPositionsError: null, // Error handling
   timelineParams: {},
@@ -166,21 +163,9 @@ export const useZustandStore = create((set, get) => ({
     }
   },
 
-  // Item position persistence methods
-  saveCustomItemPosition: (itemId, position) => {
-    return saveCustomItemPositionFn({
-      get,
-      set,
-      itemId,
-      position,
-      storageService,
-    });
-  },
-  // Y delta persistence method
+  // Y-delta persistence methods
   saveCustomItemYDelta: (itemId, yDelta) => {
-    const {
-      saveCustomItemYDelta,
-    } = require("../functions/saveCustomItemYDelta");
+    const { saveCustomItemYDelta } = require("../functions/saveCustomItemYDelta");
     return saveCustomItemYDelta({ get, set, itemId, yDelta, storageService });
   },
 
@@ -188,11 +173,9 @@ export const useZustandStore = create((set, get) => ({
     return updatePositionSettingFn({ get, set, newSetting, storageService });
   },
 
-  clearCustomPositions: () => {
-    return clearCustomPositionsFn({ get, set, storageService });
+  initializeItemPositions: () => {
+    const { initializeItemPositions } = require("../functions/initializeItemPositions");
+    return initializeItemPositions({ get, set, storageService });
   },
 
-  initializeItemPositions: async () => {
-    return initializeItemPositionsFn({ get, set, storageService });
-  },
 }));
