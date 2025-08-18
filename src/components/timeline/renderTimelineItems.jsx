@@ -63,6 +63,7 @@ export function renderTimelineItems(
           onHideItem={onHideItem}
           showItemDates={showDates}
           onPositionChange={onPositionChange}
+          itemsForDefaultY={itemsWithPositions}
         />
       </div>
     );

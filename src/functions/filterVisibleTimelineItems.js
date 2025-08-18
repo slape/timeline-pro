@@ -11,8 +11,7 @@ const filterVisibleTimelineItems = (timelineItems, hiddenItemIds) => {
 
   return timelineItems.filter((item) => {
     // Convert item ID to string for comparison with hiddenItemIds (which are strings)
-    const itemIdStr = String(item.id);
-    return !hiddenItemIds.includes(itemIdStr);
+    return !hiddenItemIds.includes(String(item.id));
   });
 };
 

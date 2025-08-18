@@ -1,5 +1,5 @@
 import TimelineLogger from "../utils/logger";
-import saveItemYDeltasToStorage from "./saveItemPositionsToStorage";
+import saveItemYDeltasToStorage from "./saveItemPositionsToStorage"; // This is correct if the function is in saveItemPositionsToStorage.js
 
 /**
  * Saves a custom Y-Delta for a timeline item
@@ -19,15 +19,15 @@ export default async function saveCustomItemYDelta({ get, set, itemId, yDelta, s
     return null;
   }
 
-  // Update Y-Delta data
+  // Update Y-Delta data (merge)
   const updatedYDeltas = {
     ...customItemYDelta,
     [itemId]: yDelta,
   };
 
-  TimelineLogger.debug("[Y-DELTA] Updated Y-Delta data", { itemId, yDelta, updatedYDeltas });
-
+  TimelineLogger.debug("[Y-DELTA][PATCH] About to update Zustand store customItemYDelta", { itemId, yDelta, updatedYDeltas });
   set({ customItemYDelta: updatedYDeltas });
+  TimelineLogger.debug("[Y-DELTA][PATCH] Zustand store updated, calling saveItemYDeltasToStorage", { updatedYDeltas });
 
   // Save to Monday.com storage asynchronously
   try {

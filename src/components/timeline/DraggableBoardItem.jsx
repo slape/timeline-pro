@@ -7,6 +7,7 @@ import { getShapeStyles } from "../../functions/getShapeStyles";
 import "./DraggableBoardItem.css";
 import { useZustandStore } from "../../store/useZustand";
 import { getDefaultItemYPosition } from "../../functions/getDefaultItemYPosition";
+import { calculateTimelineItemPositions } from "../../functions/calculateTimelineItemPositions";
 import { useDraggableItemState } from "../../hooks/useDraggableItemState";
 import { useDateHandling } from "../../hooks/useDateHandling";
 import { useMouseHandlers } from "../../hooks/useMouseHandlers";
@@ -45,6 +46,7 @@ const DraggableBoardItem = ({
   onHideItem,
   showItemDates,
   onPositionChange,
+  itemsForDefaultY = null, // New prop for strict pipeline
 }) => {
   // Ref to store the defaultY for this drag
   const dragDefaultY = React.useRef(null);
@@ -121,29 +123,52 @@ const DraggableBoardItem = ({
 
   // Use custom hook for mouse handlers
   // --- Custom drag end logic for Y delta persistence ---
-  // Wrap the position change callback to persist Y delta on drag end
-  // On drag end: calculate yDelta from dragDefaultY and save
-  const handlePositionChangeWithYDelta = (itemId, newPosition) => {
-    if (typeof dragDefaultY.current === "number" && typeof newPosition.y === "number") {
+  // Only persist Y delta at drag end (on mouseup), not during drag
+  // We'll provide a separate callback for mouseup
+  const handlePositionChangeWithYDelta = (itemId, newPosition, isDragEnd = false) => {
+    if (onPositionChange) {
+      onPositionChange(itemId, newPosition);
+    }
+    if (isDragEnd && typeof dragDefaultY.current === "number" && typeof newPosition.y === "number") {
       const yDelta = newPosition.y - dragDefaultY.current;
       TimelineLogger.debug("[Y-DELTA] Drag end: saving yDelta", { itemId, yDelta, defaultY: dragDefaultY.current, finalY: newPosition.y });
       saveCustomItemYDelta(itemId, yDelta);
     }
-    if (onPositionChange) {
-      onPositionChange(itemId, newPosition);
-    }
   };
+
 
   // On drag start: snapshot defaultY
   const handleMouseDownWithDefaultY = (e) => {
+    const itemsArray = itemsForDefaultY || boardItems;
     if (
-      boardItems &&
+      itemsArray &&
       timelineParams?.startDate &&
       timelineParams?.endDate &&
       settings?.position
     ) {
+      // 1. Log itemsForDefaultY (ids and types) if provided, else boardItems
+      const itemArrayIdTypes = itemsArray.map(bi => ({ id: bi.id, type: typeof bi.id }));
+      TimelineLogger.debug('[Y-DELTA][DEBUG] itemsForDefaultY/boardItems ids and types', { itemArrayIdTypes });
+
+      // 2. Log itemId and its type
+      TimelineLogger.debug('[Y-DELTA][DEBUG] itemId and type', { itemId: item.id, type: typeof item.id });
+
+      // 3. Log output of calculateTimelineItemPositions
+      try {
+        const calcPositions = calculateTimelineItemPositions(
+          itemsArray,
+          timelineParams.startDate,
+          timelineParams.endDate,
+          settings.position
+        );
+        const calcIds = calcPositions.map(pos => ({ id: pos.id, type: typeof pos.id }));
+        TimelineLogger.debug('[Y-DELTA][DEBUG] calculateTimelineItemPositions output ids/types', { calcIds, calcPositions });
+      } catch (err) {
+        TimelineLogger.error('[Y-DELTA][DEBUG] Error logging calculateTimelineItemPositions', err);
+      }
+
       const defaultY = getDefaultItemYPosition({
-        items: boardItems,
+        items: itemsArray,
         itemId: item.id,
         startDate: timelineParams.startDate,
         endDate: timelineParams.endDate,
@@ -160,6 +185,8 @@ const DraggableBoardItem = ({
     handleMouseMove,
     handleMouseUp,
     handleResizeMouseDown,
+    handleResizeMouseMove,
+    handleResizeMouseUp,
   } = useMouseHandlers({
     containerRef,
     dragStartPos,
@@ -170,7 +197,7 @@ const DraggableBoardItem = ({
     size,
     setSize,
     setIsDragging,
-    onPositionChange: handlePositionChangeWithYDelta,
+    onPositionChange: handlePositionChangeWithYDelta, // Pass the correct handler
     item,
     timelinePosition,
   });

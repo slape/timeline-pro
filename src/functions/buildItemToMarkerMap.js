@@ -77,7 +77,7 @@ export default function buildItemToMarkerMap({
     });
 
     if (closestMarker) {
-      map.set(item.id, {
+      map.set(String(item.id), {
         markerId: `timeline-marker-${closestMarker.index}`,
         markerIndex: closestMarker.index,
         markerPosition: closestMarker.marker.position,

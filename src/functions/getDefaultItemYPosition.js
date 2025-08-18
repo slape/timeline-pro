@@ -33,7 +33,7 @@ export function getDefaultItemYPosition({
     position,
   );
   TimelineLogger.debug("[Y-DELTA][TRACE] positions array", { positions });
-  const found = positions.find((i) => i.id === itemId);
+  const found = positions.find((i) => String(i.id) === String(itemId));
   TimelineLogger.debug("[Y-DELTA][TRACE] found item", { found });
   return found ? found.renderPosition.y : null;
 }

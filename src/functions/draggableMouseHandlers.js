@@ -274,8 +274,8 @@ export const createHandleMouseMove = ({
     if (onPositionChange) {
       onPositionChange(item.id, {
         x: newX,
-        y: boundedY,
-      });
+        y: boundedY
+      }, false); // isDragEnd = false during drag
     }
   };
 };

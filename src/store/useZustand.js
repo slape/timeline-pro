@@ -5,6 +5,7 @@ import { MondayStorageService } from "./MondayStorageService";
 import { updatePositionSetting as updatePositionSettingFn } from "../functions/updatePositionSetting";
 import { clearCustomPositions as clearCustomPositionsFn } from "../functions/clearCustomPositions";
 import { initializeItemPositions as initializeItemPositionsFn } from "../functions/initializeItemPositions";
+import saveCustomItemYDeltaFn from "../functions/saveCustomItemYDelta";
 
 // console.log('Zustand store created (should appear only once per reload)'); // Suppressed for focused debugging
 
@@ -165,8 +166,7 @@ export const useZustandStore = create((set, get) => ({
 
   // Y-delta persistence methods
   saveCustomItemYDelta: (itemId, yDelta) => {
-    const { saveCustomItemYDelta } = require("../functions/saveCustomItemYDelta");
-    return saveCustomItemYDelta({ get, set, itemId, yDelta, storageService });
+    return saveCustomItemYDeltaFn({ get, set, itemId, yDelta, storageService });
   },
 
   updatePositionSetting: (newSetting) => {
