@@ -10,6 +10,7 @@ import saveItemYDeltasToStorage from "./saveItemPositionsToStorage"; // This is 
  * @param {string} currentPositionSetting - Current position setting
  */
 export default async function saveCustomItemYDelta({ get, set, itemId, yDelta, storageService }) {
+  const { currentPositionSetting } = get();
   TimelineLogger.debug("[Y-DELTA][STORE] Saving yDelta to store", { itemId, yDelta });
   const { customItemYDelta = {}, context } = get();
   const boardId = context?.boardId;
@@ -32,7 +33,7 @@ export default async function saveCustomItemYDelta({ get, set, itemId, yDelta, s
 
   // Save to Monday.com storage asynchronously
   try {
-    await saveItemYDeltasToStorage(storageService, boardId, updatedYDeltas);
+    await saveItemYDeltasToStorage(storageService, boardId, updatedYDeltas, currentPositionSetting);
     TimelineLogger.debug("[Y-DELTA] Successfully saved Y-Delta to Monday storage", { itemId, yDelta });
   } catch (error) {
     TimelineLogger.error("[Y-DELTA] Failed to save Y-Delta to Monday storage", error);

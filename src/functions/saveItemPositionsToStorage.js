@@ -4,11 +4,12 @@ import { ITEM_POSITIONS_KEY_PREFIX } from "../utils/configConstants";
 const saveItemYDeltasToStorage = async (
   storageService,
   boardId,
-  itemYDelta = {},
+  customItemYDelta = {},
+  currentPositionSetting = null,
 ) => {
   TimelineLogger.debug("[Y-DELTA] saveItemYDeltasToStorage called", {
     boardId,
-    itemYDelta,
+    customItemYDelta,
   });
   if (!storageService || !boardId) {
     TimelineLogger.debug(
@@ -20,9 +21,10 @@ const saveItemYDeltasToStorage = async (
     const storageKey = `${ITEM_POSITIONS_KEY_PREFIX}-${boardId}`;
     const dataToSave = {
       boardId,
-      customItemYDelta: itemYDelta || {},
+      customItemYDelta: customItemYDelta || {},
+      positionSetting: currentPositionSetting,
     };
-    console.log("[Y-DELTA][STORAGE] Saving Y-deltas", { boardId, itemYDelta });
+    console.log("[Y-DELTA][STORAGE] Saving Y-deltas", { boardId, customItemYDelta });
     const response = await storageService.setInstanceItem(
       storageKey,
       dataToSave,

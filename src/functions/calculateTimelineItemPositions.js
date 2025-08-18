@@ -6,14 +6,35 @@
  * @param {string} position - Position setting ('above', 'below', 'alternate')
  * @returns {Array} Array of items with calculated render positions
  */
+/**
+ * Calculates positions for timeline items based on chronological order, position settings, and same-date handling
+ * @param {Array} items - Array of timeline items with dates
+ * @param {Date} startDate - Timeline start date
+ * @param {Date} endDate - Timeline end date
+ * @param {string} position - Current position setting ('above', 'below', 'alternate')
+ * @param {string} [trackedPositionSetting] - Persisted position setting from storage
+ * @returns {Array} Array of items with calculated render positions
+ */
 export function calculateTimelineItemPositions(
   items,
   startDate,
   endDate,
   position,
+  trackedPositionSetting = null,
 ) {
   if (!items || items.length === 0) {
     return [];
+  }
+  if (trackedPositionSetting && trackedPositionSetting !== position) {
+    // Position setting has changed; ignore any custom Y-deltas for this render
+    // (If you want to transform/mirror, insert logic here)
+    if (typeof TimelineLogger !== "undefined") {
+      TimelineLogger.debug("[Y-DELTA][POSITION] Position setting changed, ignoring custom Y-deltas", {
+        trackedPositionSetting,
+        currentPositionSetting: position,
+      });
+    }
+    // Proceed with default positions only
   }
 
   // Sort all items chronologically

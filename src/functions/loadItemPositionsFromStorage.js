@@ -25,6 +25,7 @@ const loadItemPositionsFromStorage = async (storageService, boardId) => {
         return {
           boardId,
           customItemYDelta: positionData.customItemYDelta || {},
+          positionSetting: positionData.positionSetting || null,
         };
       }
     }

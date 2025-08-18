@@ -38,16 +38,17 @@ This ensures user adjustments are resilient to data/setting changes and avoids f
 ### 2. Persistence (Saving & Loading)
 - **useZustand.js** (Store)  
   - Holds `customItemYDelta: { [itemId]: number }`  
+  - Tracks `currentPositionSetting` (from settings)
   - Exposes `saveCustomItemYDelta(itemId, yDelta)`  
   - Tracks `itemPositionsLoaded` and `itemPositionsError`  
 - **saveCustomItemYDelta.js**  
   - Updates store immediately (optimistic)  
-  - Debounced async persist to Monday.com (`timeline-pro-item-positions-${boardId}`)  
+  - Debounced async persist to Monday.com (`timeline-pro-item-positions-${boardId}`), saving both Y-deltas and the current position setting  
   - Uses versioning + `updatedAt` timestamp for merge safety across sessions/tabs  
 - **initializeItemPositions.js**  
-  - Fetches saved deltas on app load  
+  - Fetches saved deltas and setting on app load  
   - Validates with schema (rejects malformed payloads)  
-  - Hydrates Zustand with deltas  
+  - Hydrates Zustand with deltas and tracked setting  
 
 ### 3. Timeline Integration
 - **Timeline.jsx**  
@@ -103,9 +104,12 @@ This ensures user adjustments are resilient to data/setting changes and avoids f
   "customItemYDelta": {
     "itemId1": 50,
     "itemId2": -25
-  }
+  },
+  "positionSetting": "above" // or "below" or "alternate"
 }
 ```
+
+- The `positionSetting` is persisted alongside Y-deltas. This ensures that Y-deltas are only applied if the timeline position setting matches the one used when they were saved.
 
 Analysis of Current Codebase for Y-Delta Persistence
 1. Current State
@@ -130,20 +134,21 @@ Key files involved:
 
 **Overview:**
 - The system now exclusively uses Y-delta persistence for vertical positioning of timeline items.
-- Only `customItemYDelta: { [itemId]: number }` is stored and restored. All logic for absolute Y or full position objects has been removed/refactored.
-- The render pipeline always resolves `finalY = defaultY + yDelta` for each item.
-- On drag start, the item's defaultY is snapshotted. On drag end, the Y-delta is calculated and saved.
+- Only `customItemYDelta: { [itemId]: number }` and the `positionSetting` are stored and restored. All logic for absolute Y or full position objects has been removed/refactored.
+- The render pipeline always resolves `finalY = defaultY + yDelta` for each item, but only applies Y-deltas if the current position setting matches the persisted one.
+- On drag start, the item's defaultY is snapshotted. On drag end, the Y-delta is calculated and saved, along with the current position setting.
 - All persistence, drag, and restore logic is Y-delta only. No legacy fields/methods like `customItemPositions`, `saveCustomItemPosition`, or absolute Y remain.
-- The storage format and migration logic have been updated to only use Y-delta.
+- The storage format and migration logic have been updated to only use Y-delta and setting.
 
 **Persistence Chain:**
-1. User drags item → On drag end, Y-delta is calculated and saved to Zustand store and Monday storage.
-2. On reload, Y-deltas are loaded from storage and merged with default positions.
-3. The UI always renders items at `finalY = defaultY + yDelta`.
+1. User drags item → On drag end, Y-delta is calculated and saved to Zustand store and Monday storage, along with the current position setting.
+2. On reload, Y-deltas and the tracked position setting are loaded from storage.
+3. The UI renders items at `finalY = defaultY + yDelta` only if the tracked position setting matches the current one. If not, Y-deltas are ignored for this render (items appear at defaultY).
 
 **Store Structure:**
 ```js
 customItemYDelta: { [itemId]: number }
+currentPositionSetting: string // e.g., 'above', 'below', 'alternate'
 ```
 
 **Removed/Refactored:**
@@ -162,12 +167,12 @@ customItemYDelta: { [itemId]: number }
 **Known Issues / Debugging Steps:**
 - [ ] Some logs and code may still reference legacy fields (e.g., `customItemPositions`, absolute Y). These need to be fully removed for clarity and reliability.
 - [ ] If vertical position does not persist after reload, check:
-    - The storage loader and initializer use `customItemYDelta` consistently (not `itemYDelta` or other variants).
-    - Zustand store is set with the loaded Y-deltas after reload.
-    - The render pipeline always uses `finalY = defaultY + yDelta`.
+    - The storage loader and initializer use `customItemYDelta` and `positionSetting` consistently.
+    - Zustand store is set with the loaded Y-deltas and tracked position setting after reload.
+    - The render pipeline always uses `finalY = defaultY + yDelta` **only if** the tracked position setting matches the current one.
     - No code is using or expecting absolute Y/full position objects.
-- [ ] The persistence chain is: drag end → save Y-delta to store → save to Monday storage → load on reload → set store → render with Y-delta.
-- [ ] Debug logs should only appear for drag end, Y-delta save, and storage load. Remove any verbose or legacy logs.
+- [ ] The persistence chain is: drag end → save Y-delta and setting to store → save to Monday storage → load on reload → set store → render with Y-delta (if setting matches).
+- [ ] Debug logs should only appear for drag end, Y-delta save, storage load, and setting mismatch. Remove any verbose or legacy logs.
 
 **Next Steps:**
 - Remove any remaining legacy code/fields.
