@@ -44,6 +44,13 @@ This ensures user adjustments are resilient to data/setting changes and avoids f
 - **saveCustomItemYDelta.js**  
   - Updates store immediately (optimistic)  
   - Debounced async persist to Monday.com (`timeline-pro-item-positions-${boardId}`), saving both Y-deltas and the current position setting  
+
+### 3. Positioning Logic (Y-delta Application)
+- **calculateTimelineItemPositions**  
+  - Accepts an extra `customYDeltas` argument (object mapping itemId to yDelta) from the store.
+  - Only applies Y-deltas if the current timeline position setting matches the tracked (persisted) setting.
+  - If the setting has changed, it ignores all custom Y-deltas and uses only the default calculated positions, ensuring a reset/mirror behavior as needed.
+  - All call sites (Timeline, DraggableBoardItem) now pass `customItemYDelta` from the store to ensure correct application of persistence and reset logic.
   - Uses versioning + `updatedAt` timestamp for merge safety across sessions/tabs  
 - **initializeItemPositions.js**  
   - Fetches saved deltas and setting on app load  

@@ -155,11 +155,14 @@ const DraggableBoardItem = ({
 
       // 3. Log output of calculateTimelineItemPositions
       try {
+        const { customItemYDelta } = useZustandStore();
         const calcPositions = calculateTimelineItemPositions(
           itemsArray,
           timelineParams.startDate,
           timelineParams.endDate,
-          settings.position
+          settings.position,
+          currentPositionSetting, // tracked position setting
+          customItemYDelta // pass custom Y-deltas
         );
         const calcIds = calcPositions.map(pos => ({ id: pos.id, type: typeof pos.id }));
         TimelineLogger.debug('[Y-DELTA][DEBUG] calculateTimelineItemPositions output ids/types', { calcIds, calcPositions });

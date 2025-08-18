@@ -205,11 +205,14 @@ const Timeline = ({ onItemMove, onHideItem, onLabelChange }) => {
       {/* Board Items - Render all items chronologically with position logic */}
       {(() => {
         // Calculate positions for all items using effective dates
+        const { customItemYDelta } = useZustandStore();
         const itemsWithPositions = calculateTimelineItemPositions(
           visibleTimelineItems,
           effectiveStartDate,
           effectiveEndDate,
           position,
+          currentPositionSetting, // tracked position setting
+          customItemYDelta // pass custom Y-deltas
         );
         TimelineLogger.debug("itemsWithPositions", itemsWithPositions);
         // Render items using extracted function

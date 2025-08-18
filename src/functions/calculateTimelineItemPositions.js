@@ -15,19 +15,29 @@
  * @param {string} [trackedPositionSetting] - Persisted position setting from storage
  * @returns {Array} Array of items with calculated render positions
  */
+// Accepts an extra customYDeltas argument (object mapping itemId to yDelta)
 export function calculateTimelineItemPositions(
   items,
   startDate,
   endDate,
   position,
   trackedPositionSetting = null,
+  customYDeltas = {}
 ) {
   if (!items || items.length === 0) {
     return [];
   }
-  if (trackedPositionSetting && trackedPositionSetting !== position) {
+  let applyYDeltas = false;
+  if (trackedPositionSetting && trackedPositionSetting === position) {
+    applyYDeltas = true;
+    if (typeof TimelineLogger !== "undefined") {
+      TimelineLogger.debug("[Y-DELTA][POSITION] Position setting matches, applying custom Y-deltas", {
+        trackedPositionSetting,
+        currentPositionSetting: position,
+      });
+    }
+  } else if (trackedPositionSetting && trackedPositionSetting !== position) {
     // Position setting has changed; ignore any custom Y-deltas for this render
-    // (If you want to transform/mirror, insert logic here)
     if (typeof TimelineLogger !== "undefined") {
       TimelineLogger.debug("[Y-DELTA][POSITION] Position setting changed, ignoring custom Y-deltas", {
         trackedPositionSetting,
@@ -118,13 +128,19 @@ export function calculateTimelineItemPositions(
           ? Math.max(-maxVerticalOffset, verticalOffset) // Only cap negative values
           : Math.min(maxVerticalOffset, verticalOffset); // Only cap positive values
 
+      // If we should apply Y-deltas, adjust the vertical position accordingly
+      let yWithDelta = finalVerticalOffset;
+      if (applyYDeltas && item.id && customYDeltas && typeof customYDeltas[item.id] === 'number') {
+        yWithDelta += customYDeltas[item.id];
+      }
       renderedItems.push({
         ...item,
         renderPosition: {
           x: finalHorizontalPosition,
-          y: finalVerticalOffset,
+          y: yWithDelta,
           zIndex: 10 + sameDateIndex, // Higher z-index for overlapping items
         },
+        isCustomYDelta: applyYDeltas && item.id && typeof customYDeltas[item.id] === 'number',
       });
 
       globalIndex++;
