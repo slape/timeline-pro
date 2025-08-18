@@ -131,7 +131,7 @@ const DraggableBoardItem = ({
     }
     if (isDragEnd && typeof dragDefaultY.current === "number" && typeof newPosition.y === "number") {
       const yDelta = newPosition.y - dragDefaultY.current;
-      TimelineLogger.debug("[Y-DELTA] Drag end: saving yDelta", { itemId, yDelta, defaultY: dragDefaultY.current, finalY: newPosition.y });
+      TimelineLogger.debug("[Y-DELTA][DRAG-END] Saving yDelta", { itemId, yDelta });
       saveCustomItemYDelta(itemId, yDelta);
     }
   };

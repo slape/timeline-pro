@@ -10,8 +10,7 @@ import saveItemYDeltasToStorage from "./saveItemPositionsToStorage"; // This is 
  * @param {string} currentPositionSetting - Current position setting
  */
 export default async function saveCustomItemYDelta({ get, set, itemId, yDelta, storageService }) {
-  TimelineLogger.debug("[Y-DELTA] saveCustomItemYDelta called", { itemId, yDelta });
-  
+  TimelineLogger.debug("[Y-DELTA][STORE] Saving yDelta to store", { itemId, yDelta });
   const { customItemYDelta = {}, context } = get();
   const boardId = context?.boardId;
   if (!boardId) {
@@ -27,6 +26,12 @@ export default async function saveCustomItemYDelta({ get, set, itemId, yDelta, s
 
   TimelineLogger.debug("[Y-DELTA][PATCH] About to update Zustand store customItemYDelta", { itemId, yDelta, updatedYDeltas });
   set({ customItemYDelta: updatedYDeltas });
+  // Log Zustand store state after patch
+  const zustandStore = require('../store/useZustand');
+  if (zustandStore && zustandStore.useZustandStore) {
+    const currentStore = zustandStore.useZustandStore.getState();
+    TimelineLogger.debug("[Y-DELTA][DEBUG] Zustand store after patch", { customItemYDelta: currentStore.customItemYDelta });
+  }
   TimelineLogger.debug("[Y-DELTA][PATCH] Zustand store updated, calling saveItemYDeltasToStorage", { updatedYDeltas });
 
   // Save to Monday.com storage asynchronously

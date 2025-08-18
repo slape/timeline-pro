@@ -48,7 +48,11 @@ export const useMouseHandlers = ({
       createHandleMouseUp({
         setIsDragging,
         handleMouseMove,
-        handleMouseUp: () => {}, // Will be set by the function itself
+        handleMouseUp: () => {
+  if (onPositionChange) {
+    onPositionChange(item.id, position, true);
+  }
+}, // Will be set by the function itself
         onPositionChange,
         item,
         position,

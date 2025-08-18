@@ -22,10 +22,7 @@ const saveItemYDeltasToStorage = async (
       boardId,
       customItemYDelta: itemYDelta || {},
     };
-    TimelineLogger.debug("Saving item Y-deltas to Monday storage", {
-      boardId,
-      yDeltaCount: Object.keys(dataToSave.customItemYDelta || {}).length,
-    });
+    console.log("[Y-DELTA][STORAGE] Saving Y-deltas", { boardId, itemYDelta });
     const response = await storageService.setInstanceItem(
       storageKey,
       dataToSave,
