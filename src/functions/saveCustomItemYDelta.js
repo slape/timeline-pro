@@ -26,12 +26,8 @@ export default async function saveCustomItemYDelta({ get, set, itemId, yDelta, s
 
   TimelineLogger.debug("[Y-DELTA][PATCH] About to update Zustand store customItemYDelta", { itemId, yDelta, updatedYDeltas });
   set({ customItemYDelta: updatedYDeltas });
-  // Log Zustand store state after patch
-  const zustandStore = require('../store/useZustand');
-  if (zustandStore && zustandStore.useZustandStore) {
-    const currentStore = zustandStore.useZustandStore.getState();
-    TimelineLogger.debug("[Y-DELTA][DEBUG] Zustand store after patch", { customItemYDelta: currentStore.customItemYDelta });
-  }
+  // Log Zustand store state after patch (log updatedYDeltas directly)
+  TimelineLogger.debug("[Y-DELTA][DEBUG] Zustand store after patch", { customItemYDelta: updatedYDeltas });
   TimelineLogger.debug("[Y-DELTA][PATCH] Zustand store updated, calling saveItemYDeltasToStorage", { updatedYDeltas });
 
   // Save to Monday.com storage asynchronously

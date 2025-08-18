@@ -305,8 +305,9 @@ export const createHandleMouseUp = ({
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("mouseup", handleMouseUp);
 
-    // Notify parent of position change
-    onPositionChange?.(item.id, position);
+    // Notify parent of position change (drag end)
+    TimelineLogger.debug('[Y-DELTA][DRAG-END] createHandleMouseUp: passing isDragEnd=true', { itemId: item.id, position });
+    onPositionChange?.(item.id, position, true);
   };
 };
 

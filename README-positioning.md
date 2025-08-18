@@ -126,19 +126,57 @@ Key files involved:
  (drag workflow, delta calculation)
 /src/functions/getDefaultItemYPosition.js
  (for defaultY calculation)
-There is still some code referencing customItemPositions (full x/y object), 
-saveCustomItemPosition
-, and logic for absolute Y, which needs to be removed or refactored.
-2. What Needs to Change
-Remove all logic and store fields for absolute Y or full position objects.
+## Y-Delta-Only Positioning System (Current)
 
-Ensure all persistence, drag, and restore logic uses only Y-delta:
-Only customItemYDelta: { [itemId]: number } should be persisted.
-The render pipeline should always resolve finalY = defaultY + yDelta.
-Drag workflow should snapshot defaultY at drag start, calculate and save yDelta at drag end.
-Refactor Timeline, DraggableBoardItem, and zustand store to remove legacy fields and methods.
-Update storage format and migration logic if needed.
-Implementation Plan
+**Overview:**
+- The system now exclusively uses Y-delta persistence for vertical positioning of timeline items.
+- Only `customItemYDelta: { [itemId]: number }` is stored and restored. All logic for absolute Y or full position objects has been removed/refactored.
+- The render pipeline always resolves `finalY = defaultY + yDelta` for each item.
+- On drag start, the item's defaultY is snapshotted. On drag end, the Y-delta is calculated and saved.
+- All persistence, drag, and restore logic is Y-delta only. No legacy fields/methods like `customItemPositions`, `saveCustomItemPosition`, or absolute Y remain.
+- The storage format and migration logic have been updated to only use Y-delta.
+
+**Persistence Chain:**
+1. User drags item → On drag end, Y-delta is calculated and saved to Zustand store and Monday storage.
+2. On reload, Y-deltas are loaded from storage and merged with default positions.
+3. The UI always renders items at `finalY = defaultY + yDelta`.
+
+**Store Structure:**
+```js
+customItemYDelta: { [itemId]: number }
+```
+
+**Removed/Refactored:**
+- All logic and store fields for absolute Y or full position objects.
+- All references to `customItemPositions`, `saveCustomItemPosition`, or absolute Y.
+
+---
+
+## Debugging & Current Progress
+
+**Current Progress:**
+- Y-delta persistence is mostly working: drag end triggers Y-delta save, logs confirm persistence chain is called.
+- On reload, Y-deltas are loaded from storage and merged with default positions in the render pipeline.
+- Legacy code and references to old positioning logic have been mostly removed, but some may remain.
+
+**Known Issues / Debugging Steps:**
+- [ ] Some logs and code may still reference legacy fields (e.g., `customItemPositions`, absolute Y). These need to be fully removed for clarity and reliability.
+- [ ] If vertical position does not persist after reload, check:
+    - The storage loader and initializer use `customItemYDelta` consistently (not `itemYDelta` or other variants).
+    - Zustand store is set with the loaded Y-deltas after reload.
+    - The render pipeline always uses `finalY = defaultY + yDelta`.
+    - No code is using or expecting absolute Y/full position objects.
+- [ ] The persistence chain is: drag end → save Y-delta to store → save to Monday storage → load on reload → set store → render with Y-delta.
+- [ ] Debug logs should only appear for drag end, Y-delta save, and storage load. Remove any verbose or legacy logs.
+
+**Next Steps:**
+- Remove any remaining legacy code/fields.
+- Validate that only Y-delta is persisted and restored.
+- Confirm that after reload, vertical position is correct and matches user adjustment.
+
+---
+
+This README now reflects the true source of truth for the Y-delta-only positioning system. All persistence, drag, and restore logic should align with this model.
 1. Remove Legacy/Redundant Code
 Delete all uses of customItemPositions, 
 saveCustomItemPosition

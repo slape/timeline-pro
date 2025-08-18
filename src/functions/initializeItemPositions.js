@@ -42,30 +42,15 @@ export async function initializeItemPositions({ get, set, storageService }) {
       storageService,
       boardId,
     );
-    TimelineLogger.debug("✅ Setting item positions in store", {
+    TimelineLogger.debug("✅ Setting customItemYDelta in store", {
       boardId,
-      positionSetting: positionData.positionSetting,
-      itemCount: Object.keys(positionData.itemPositions || {}).length,
-      itemPositionsLoaded: true,
+      customItemYDelta: positionData.customItemYDelta || {},
     });
     set({
-      customItemPositions: positionData.itemPositions || {},
-      customItemYDelta: positionData.itemYDelta || {},
-      currentPositionSetting: positionData.positionSetting,
-      itemPositionsLoaded: true,
-      itemPositionsError: null,
+      customItemYDelta: positionData.customItemYDelta || {},
     });
-    TimelineLogger.debug(
-      "[Y-DELTA] Zustand store updated in initializeItemPositions",
-      {
-        customItemPositions: positionData.itemPositions || {},
-        customItemYDelta: positionData.itemYDelta || {},
-        currentPositionSetting: positionData.positionSetting,
-      },
-    );
-    TimelineLogger.debug("✅ Item positions loaded and store updated", {
-      itemCount: Object.keys(positionData.itemPositions || {}).length,
-      itemPositionsLoaded: true,
+    TimelineLogger.debug("[Y-DELTA] Zustand store customItemYDelta after reload", {
+      customItemYDelta: positionData.customItemYDelta || {},
     });
   } catch (error) {
     TimelineLogger.error("❌ Failed to initialize item positions", error);
