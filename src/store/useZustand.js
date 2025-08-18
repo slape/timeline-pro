@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import TimelineLogger from "../utils/logger";
 import { MondayStorageService } from "./MondayStorageService";
 
 import { saveCustomItemPosition as saveCustomItemPositionFn } from "../functions/saveCustomItemPosition";
@@ -8,8 +9,7 @@ import { initializeItemPositions as initializeItemPositionsFn } from "../functio
 
 // console.log('Zustand store created (should appear only once per reload)'); // Suppressed for focused debugging
 
-// Monday.com storage keys
-const HIDDEN_ITEMS_KEY = "timeline-pro-hidden-items";
+import { HIDDEN_ITEMS_KEY } from "../utils/configConstants";
 
 // Storage service instance (will be initialized when Monday SDK is available)
 let storageService = null;
@@ -18,7 +18,6 @@ import loadHiddenItemsFromStorage from "../functions/loadHiddenItemsFromStorage"
 // Helper functions for Monday.com storage persistence
 // loadHiddenItemsFromStorage now imported from functions directory and called with (storageService, HIDDEN_ITEMS_KEY)
 
-import saveHiddenItemsToStorage from "../functions/saveHiddenItemsToStorage";
 
 export const useZustandStore = create((set, get) => ({
   settings: {},
@@ -27,6 +26,7 @@ export const useZustandStore = create((set, get) => ({
   itemIds: [],
   hiddenItemIds: [], // Will be loaded asynchronously from Monday storage
   hiddenItemsLoaded: false, // Track if hidden items have been loaded from Monday storage
+  appLoading: true, // New state to manage initial app load
   // Item position persistence
   customItemPositions: {}, // { itemId: { x, y } }
   customItemYDelta: {}, // { itemId: number } - Y-axis delta persistence
@@ -77,44 +77,71 @@ export const useZustandStore = create((set, get) => ({
   setItemIds: (itemIds) => {
     set({ itemIds });
   },
-  setHiddenItemIds: (hiddenItemIds) => {
-    saveHiddenItemsToStorage(storageService, hiddenItemIds); // Persist to Monday storage (async)
-    set({ hiddenItemIds });
-  },
   // Initialize Monday storage service and load hidden items
   initializeMondayStorage: async (mondaySDK) => {
     try {
       storageService = new MondayStorageService(mondaySDK);
+      TimelineLogger.debug("Storage service initialized.");
       const hiddenItemIds = await loadHiddenItemsFromStorage(
         storageService,
         HIDDEN_ITEMS_KEY,
       );
-      set({ hiddenItemIds, hiddenItemsLoaded: true });
-    } catch (error) {
+      TimelineLogger.debug("Loaded hidden items from storage", { count: hiddenItemIds.length, items: hiddenItemIds });
+      set({ hiddenItemIds, hiddenItemsLoaded: true, appLoading: false }); // Set appLoading to false after initialization
+    } catch (error) { 
+      TimelineLogger.error("Failed to initialize Monday storage", error);
       // Even if loading fails, mark as loaded to prevent infinite loading
-      set({ hiddenItemsLoaded: true });
+      set({ hiddenItemsLoaded: true, appLoading: false });
     }
   },
+  // Safely update hidden items in storage to prevent race conditions
+  updateHiddenItemsInStorage: async (updateFn, actionName) => {
+    if (!storageService) {
+        TimelineLogger.warn("Storage service not available for action:", actionName);
+        return;
+    }
+    TimelineLogger.debug(`[Zustand] Action: ${actionName} - Starting safe update.`);
+    const newHiddenIds = await storageService.safeUpdate(
+      HIDDEN_ITEMS_KEY,
+      (currentValue) => {
+        const currentHiddenIds = Array.isArray(currentValue) ? currentValue : [];
+        TimelineLogger.debug(`[Zustand] safeUpdate: Current hidden IDs`, { count: currentHiddenIds.length, ids: currentHiddenIds });
+        const updatedIds = updateFn(currentHiddenIds);
+        TimelineLogger.debug(`[Zustand] safeUpdate: New hidden IDs to be saved`, { count: updatedIds.length, ids: updatedIds });
+        return updatedIds;
+      },
+    );
+    if (newHiddenIds !== null) {
+      TimelineLogger.debug(`[Zustand] safeUpdate successful. New state:`, { count: newHiddenIds.length, ids: newHiddenIds });
+      set({ hiddenItemIds: newHiddenIds });
+    } else {
+      TimelineLogger.error(`[Zustand] Failed to safely update hidden items in storage for action: ${actionName}.`);
+    }
+  },
+
   // Helper function to hide a single item
   hideItem: (itemId) => {
-    const { hiddenItemIds } = get();
-    if (!hiddenItemIds.includes(itemId)) {
-      const newHiddenIds = [...hiddenItemIds, itemId];
-      saveHiddenItemsToStorage(storageService, newHiddenIds); // Async save to Monday storage
-      set({ hiddenItemIds: newHiddenIds });
-    }
+    TimelineLogger.debug(`[Zustand] Action: hideItem`, { itemId });
+    get().updateHiddenItemsInStorage((currentHiddenIds) => {
+      if (!currentHiddenIds.includes(itemId)) {
+        return [...currentHiddenIds, itemId];
+      }
+      return currentHiddenIds;
+    }, 'hideItem');
   },
+
   // Helper function to unhide a single item
   unhideItem: (itemId) => {
-    const { hiddenItemIds } = get();
-    const newHiddenIds = hiddenItemIds.filter((id) => id !== itemId);
-    saveHiddenItemsToStorage(newHiddenIds); // Async save to Monday storage
-    set({ hiddenItemIds: newHiddenIds });
+    TimelineLogger.debug(`[Zustand] Action: unhideItem`, { itemId });
+    get().updateHiddenItemsInStorage((currentHiddenIds) => {
+      return currentHiddenIds.filter((id) => id !== itemId);
+    }, 'unhideItem');
   },
+
   // Helper function to unhide all items
   unhideAllItems: () => {
-    saveHiddenItemsToStorage(storageService, []); // Async save to Monday storage
-    set({ hiddenItemIds: [] });
+    TimelineLogger.debug(`[Zustand] Action: unhideAllItems`);
+    get().updateHiddenItemsInStorage(() => [], 'unhideAllItems');
   },
   // Helper function to get count of hidden items
   getHiddenItemCount: () => {

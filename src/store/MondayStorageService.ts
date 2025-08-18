@@ -5,6 +5,7 @@
  * Provides methods for both instance-level and global-level storage operations.
  */
 import { MondayStorageOptions, MondayStorageResponse } from '../types/monday_storage';
+import TimelineLogger from '../utils/logger';
 /**
  * Service for interacting with Monday.com's Storage API
  */
@@ -48,9 +49,12 @@ export class MondayStorageService {
    */
   async setInstanceItem<T = any>(key: string, value: T, options?: MondayStorageOptions): Promise<MondayStorageResponse> {
     try {
-      return await this.monday.storage.instance.setItem(key, value, options);
+      TimelineLogger.debug(`[StorageService] setInstanceItem: Setting key '${key}'`, { value, options });
+      const response = await this.monday.storage.instance.setItem(key, value, options);
+      TimelineLogger.debug(`[StorageService] setInstanceItem: Response for key '${key}'`, { response });
+      return response;
     } catch (error) {
-      console.error('Error setting instance item:', error);
+      TimelineLogger.error(`[StorageService] Error setting instance item for key '${key}'`, { error });
       throw error;
     }
   }
@@ -63,9 +67,12 @@ export class MondayStorageService {
    */
   async deleteInstanceItem(key: string, options?: MondayStorageOptions): Promise<MondayStorageResponse> {
     try {
-      return await this.monday.storage.instance.deleteItem(key, options);
+      TimelineLogger.debug(`[StorageService] deleteInstanceItem: Deleting key '${key}'`, { options });
+      const response = await this.monday.storage.instance.deleteItem(key, options);
+      TimelineLogger.debug(`[StorageService] deleteInstanceItem: Response for key '${key}'`, { response });
+      return response;
     } catch (error) {
-      console.error('Error deleting instance item:', error);
+      TimelineLogger.error(`[StorageService] Error deleting instance item for key '${key}'`, { error });
       throw error;
     }
   }
@@ -147,36 +154,54 @@ export class MondayStorageService {
     isInstance = true
   ): Promise<T | null> {
     try {
-      // Get current value with version
+      TimelineLogger.debug(`[StorageService] safeUpdate: Starting for key '${key}'`);
       const getMethod = isInstance ? this.getInstanceItem.bind(this) : this.getGlobalItem.bind(this);
       const setMethod = isInstance ? this.setInstanceItem.bind(this) : this.setGlobalItem.bind(this);
       
       const response = await getMethod(key, { versioning: true });
-      
+      TimelineLogger.debug(`[StorageService] safeUpdate: Get response for key '${key}'`, { response: response.data });
+
       if (!response.data.success) {
-        console.error('Failed to get item for safe update:', response.data.error);
-        return null;
+        if (response.data.error && response.data.error.includes('not found')) {
+            TimelineLogger.debug(`[StorageService] safeUpdate: Key '${key}' not found. Assuming new item.`);
+        } else {
+            TimelineLogger.error(`[StorageService] Failed to get item for safe update for key '${key}'`, { error: response.data.error });
+            return null;
+        }
       }
       
-      // Calculate new value
       const currentValue = response.data.value ?? null;
       const version = response.data.version;
+      TimelineLogger.debug(`[StorageService] safeUpdate: Current value for key '${key}'`, { value: currentValue, version });
       const newValue = updateFn(currentValue);
-      
-      // Set with version check
+      TimelineLogger.debug(`[StorageService] safeUpdate: New value for key '${key}'`, { value: newValue });
+
+      // If the new value is an empty array, we should delete the key instead of setting it.
+      if (Array.isArray(newValue) && newValue.length === 0) {
+        TimelineLogger.debug(`[StorageService] safeUpdate: New value is an empty array. Deleting key '${key}'.`);
+        const deleteResponse = await this.deleteInstanceItem(key);
+        if (!deleteResponse.data.success) {
+          TimelineLogger.error(`[StorageService] Failed to delete empty array key '${key}'`, { error: deleteResponse.data.error });
+          return null;
+        }
+        return newValue;
+      }
+
       const updateResponse = await setMethod(key, newValue, { 
         versioning: true,
         version
       });
+      TimelineLogger.debug(`[StorageService] safeUpdate: Set response for key '${key}'`, { response: updateResponse.data });
       
       if (!updateResponse.data.success) {
-        console.error('Failed to update item safely:', updateResponse.data.error);
+        TimelineLogger.error(`[StorageService] Failed to update item safely for key '${key}'`, { error: updateResponse.data.error });
         return null;
       }
       
+      TimelineLogger.debug(`[StorageService] safeUpdate: Successfully updated key '${key}'`);
       return newValue;
     } catch (error) {
-      console.error('Error in safe update:', error);
+      TimelineLogger.error(`[StorageService] Error in safe update for key '${key}'`, { error });
       return null;
     }
   }

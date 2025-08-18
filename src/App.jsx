@@ -59,19 +59,19 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const {
+    // State
+    context,
+    settings,
+    boardItems,
+    itemIds,
+    hiddenItemIds,
+    appLoading,
+    // Actions
     setContext,
     setSettings,
     setBoardItems,
     setItemIds,
     initializeMondayStorage,
-  } = useZustandStore();
-  const {
-    context,
-    itemIds,
-    settings,
-    boardItems,
-    hiddenItemsLoaded,
-    hiddenItemIds,
   } = useZustandStore();
 
   // Debug logging for loading states
@@ -81,7 +81,6 @@ const App = () => {
       hasBoardItems: !!boardItems,
       hasSettings: !!settings,
       isLoading,
-      hiddenItemsLoaded,
       hiddenItemsCount: hiddenItemIds?.length || 0,
       boardItemsCount: boardItems?.length || 0,
       itemIdsCount: itemIds?.length || 0,
@@ -91,7 +90,6 @@ const App = () => {
     boardItems,
     settings,
     isLoading,
-    hiddenItemsLoaded,
     hiddenItemIds,
     itemIds,
   ]);
@@ -219,12 +217,7 @@ const App = () => {
       <ThemeProvider systemTheme={context?.theme ?? "light"}>
         {error && <div style={{ color: "red" }}>{error}</div>}
         {(() => {
-          const shouldShowLoading =
-            !boardItems ||
-            !context ||
-            !settings ||
-            isLoading ||
-            !hiddenItemsLoaded;
+          const shouldShowLoading = appLoading || !boardItems || !context || !settings;
 
           TimelineLogger.debug("🎯 App render decision", {
             shouldShowLoading,
@@ -232,8 +225,8 @@ const App = () => {
               noBoardItems: !boardItems,
               noContext: !context,
               noSettings: !settings,
+              appIsLoading: appLoading,
               isLoading,
-              hiddenItemsNotLoaded: !hiddenItemsLoaded,
             },
             hiddenItemsCount: hiddenItemIds?.length || 0,
           });
