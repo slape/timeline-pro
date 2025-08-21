@@ -1,5 +1,6 @@
 import React from "react";
 import DraggableBoardItem from "./DraggableBoardItem";
+import TimelineLogger from '../../utils/logger';
 import { useZustandStore } from "../../store/useZustand";
 
 /**
@@ -11,6 +12,7 @@ import { useZustandStore } from "../../store/useZustand";
  * @returns {Array} Array of JSX elements for timeline items
  */
 export function renderTimelineItems(
+
   itemsWithPositions,
   onLabelChange,
   onHideItem,
@@ -26,6 +28,9 @@ export function renderTimelineItems(
   // console.log('renderTimelineItems - hiddenItemIds:', hiddenItemIds); // Suppressed for focused debugging
   // console.log('renderTimelineItems - itemsWithPositions count:', itemsWithPositions?.length); // Suppressed for focused debugging
 
+  TimelineLogger.debug(`[Y-DELTA][UI] renderTimelineItems called`, { hiddenItemIds, itemsWithPositions: itemsWithPositions.map(i => i.id) });
+  TimelineLogger.debug(`[Y-DELTA][UI] renderTimelineItems called`, { hiddenItemIds, itemsWithPositions: itemsWithPositions.map(i => i.id) });
+  TimelineLogger.debug(`[Y-DELTA][UI] renderTimelineItems called`, { hiddenItemIds, itemsWithPositions: itemsWithPositions.map(i => i.id) });
   return itemsWithPositions.map((item) => {
     // Support either `parsedDate` (new) or `date` (legacy)
     const raw = item.parsedDate ?? item.date;

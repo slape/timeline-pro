@@ -92,42 +92,61 @@ export const useZustandStore = create((set, get) => ({
       set({ hiddenItemsLoaded: true, appLoading: false });
     }
   },
-  // Safely update hidden items in storage to prevent race conditions
+  // Optimistic update: update local hiddenItemIds state immediately, then sync to Monday.com storage in the background.
+  // If storage fails, roll back the change and log an error.
   updateHiddenItemsInStorage: async (updateFn, actionName) => {
     if (!storageService) {
         TimelineLogger.warn("Storage service not available for action:", actionName);
         return;
     }
-    TimelineLogger.debug(`[Zustand] Action: ${actionName} - Starting safe update.`);
-    const newHiddenIds = await storageService.safeUpdate(
-      HIDDEN_ITEMS_KEY,
-      (currentValue) => {
-        const currentHiddenIds = Array.isArray(currentValue) ? currentValue : [];
-        TimelineLogger.debug(`[Zustand] safeUpdate: Current hidden IDs`, { count: currentHiddenIds.length, ids: currentHiddenIds });
-        const updatedIds = updateFn(currentHiddenIds);
-        TimelineLogger.debug(`[Zustand] safeUpdate: New hidden IDs to be saved`, { count: updatedIds.length, ids: updatedIds });
-        return updatedIds;
-      },
-    );
-    if (newHiddenIds !== null) {
-      TimelineLogger.debug(`[Zustand] safeUpdate successful. New state:`, { count: newHiddenIds.length, ids: newHiddenIds });
-      set({ hiddenItemIds: newHiddenIds });
-    } else {
-      TimelineLogger.error(`[Zustand] Failed to safely update hidden items in storage for action: ${actionName}.`);
+    TimelineLogger.debug(`[Zustand] Action: ${actionName} - Starting optimistic update.`);
+    // Use the latest local store state as the source of truth
+    const localHiddenIds = get().hiddenItemIds;
+    const optimisticHiddenIds = updateFn(Array.isArray(localHiddenIds) ? localHiddenIds : []);
+    // Optimistically update local state immediately
+    set({ hiddenItemIds: optimisticHiddenIds });
+    try {
+      const newHiddenIds = await storageService.safeUpdate(
+        HIDDEN_ITEMS_KEY,
+        (currentValue) => {
+          // Use optimistic state as base, fallback to storage value if not available
+          const currentHiddenIds = Array.isArray(optimisticHiddenIds) ? optimisticHiddenIds : (Array.isArray(currentValue) ? currentValue : []);
+          TimelineLogger.debug(`[Y-DELTA][Zustand] safeUpdate: Current hidden IDs (OPTIMISTIC)`, { count: currentHiddenIds.length, ids: currentHiddenIds });
+          const updatedIds = updateFn(currentHiddenIds);
+          TimelineLogger.debug(`[Y-DELTA][Zustand] safeUpdate: New hidden IDs to be saved`, { count: updatedIds.length, ids: updatedIds });
+          return updatedIds;
+        },
+      );
+      if (newHiddenIds !== null) {
+        TimelineLogger.debug(`[Y-DELTA][Zustand] safeUpdate successful. New state:`, { count: newHiddenIds.length, ids: newHiddenIds });
+        // Local state already set optimistically
+      } else {
+        // Rollback: revert to previous state if storage fails
+        TimelineLogger.error(`[Zustand] Failed to safely update hidden items in storage for action: ${actionName}. Rolling back.`);
+        set({ hiddenItemIds: localHiddenIds });
+      }
+    } catch (error) {
+      TimelineLogger.error(`[Zustand] Optimistic update failed for action: ${actionName}. Rolling back.`, { error });
+      set({ hiddenItemIds: localHiddenIds });
     }
   },
 
   // Helper function to hide a single item
   hideItem: (itemId) => {
-    TimelineLogger.debug(`[Zustand] Action: hideItem`, { itemId });
-    get().updateHiddenItemsInStorage((currentHiddenIds) => {
-      if (!currentHiddenIds.includes(itemId)) {
-        return [...currentHiddenIds, itemId];
-      }
-      return currentHiddenIds;
-    }, 'hideItem');
-  },
-
+  const prevHidden = get().hiddenItemIds;
+  TimelineLogger.debug(`[Y-DELTA][Zustand] Action: hideItem`, { itemId, prevHidden });
+  get().updateHiddenItemsInStorage((currentHiddenIds) => {
+    TimelineLogger.debug(`[Y-DELTA][Zustand] hideItem: currentHiddenIds before update`, { currentHiddenIds });
+    let updated;
+    if (!currentHiddenIds.includes(itemId)) {
+      updated = [...currentHiddenIds, itemId];
+    } else {
+      updated = currentHiddenIds;
+    }
+    TimelineLogger.debug(`[Y-DELTA][Zustand] hideItem: updatedHiddenIds after update`, { updated });
+    return updated;
+  }, 'hideItem');
+},
   // Helper function to unhide a single item
   unhideItem: (itemId) => {
     TimelineLogger.debug(`[Zustand] Action: unhideItem`, { itemId });
