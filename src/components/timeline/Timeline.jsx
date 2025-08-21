@@ -96,16 +96,16 @@ const Timeline = ({ onItemMove, onHideItem, onLabelChange }) => {
     visibleTimelineItems,
   ]);
 
-  // Detect position setting changes and trigger reset
+  // Dedicated effect to handle initialization logic
+  const [isInitialized, setIsInitialized] = React.useState(false);
+
   React.useEffect(() => {
-    TimelineLogger.debug("🔍 Position change detection check", {
-      position,
-      currentPositionSetting,
-      positionType: typeof position,
-      currentPositionSettingType: typeof currentPositionSetting,
-      areEqual: position === currentPositionSetting,
-      willTriggerReset: position && position !== currentPositionSetting,
-    });
+    setIsInitialized(true); // Mark the app as initialized after the first render
+  }, []);
+
+  React.useEffect(() => {
+    // Ensure the app is fully initialized before executing this effect
+    if (!isInitialized) return;
 
     if (position && position !== currentPositionSetting) {
       TimelineLogger.debug("🔄 Position setting changed, triggering reset", {
@@ -114,7 +114,7 @@ const Timeline = ({ onItemMove, onHideItem, onLabelChange }) => {
       });
       updatePositionSetting(position);
     }
-  }, [position, currentPositionSetting, updatePositionSetting]);
+  }, [position, currentPositionSetting, updatePositionSetting]); // Removed `isInitialized` from dependencies
 
   // Use dynamic dates for all timeline calculations
   const effectiveStartDate = dynamicStartDate;

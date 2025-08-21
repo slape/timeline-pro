@@ -16,13 +16,14 @@
  * @returns {Array} Array of items with calculated render positions
  */
 // Accepts an extra customYDeltas argument (object mapping itemId to yDelta)
+import TimelineLogger from "../utils/logger";
 export function calculateTimelineItemPositions(
   items,
   startDate,
   endDate,
   position,
   trackedPositionSetting = null,
-  customYDeltas = {}
+  customYDeltas = {},
 ) {
   if (!items || items.length === 0) {
     return [];
@@ -31,18 +32,24 @@ export function calculateTimelineItemPositions(
   if (trackedPositionSetting && trackedPositionSetting === position) {
     applyYDeltas = true;
     if (typeof TimelineLogger !== "undefined") {
-      TimelineLogger.debug("[Y-DELTA][POSITION] Position setting matches, applying custom Y-deltas", {
-        trackedPositionSetting,
-        currentPositionSetting: position,
-      });
+      TimelineLogger.debug(
+        "[Y-DELTA][POSITION] Position setting matches, applying custom Y-deltas",
+        {
+          trackedPositionSetting,
+          currentPositionSetting: position,
+        },
+      );
     }
   } else if (trackedPositionSetting && trackedPositionSetting !== position) {
     // Position setting has changed; ignore any custom Y-deltas for this render
     if (typeof TimelineLogger !== "undefined") {
-      TimelineLogger.debug("[Y-DELTA][POSITION] Position setting changed, ignoring custom Y-deltas", {
-        trackedPositionSetting,
-        currentPositionSetting: position,
-      });
+      TimelineLogger.debug(
+        "[Y-DELTA][POSITION] Position setting changed, ignoring custom Y-deltas",
+        {
+          trackedPositionSetting,
+          currentPositionSetting: position,
+        },
+      );
     }
     // Proceed with default positions only
   }
@@ -130,7 +137,12 @@ export function calculateTimelineItemPositions(
 
       // If we should apply Y-deltas, adjust the vertical position accordingly
       let yWithDelta = finalVerticalOffset;
-      if (applyYDeltas && item.id && customYDeltas && typeof customYDeltas[item.id] === 'number') {
+      if (
+        applyYDeltas &&
+        item.id &&
+        customYDeltas &&
+        typeof customYDeltas[item.id] === "number"
+      ) {
         yWithDelta += customYDeltas[item.id];
       }
       renderedItems.push({
@@ -140,7 +152,8 @@ export function calculateTimelineItemPositions(
           y: yWithDelta,
           zIndex: 10 + sameDateIndex, // Higher z-index for overlapping items
         },
-        isCustomYDelta: applyYDeltas && item.id && typeof customYDeltas[item.id] === 'number',
+        isCustomYDelta:
+          applyYDeltas && item.id && typeof customYDeltas[item.id] === "number",
       });
 
       globalIndex++;

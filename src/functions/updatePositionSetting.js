@@ -1,5 +1,5 @@
 import TimelineLogger from "../utils/logger";
-import saveItemYDeltasToStorage from "./saveItemPositionsToStorage";
+import resetItemPositions from "./resetItemPositions";
 
 /**
  * Updates the timeline position setting and persists changes.
@@ -24,27 +24,19 @@ export function updatePositionSetting({
     return;
   }
 
+  if (currentPositionSetting === newSetting) {
+    TimelineLogger.debug("Position setting unchanged, skipping reset.");
+    return;
+  }
+
   TimelineLogger.debug("Position setting changed", {
     from: currentPositionSetting,
     to: newSetting,
   });
 
-  // For any position setting change, clear all Y-deltas and persist
-  TimelineLogger.debug(
-    "Clearing all custom Y-deltas for position setting change",
-    { to: newSetting },
-  );
-  set({
-    customItemYDelta: {},
-    itemPositionsLoaded: true,
-    itemPositionsError: null,
-  });
-  set({
-    currentPositionSetting: newSetting,
-    customItemYDelta: {},
-    itemPositionsLoaded: true,
-    itemPositionsError: null,
-  });
+  // Update the position setting in the store
+  set({ currentPositionSetting: newSetting });
 
-  saveItemYDeltasToStorage(storageService, boardId, {});
+  // Trigger reset logic
+  resetItemPositions({ get, set, storageService, boardId });
 }
