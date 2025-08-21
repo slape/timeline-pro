@@ -1,6 +1,6 @@
 import React from "react";
 import DraggableBoardItem from "./DraggableBoardItem";
-import TimelineLogger from '../../utils/logger';
+import TimelineLogger from "../../utils/logger";
 import { useZustandStore } from "../../store/useZustand";
 
 /**
@@ -12,14 +12,13 @@ import { useZustandStore } from "../../store/useZustand";
  * @returns {Array} Array of JSX elements for timeline items
  */
 export function renderTimelineItems(
-
   itemsWithPositions,
   onLabelChange,
   onHideItem,
   onPositionChange = () => {},
 ) {
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { settings, hiddenItemIds } = useZustandStore();
+  const { settings, hiddenItemIds, customItemYDelta } = useZustandStore();
   const shape = settings?.shape;
   // Support new settings key `itemDates`; fall back to legacy `showItemDates`
   const showDates = settings?.itemDates ?? settings?.showItemDates ?? true;
@@ -28,9 +27,18 @@ export function renderTimelineItems(
   // console.log('renderTimelineItems - hiddenItemIds:', hiddenItemIds); // Suppressed for focused debugging
   // console.log('renderTimelineItems - itemsWithPositions count:', itemsWithPositions?.length); // Suppressed for focused debugging
 
-  TimelineLogger.debug(`[Y-DELTA][UI] renderTimelineItems called`, { hiddenItemIds, itemsWithPositions: itemsWithPositions.map(i => i.id) });
-  TimelineLogger.debug(`[Y-DELTA][UI] renderTimelineItems called`, { hiddenItemIds, itemsWithPositions: itemsWithPositions.map(i => i.id) });
-  TimelineLogger.debug(`[Y-DELTA][UI] renderTimelineItems called`, { hiddenItemIds, itemsWithPositions: itemsWithPositions.map(i => i.id) });
+  TimelineLogger.debug(`[Y-DELTA][UI] renderTimelineItems called`, {
+    hiddenItemIds,
+    itemsWithPositions: itemsWithPositions.map((i) => i.id),
+  });
+  TimelineLogger.debug(`[Y-DELTA][UI] renderTimelineItems called`, {
+    hiddenItemIds,
+    itemsWithPositions: itemsWithPositions.map((i) => i.id),
+  });
+  TimelineLogger.debug(`[Y-DELTA][UI] renderTimelineItems called`, {
+    hiddenItemIds,
+    itemsWithPositions: itemsWithPositions.map((i) => i.id),
+  });
   return itemsWithPositions.map((item) => {
     // Support either `parsedDate` (new) or `date` (legacy)
     const raw = item.parsedDate ?? item.date;
@@ -42,6 +50,13 @@ export function renderTimelineItems(
     const isHidden = hiddenItemIds?.includes(item.id);
 
     // console.log(`Item ${item.id}: isHidden=${isHidden}, hiddenItemIds includes:`, hiddenItemIds?.includes(item.id)); // Suppressed for focused debugging
+
+    TimelineLogger.debug("[Y-DELTA-DEBUG] Calculating render position", {
+      itemId: item.id,
+      finalY: item.renderPosition.y,
+      yDelta: customItemYDelta[item.id] || 0,
+      defaultY: item.position,
+    });
 
     return (
       <div

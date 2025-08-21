@@ -230,7 +230,7 @@ currentPositionSetting: string // e.g., 'above', 'below', 'alternate'
 **Removed/Refactored:**
 
 - All logic and store fields for absolute Y or full position objects.
-- All references to `customItemPositions`, `saveCustomItemPosition`, or absolute Y.
+- All references to `customItemPositions`, `saveCustomItemPosition` or absolute Y.
 
 ---
 
@@ -322,3 +322,73 @@ This README now reflects the complete source of truth for the Y-delta-only posit
    Timeline waits for itemPositionsLoaded before rendering.
    App initializes Y-delta subsystem on load, with error handling.
    All legacy loading logic for full positions is removed.
+
+CURRENTLY this feature has 2 bugs:
+
+1. when dragging an item and letting it go, it jumps to a new location on the yaxis.
+2. when refreshing the page, the ydeltas are either not saved or not correctly applied because the items return to their default location as determined by calculateTimelineItemPositions.js
+
+### Bugs in Y-Delta Persistence System
+
+#### Bug 1: Y-Delta Calculation
+
+- **Observation**: The `yDelta` remains `0` during and after drag operations.
+- **Potential Cause**: The `handlePositionChangeWithYDelta` function may not be calculating or saving the `yDelta` correctly.
+- **Impact**: The vertical offset adjustments made by users are not persisted, leading to incorrect item positions on reload.
+
+#### Bug 2: Rendering Logic
+
+- **Observation**: The `finalY` value is consistently `-40` (or `-80` for some items), and the `yDelta` is not applied during rendering.
+- **Potential Cause**: The `resolveItemPositions` function may not be applying the `yDelta` to the `defaultY` to compute the `finalY`.
+- **Impact**: Items appear in incorrect positions, ignoring user adjustments.
+
+#### Bug 3: Store Integration
+
+- **Observation**: The `customItemYDelta` object in the store remains empty.
+- **Potential Cause**: The `saveCustomItemYDelta` function may not be called with the correct `itemId` and `yDelta` values.
+- **Impact**: The Y-delta values are not saved to the store, preventing persistence across sessions.
+
+#### Bug 4: Initialization on Reload
+
+- **Observation**: On refreshing the page, the `customItemYDelta` object is empty, and items return to their default positions.
+- **Potential Cause**: The `initializeItemPositions` function may not be correctly loading Y-deltas from storage or updating the Zustand store.
+- **Impact**: User adjustments are lost after a page reload.
+
+#### Bug 5: Storage Loading
+
+- **Observation**: The data fetched from Monday.com storage may not match the expected format.
+- **Potential Cause**: The `loadItemPositionsFromStorage` function may not be fetching or returning the correct data structure.
+- **Impact**: The Y-deltas are not restored correctly, leading to empty `customItemYDelta` in the store.
+
+Inspect loadItemPositionsFromStorage:
+
+Verify that this function is fetching the correct data from storage.
+Inspect Storage Data:
+
+Check the actual data stored in Monday.com to ensure it matches the expected format:
+Add More Logs:
+
+Add logs to loadItemPositionsFromStorage to confirm the data being fetched from storage.
+
+### Potential Interaction Between `loadItemPositionsFromStorage` and `calculateTimelineItemPositions`
+
+#### Key Observations:
+
+1. **`loadItemPositionsFromStorage`**:
+   - Fetches Y-delta values from storage for a specific board.
+   - Returns an object containing `customItemYDelta` mapped by item IDs.
+
+2. **`calculateTimelineItemPositions`**:
+   - Calculates positions of timeline items based on chronological order and position settings.
+   - Optionally applies Y-deltas if provided via the `customYDeltas` argument.
+
+#### Potential Interaction:
+
+- **Data Flow**: The `customItemYDelta` fetched by `loadItemPositionsFromStorage` is likely passed to `calculateTimelineItemPositions` as the `customYDeltas` argument.
+- **Conflict Risk**: If the data fetched by `loadItemPositionsFromStorage` is outdated, incomplete, or inconsistent with the current state of the timeline, it could lead to incorrect positioning in `calculateTimelineItemPositions`.
+
+#### Recommendations:
+
+1. **Validation**: Ensure that the data returned by `loadItemPositionsFromStorage` is validated before being passed to `calculateTimelineItemPositions`.
+2. **Synchronization**: Verify that the `customItemYDelta` data is up-to-date and corresponds to the current state of the timeline items.
+3. **Debugging**: Add logs to trace the flow of `customItemYDelta` from `loadItemPositionsFromStorage` to `calculateTimelineItemPositions`.

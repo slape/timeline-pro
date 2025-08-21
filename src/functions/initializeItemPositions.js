@@ -9,6 +9,9 @@ import loadItemPositionsFromStorage from "./loadItemPositionsFromStorage";
  * @param {any} storageService - Monday storage service
  */
 export async function initializeItemPositions({ get, set, storageService }) {
+  // Log to verify if initializeItemPositions is called
+  TimelineLogger.debug("[TEST] initializeItemPositions function invoked");
+
   TimelineLogger.debug("[Y-DELTA] initializeItemPositions called", {
     hasStorageService: !!storageService,
   });
@@ -38,10 +41,22 @@ export async function initializeItemPositions({ get, set, storageService }) {
       });
       return;
     }
+
+    // Log the Zustand store state before attempting to load positions
+    TimelineLogger.debug("[TEST] Zustand store before loading positions", {
+      customItemYDelta: get().customItemYDelta,
+    });
+
     const positionData = await loadItemPositionsFromStorage(
       storageService,
       boardId,
     );
+
+    // Log the data fetched from Monday storage
+    TimelineLogger.debug("[TEST] Data fetched from Monday storage", {
+      positionData,
+    });
+
     TimelineLogger.debug("✅ Setting customItemYDelta in store", {
       boardId,
       customItemYDelta: positionData.customItemYDelta || {},
@@ -49,9 +64,17 @@ export async function initializeItemPositions({ get, set, storageService }) {
     set({
       customItemYDelta: positionData.customItemYDelta || {},
     });
-    TimelineLogger.debug("[Y-DELTA] Zustand store customItemYDelta after reload", {
-      customItemYDelta: positionData.customItemYDelta || {},
+
+    // Log the Zustand store state after updating with loaded positions
+    TimelineLogger.debug("[TEST] Zustand store after loading positions", {
+      customItemYDelta: get().customItemYDelta,
     });
+    TimelineLogger.debug(
+      "[Y-DELTA] Zustand store customItemYDelta after reload",
+      {
+        customItemYDelta: positionData.customItemYDelta || {},
+      },
+    );
   } catch (error) {
     TimelineLogger.error("❌ Failed to initialize item positions", error);
     set({

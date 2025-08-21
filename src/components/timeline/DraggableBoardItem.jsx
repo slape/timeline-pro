@@ -121,21 +121,40 @@ const DraggableBoardItem = ({
     setSize(newSize);
   }, [shape, showItemDates]);
 
+  const { customItemYDelta } = useZustandStore();
   // Use custom hook for mouse handlers
   // --- Custom drag end logic for Y delta persistence ---
   // Only persist Y delta at drag end (on mouseup), not during drag
   // We'll provide a separate callback for mouseup
-  const handlePositionChangeWithYDelta = (itemId, newPosition, isDragEnd = false) => {
+  const handlePositionChangeWithYDelta = (
+    itemId,
+    newPosition,
+    isDragEnd = false,
+  ) => {
     if (onPositionChange) {
       onPositionChange(itemId, newPosition);
     }
-    if (isDragEnd && typeof dragDefaultY.current === "number" && typeof newPosition.y === "number") {
+    if (
+      isDragEnd &&
+      typeof dragDefaultY.current === "number" &&
+      typeof newPosition.y === "number"
+    ) {
       const yDelta = newPosition.y - dragDefaultY.current;
-      TimelineLogger.debug("[Y-DELTA][DRAG-END] Saving yDelta", { itemId, yDelta });
+      TimelineLogger.debug("[Y-DELTA][DRAG-END] Saving yDelta", {
+        itemId,
+        yDelta,
+      });
       saveCustomItemYDelta(itemId, yDelta);
+
+      // Debug log for calculated yDelta at drag end
+      TimelineLogger.debug("[Y-DELTA-DEBUG] Drag end: Calculated yDelta", {
+        itemId,
+        newPositionY: newPosition.y,
+        dragDefaultY: dragDefaultY.current,
+        yDelta,
+      });
     }
   };
-
 
   // On drag start: snapshot defaultY
   const handleMouseDownWithDefaultY = (e) => {
@@ -147,27 +166,43 @@ const DraggableBoardItem = ({
       settings?.position
     ) {
       // 1. Log itemsForDefaultY (ids and types) if provided, else boardItems
-      const itemArrayIdTypes = itemsArray.map(bi => ({ id: bi.id, type: typeof bi.id }));
-      TimelineLogger.debug('[Y-DELTA][DEBUG] itemsForDefaultY/boardItems ids and types', { itemArrayIdTypes });
+      const itemArrayIdTypes = itemsArray.map((bi) => ({
+        id: bi.id,
+        type: typeof bi.id,
+      }));
+      TimelineLogger.debug(
+        "[Y-DELTA][DEBUG] itemsForDefaultY/boardItems ids and types",
+        { itemArrayIdTypes },
+      );
 
       // 2. Log itemId and its type
-      TimelineLogger.debug('[Y-DELTA][DEBUG] itemId and type', { itemId: item.id, type: typeof item.id });
+      TimelineLogger.debug("[Y-DELTA][DEBUG] itemId and type", {
+        itemId: item.id,
+        type: typeof item.id,
+      });
 
       // 3. Log output of calculateTimelineItemPositions
       try {
-        const { customItemYDelta } = useZustandStore();
         const calcPositions = calculateTimelineItemPositions(
           itemsArray,
           timelineParams.startDate,
           timelineParams.endDate,
           settings.position,
-          currentPositionSetting, // tracked position setting
-          customItemYDelta // pass custom Y-deltas
+          customItemYDelta, // pass custom Y-deltas
         );
-        const calcIds = calcPositions.map(pos => ({ id: pos.id, type: typeof pos.id }));
-        TimelineLogger.debug('[Y-DELTA][DEBUG] calculateTimelineItemPositions output ids/types', { calcIds, calcPositions });
+        const calcIds = calcPositions.map((pos) => ({
+          id: pos.id,
+          type: typeof pos.id,
+        }));
+        TimelineLogger.debug(
+          "[Y-DELTA][DEBUG] calculateTimelineItemPositions output ids/types",
+          { calcIds, calcPositions },
+        );
       } catch (err) {
-        TimelineLogger.error('[Y-DELTA][DEBUG] Error logging calculateTimelineItemPositions', err);
+        TimelineLogger.error(
+          "[Y-DELTA][DEBUG] Error logging calculateTimelineItemPositions",
+          err,
+        );
       }
 
       const defaultY = getDefaultItemYPosition({
@@ -178,7 +213,23 @@ const DraggableBoardItem = ({
         position: settings.position,
       });
       dragDefaultY.current = defaultY;
-      TimelineLogger.debug("[Y-DELTA] Drag start: snapshotted defaultY", { itemId: item.id, defaultY });
+      TimelineLogger.debug("[Y-DELTA] Drag start: snapshotted defaultY", {
+        itemId: item.id,
+        defaultY,
+      });
+
+      TimelineLogger.debug("[Y-DELTA-DEBUG] Drag start: Calculated defaultY", {
+        itemId: item.id,
+        defaultY,
+      });
+
+      TimelineLogger.debug(
+        "[Y-DELTA-DEBUG] Drag start: dragDefaultY.current set",
+        {
+          itemId: item.id,
+          dragDefaultY: dragDefaultY.current,
+        },
+      );
     }
     handleMouseDown(e);
   };
@@ -188,8 +239,6 @@ const DraggableBoardItem = ({
     handleMouseMove,
     handleMouseUp,
     handleResizeMouseDown,
-    handleResizeMouseMove,
-    handleResizeMouseUp,
   } = useMouseHandlers({
     containerRef,
     dragStartPos,

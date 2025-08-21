@@ -1,23 +1,15 @@
 import { create } from "zustand";
 import TimelineLogger from "../utils/logger";
 import { MondayStorageService } from "./MondayStorageService";
-
 import { updatePositionSetting as updatePositionSettingFn } from "../functions/updatePositionSetting";
-import { clearCustomPositions as clearCustomPositionsFn } from "../functions/clearCustomPositions";
-import { initializeItemPositions as initializeItemPositionsFn } from "../functions/initializeItemPositions";
 import saveCustomItemYDeltaFn from "../functions/saveCustomItemYDelta";
-
-// console.log('Zustand store created (should appear only once per reload)'); // Suppressed for focused debugging
-
 import { HIDDEN_ITEMS_KEY } from "../utils/configConstants";
-
+import { initializeItemPositions } from "../functions/initializeItemPositions";
 // Storage service instance (will be initialized when Monday SDK is available)
 let storageService = null;
-
 import loadHiddenItemsFromStorage from "../functions/loadHiddenItemsFromStorage";
 // Helper functions for Monday.com storage persistence
 // loadHiddenItemsFromStorage now imported from functions directory and called with (storageService, HIDDEN_ITEMS_KEY)
-
 
 export const useZustandStore = create((set, get) => ({
   settings: {},
@@ -33,6 +25,8 @@ export const useZustandStore = create((set, get) => ({
   itemPositionsError: null, // Error handling
   timelineParams: {},
   timelineItems: [],
+  // Tracks the current timeline position setting (e.g., 'above', 'below', 'alternate')
+  currentPositionSetting: null,
   setSettings: (settings) => {
     set({ settings });
   },
@@ -84,9 +78,12 @@ export const useZustandStore = create((set, get) => ({
         storageService,
         HIDDEN_ITEMS_KEY,
       );
-      TimelineLogger.debug("Loaded hidden items from storage", { count: hiddenItemIds.length, items: hiddenItemIds });
+      TimelineLogger.debug("Loaded hidden items from storage", {
+        count: hiddenItemIds.length,
+        items: hiddenItemIds,
+      });
       set({ hiddenItemIds, hiddenItemsLoaded: true, appLoading: false }); // Set appLoading to false after initialization
-    } catch (error) { 
+    } catch (error) {
       TimelineLogger.error("Failed to initialize Monday storage", error);
       // Even if loading fails, mark as loaded to prevent infinite loading
       set({ hiddenItemsLoaded: true, appLoading: false });
@@ -96,13 +93,20 @@ export const useZustandStore = create((set, get) => ({
   // If storage fails, roll back the change and log an error.
   updateHiddenItemsInStorage: async (updateFn, actionName) => {
     if (!storageService) {
-        TimelineLogger.warn("Storage service not available for action:", actionName);
-        return;
+      TimelineLogger.warn(
+        "Storage service not available for action:",
+        actionName,
+      );
+      return;
     }
-    TimelineLogger.debug(`[Zustand] Action: ${actionName} - Starting optimistic update.`);
+    TimelineLogger.debug(
+      `[Zustand] Action: ${actionName} - Starting optimistic update.`,
+    );
     // Use the latest local store state as the source of truth
     const localHiddenIds = get().hiddenItemIds;
-    const optimisticHiddenIds = updateFn(Array.isArray(localHiddenIds) ? localHiddenIds : []);
+    const optimisticHiddenIds = updateFn(
+      Array.isArray(localHiddenIds) ? localHiddenIds : [],
+    );
     // Optimistically update local state immediately
     set({ hiddenItemIds: optimisticHiddenIds });
     try {
@@ -110,55 +114,82 @@ export const useZustandStore = create((set, get) => ({
         HIDDEN_ITEMS_KEY,
         (currentValue) => {
           // Use optimistic state as base, fallback to storage value if not available
-          const currentHiddenIds = Array.isArray(optimisticHiddenIds) ? optimisticHiddenIds : (Array.isArray(currentValue) ? currentValue : []);
-          TimelineLogger.debug(`[Y-DELTA][Zustand] safeUpdate: Current hidden IDs (OPTIMISTIC)`, { count: currentHiddenIds.length, ids: currentHiddenIds });
+          const currentHiddenIds = Array.isArray(optimisticHiddenIds)
+            ? optimisticHiddenIds
+            : Array.isArray(currentValue)
+              ? currentValue
+              : [];
+          TimelineLogger.debug(
+            `[Y-DELTA][Zustand] safeUpdate: Current hidden IDs (OPTIMISTIC)`,
+            { count: currentHiddenIds.length, ids: currentHiddenIds },
+          );
           const updatedIds = updateFn(currentHiddenIds);
-          TimelineLogger.debug(`[Y-DELTA][Zustand] safeUpdate: New hidden IDs to be saved`, { count: updatedIds.length, ids: updatedIds });
+          TimelineLogger.debug(
+            `[Y-DELTA][Zustand] safeUpdate: New hidden IDs to be saved`,
+            { count: updatedIds.length, ids: updatedIds },
+          );
           return updatedIds;
         },
       );
       if (newHiddenIds !== null) {
-        TimelineLogger.debug(`[Y-DELTA][Zustand] safeUpdate successful. New state:`, { count: newHiddenIds.length, ids: newHiddenIds });
+        TimelineLogger.debug(
+          `[Y-DELTA][Zustand] safeUpdate successful. New state:`,
+          { count: newHiddenIds.length, ids: newHiddenIds },
+        );
         // Local state already set optimistically
       } else {
         // Rollback: revert to previous state if storage fails
-        TimelineLogger.error(`[Zustand] Failed to safely update hidden items in storage for action: ${actionName}. Rolling back.`);
+        TimelineLogger.error(
+          `[Zustand] Failed to safely update hidden items in storage for action: ${actionName}. Rolling back.`,
+        );
         set({ hiddenItemIds: localHiddenIds });
       }
     } catch (error) {
-      TimelineLogger.error(`[Zustand] Optimistic update failed for action: ${actionName}. Rolling back.`, { error });
+      TimelineLogger.error(
+        `[Zustand] Optimistic update failed for action: ${actionName}. Rolling back.`,
+        { error },
+      );
       set({ hiddenItemIds: localHiddenIds });
     }
   },
 
   // Helper function to hide a single item
   hideItem: (itemId) => {
-  const prevHidden = get().hiddenItemIds;
-  TimelineLogger.debug(`[Y-DELTA][Zustand] Action: hideItem`, { itemId, prevHidden });
-  get().updateHiddenItemsInStorage((currentHiddenIds) => {
-    TimelineLogger.debug(`[Y-DELTA][Zustand] hideItem: currentHiddenIds before update`, { currentHiddenIds });
-    let updated;
-    if (!currentHiddenIds.includes(itemId)) {
-      updated = [...currentHiddenIds, itemId];
-    } else {
-      updated = currentHiddenIds;
-    }
-    TimelineLogger.debug(`[Y-DELTA][Zustand] hideItem: updatedHiddenIds after update`, { updated });
-    return updated;
-  }, 'hideItem');
-},
+    const prevHidden = get().hiddenItemIds;
+    TimelineLogger.debug(`[Y-DELTA][Zustand] Action: hideItem`, {
+      itemId,
+      prevHidden,
+    });
+    get().updateHiddenItemsInStorage((currentHiddenIds) => {
+      TimelineLogger.debug(
+        `[Y-DELTA][Zustand] hideItem: currentHiddenIds before update`,
+        { currentHiddenIds },
+      );
+      let updated;
+      if (!currentHiddenIds.includes(itemId)) {
+        updated = [...currentHiddenIds, itemId];
+      } else {
+        updated = currentHiddenIds;
+      }
+      TimelineLogger.debug(
+        `[Y-DELTA][Zustand] hideItem: updatedHiddenIds after update`,
+        { updated },
+      );
+      return updated;
+    }, "hideItem");
+  },
   // Helper function to unhide a single item
   unhideItem: (itemId) => {
     TimelineLogger.debug(`[Zustand] Action: unhideItem`, { itemId });
     get().updateHiddenItemsInStorage((currentHiddenIds) => {
       return currentHiddenIds.filter((id) => id !== itemId);
-    }, 'unhideItem');
+    }, "unhideItem");
   },
 
   // Helper function to unhide all items
   unhideAllItems: () => {
     TimelineLogger.debug(`[Zustand] Action: unhideAllItems`);
-    get().updateHiddenItemsInStorage(() => [], 'unhideAllItems');
+    get().updateHiddenItemsInStorage(() => [], "unhideAllItems");
   },
   // Helper function to get count of hidden items
   getHiddenItemCount: () => {
@@ -193,8 +224,11 @@ export const useZustandStore = create((set, get) => ({
   },
 
   initializeItemPositions: () => {
-    const { initializeItemPositions } = require("../functions/initializeItemPositions");
     return initializeItemPositions({ get, set, storageService });
   },
 
+  // Updates the current position setting in the store
+  setCurrentPositionSetting: (newSetting) => {
+    set({ currentPositionSetting: newSetting });
+  },
 }));

@@ -24,10 +24,16 @@ const saveItemYDeltasToStorage = async (
       customItemYDelta: customItemYDelta || {},
       positionSetting: currentPositionSetting,
     };
-    console.log("[Y-DELTA][STORAGE] Saving Y-deltas", { boardId, customItemYDelta });
+    console.log("[Y-DELTA][STORAGE] Saving Y-deltas", {
+      boardId,
+      customItemYDelta,
+    });
+    // Serialize data before saving
+    const serializedDataToSave = JSON.stringify(dataToSave);
+
     const response = await storageService.setInstanceItem(
       storageKey,
-      dataToSave,
+      serializedDataToSave,
     );
     if (response?.data?.success) {
       TimelineLogger.debug(

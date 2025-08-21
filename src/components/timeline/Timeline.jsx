@@ -54,6 +54,7 @@ const Timeline = ({ onItemMove, onHideItem, onLabelChange }) => {
     endDate,
   });
 
+  const { customItemYDelta } = useZustandStore();
   // Get timeline data using original dates
   const { visibleBoardItems, visibleTimelineItems, visibleBoardItemsString } =
     useTimelineData(startDate, endDate, scale);
@@ -182,6 +183,12 @@ const Timeline = ({ onItemMove, onHideItem, onLabelChange }) => {
     datePosition,
   );
 
+  React.useEffect(() => {
+    // Initialize item positions on component mount
+    const { initializeItemPositions } = useZustandStore.getState();
+    initializeItemPositions();
+  }, []);
+
   return (
     <div className="timeline-container" style={TIMELINE_CONTAINER_STYLES}>
       {/* Timeline line */}
@@ -205,14 +212,13 @@ const Timeline = ({ onItemMove, onHideItem, onLabelChange }) => {
       {/* Board Items - Render all items chronologically with position logic */}
       {(() => {
         // Calculate positions for all items using effective dates
-        const { customItemYDelta } = useZustandStore();
         const itemsWithPositions = calculateTimelineItemPositions(
           visibleTimelineItems,
           effectiveStartDate,
           effectiveEndDate,
           position,
           currentPositionSetting, // tracked position setting
-          customItemYDelta // pass custom Y-deltas
+          customItemYDelta, // pass custom Y-deltas
         );
         TimelineLogger.debug("itemsWithPositions", itemsWithPositions);
         // Render items using extracted function

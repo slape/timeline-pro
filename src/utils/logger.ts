@@ -70,13 +70,7 @@ class TimelineLogger {
   static debug(message: string, metadata: LogMetadata = {}): void {
     // FOCUSED DEBUG MODE: Show all bounds debugging for constants verification
     const criticalKeywords = [
-      '🎯 ALTERNATE MODE DETECTED',
-      '🔍 ALTERNATE BOUNDS',
-      '🔍 ABOVE BOUNDS',
-      '🔍 BELOW BOUNDS',
-      '🚨 ALTERNATE BOUNDS ENFORCED',
-      '[DRAG-DEBUG]',
-      '[Y-DELTA]'
+      '[TEST]'
     ];
     
     const isCritical = criticalKeywords.some(keyword => message.includes(keyword));

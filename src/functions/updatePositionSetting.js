@@ -16,8 +16,7 @@ export function updatePositionSetting({
   newSetting,
   storageService,
 }) {
-  const { currentPositionSetting, customItemPositions, context, boardItems } =
-    get();
+  const { currentPositionSetting, context } = get();
   const boardId = context?.boardId;
 
   if (!boardId) {
@@ -33,7 +32,7 @@ export function updatePositionSetting({
   // For any position setting change, clear all Y-deltas and persist
   TimelineLogger.debug(
     "Clearing all custom Y-deltas for position setting change",
-    { to: newSetting }
+    { to: newSetting },
   );
   set({
     customItemYDelta: {},
@@ -47,9 +46,5 @@ export function updatePositionSetting({
     itemPositionsError: null,
   });
 
-  saveItemYDeltasToStorage(
-    storageService,
-    boardId,
-    {},
-  );
+  saveItemYDeltasToStorage(storageService, boardId, {});
 }
