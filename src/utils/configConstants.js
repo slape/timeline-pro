@@ -146,3 +146,8 @@ export const getTimelineTopCSS = (position) => {
       return UI_COMPONENTS.TIMELINE_TOP_CENTER;
   }
 };
+
+export const LANE_HEIGHT = 40; // match your card height/row pitch
+export const OFFSET_MAX = 12; // small nudge range; use 0 to disable initially
+export const MIN_ROW = -10; // sensible bounds
+export const MAX_ROW = 200; // sensible bounds

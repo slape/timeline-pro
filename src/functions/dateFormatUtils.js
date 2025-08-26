@@ -155,7 +155,14 @@ export const parseDateFromColumnValue = (columnValue, columnType = "date") => {
  * @returns {moment} Moment object for current or fallback date
  */
 export const getCurrentMoment = (fallbackDate = null) => {
+  // Ensure we always return a proper moment object for the date picker
   if (fallbackDate) {
+    // If already a moment object, return it directly
+    if (moment.isMoment(fallbackDate)) {
+      return fallbackDate;
+    }
+
+    // If it's a Date object or a string, convert to moment
     const dateObj = convertToDate(fallbackDate);
     return dateObj ? moment(dateObj) : moment();
   }
@@ -172,10 +179,35 @@ export const validateDateInput = (dateInput) => {
     return { isValid: false, date: null, error: "No date provided" };
   }
 
-  const convertedDate = convertToDate(dateInput);
-  if (!convertedDate) {
-    return { isValid: false, date: null, error: "Invalid date format" };
+  // Handle moment objects directly
+  if (moment.isMoment(dateInput)) {
+    if (!dateInput.isValid()) {
+      return { isValid: false, date: null, error: "Invalid moment date" };
+    }
+    return { isValid: true, date: dateInput.toDate(), error: null };
   }
 
-  return { isValid: true, date: convertedDate, error: null };
+  // Handle Date objects
+  if (dateInput instanceof Date) {
+    if (isNaN(dateInput.getTime())) {
+      return { isValid: false, date: null, error: "Invalid Date object" };
+    }
+    return { isValid: true, date: dateInput, error: null };
+  }
+
+  // Handle string dates
+  if (typeof dateInput === "string") {
+    const parsedDate = new Date(dateInput);
+    if (isNaN(parsedDate.getTime())) {
+      return { isValid: false, date: null, error: "Invalid date string" };
+    }
+    return { isValid: true, date: parsedDate, error: null };
+  }
+
+  // If we get here, it's an unknown format
+  return {
+    isValid: false,
+    date: null,
+    error: `Unknown date format: ${typeof dateInput}`,
+  };
 };

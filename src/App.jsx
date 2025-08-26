@@ -85,14 +85,7 @@ const App = () => {
       boardItemsCount: boardItems?.length || 0,
       itemIdsCount: itemIds?.length || 0,
     });
-  }, [
-    context,
-    boardItems,
-    settings,
-    isLoading,
-    hiddenItemIds,
-    itemIds,
-  ]);
+  }, [context, boardItems, settings, isLoading, hiddenItemIds, itemIds]);
 
   // Track previous IDs to avoid unnecessary refetching (some SDKs re-emit same values)
   const prevBoardIdRef = useRef();
@@ -217,7 +210,8 @@ const App = () => {
       <ThemeProvider systemTheme={context?.theme ?? "light"}>
         {error && <div style={{ color: "red" }}>{error}</div>}
         {(() => {
-          const shouldShowLoading = appLoading || !boardItems || !context || !settings;
+          const shouldShowLoading =
+            appLoading || !boardItems || !context || !settings;
 
           TimelineLogger.debug("🎯 App render decision", {
             shouldShowLoading,

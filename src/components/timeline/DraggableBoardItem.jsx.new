@@ -5,6 +5,8 @@ import ItemContainer from "./ItemContainer";
 import { getContainerStyles } from "../../functions/draggableItemStyles";
 import { getShapeStyles } from "../../functions/getShapeStyles";
 import "./DraggableBoardItem.css";
+import { getDefaultRowFor } from "../../functions/getDefaultRowFor";
+import { clamp } from "../../functions/clamp";
 import { useDraggableItemState } from "../../hooks/useDraggableItemState";
 import { useDateHandling } from "../../hooks/useDateHandling";
 import { useMouseHandlers } from "../../hooks/useMouseHandlers";
@@ -14,6 +16,7 @@ import { calculateInitialSize } from "../../functions/itemSizeUtils";
 import handleItemNameChange from "../../functions/handleItemNameChange";
 import handleSaveDate from "../../functions/handleSaveDate";
 import mondaySdk from "monday-sdk-js";
+import { LANE_HEIGHT, OFFSET_MAX } from "../../utils/configConstants";
 
 const monday = mondaySdk();
 
@@ -65,41 +68,55 @@ const DraggableBoardItem = ({
 
   // Extract required data from props and store with stable references
   // Use a custom hook to isolate the state access and reduce rerenders
-  const { context, settings, updateBoardItemDate } = useIsolatedZustandState(
-    item.id,
-  );
+  const {
+    context,
+    settings,
+    scale,
+    currentPositionSetting,
+    updateBoardItemDate,
+    saveCustomItemY,
+    itemPosition,
+  } = useIsolatedZustandState(item.id);
 
   // Extract position values for easier access and stability
+  const itemRowShift = itemPosition.rowShift || 0;
+  const itemLaneOffset = itemPosition.laneOffset || 0;
 
   // Create a stable reference to the position data to prevent child component rerenders
   // Use primitive values as dependencies to avoid reference issues
+  const customItemY = React.useMemo(
+    () => ({
+      rowShift: itemRowShift,
+      laneOffset: itemLaneOffset,
+    }),
+    [itemRowShift, itemLaneOffset],
+  );
+
+  const dragRef = useRef(null);
+  const visualYRef = useRef(0);
   const elRef = useRef(null);
   // Initialize size using utility function
   const [size, setSize] = useState(() =>
     calculateInitialSize(shape, showItemDates, true),
   );
 
-  // Date picker state - using React.useState for more explicit reference
-  const [isDatePickerOpen, setIsDatePickerOpen] = React.useState(false);
-  const [selectedDate, setSelectedDate] = React.useState(null);
+  // Date picker state
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(date);
 
-  // Date picker handlers - using React.useCallback to prevent recreation on re-renders
-  const openDatePicker = React.useCallback((date) => {
-    // Just pass the date directly - the DatePickerModal will handle conversion
+  // Date picker handlers
+  const openDatePicker = (date) => {
     setSelectedDate(date);
     setIsDatePickerOpen(true);
-  }, []);
+  };
 
-  const closeDatePicker = React.useCallback(() => {
+  const closeDatePicker = () => {
     setIsDatePickerOpen(false);
-    // Also reset the selected date when closing to avoid stale state
-    setSelectedDate(null);
-  }, []);
+  };
 
-  const handleDateChange = React.useCallback((newDate) => {
-    // The DatePicker component will pass a moment object here
+  const handleDateChange = (newDate) => {
     setSelectedDate(newDate);
-  }, []);
+  };
 
   // Calculate initial position based on the item's date - only runs on mount
   useEffect(() => {
@@ -140,6 +157,179 @@ const DraggableBoardItem = ({
     [position, size, isDragging],
   );
 
+  // Helper function to update connector position during drag
+  const updateConnectorPosition = (transformY = null, itemId = item.id) => {
+    const connectorId = `board-item-${itemId}`;
+    const connectorAnchor = document.getElementById(connectorId);
+
+    if (connectorAnchor) {
+      if (transformY === null) {
+        // Reset the transform to empty string when null
+        connectorAnchor.style.transform = "";
+        // Force a repaint
+        void connectorAnchor.offsetHeight;
+        TimelineLogger.debug("[CONNECTOR] Reset transform", { itemId });
+      } else {
+        // Apply the transform when a value is provided
+        connectorAnchor.style.transform = `translateY(${transformY}px)`;
+        // Force a repaint by reading layout property to trigger recalc
+        void connectorAnchor.getBoundingClientRect();
+        TimelineLogger.debug("[CONNECTOR] Applied transform", {
+          itemId,
+          transformY,
+        });
+      }
+    } else {
+      TimelineLogger.debug("[CONNECTOR] Anchor not found", { connectorId });
+    }
+  };
+
+  // Row/Lane Shift drag handling system
+  const onDragStart = (e) => {
+    // Skip drag handling for click events
+    if (e.type === "click") {
+      return;
+    }
+
+    // Get the current base row and custom position
+    const baseRow = getDefaultRowFor(item, currentPositionSetting);
+    const startRow = baseRow + (customItemY.rowShift || 0);
+    const startLaneOffset = customItemY.laneOffset || 0;
+
+    // Ensure the connector anchor is ready for dragging
+    const connectorAnchor = document.getElementById(`board-item-${item.id}`);
+    if (connectorAnchor) {
+      // Make sure any previous transforms are cleared
+      connectorAnchor.style.transform = "";
+      // Force a repaint to ensure the connector is properly positioned
+      void connectorAnchor.offsetHeight;
+
+      // Log for debugging
+      TimelineLogger.debug("[CONNECTOR] Prepared for drag", {
+        itemId: item.id,
+        position: connectorAnchor.getBoundingClientRect(),
+      });
+    }
+
+    // Calculate the exact starting Y position in pixels
+    const startY = startRow * LANE_HEIGHT + startLaneOffset;
+    visualYRef.current = startY;
+
+    dragRef.current = {
+      pointerYStart: getPointerY(e),
+      baseRow,
+      startRow,
+      startLaneOffset,
+      laneHeight: LANE_HEIGHT,
+      scaleSnapshot: scale,
+    };
+
+    // Log for debugging
+    TimelineLogger.debug("[POS] Drag start: Row/Lane model", {
+      itemId: item.id,
+      baseRow,
+      startRow,
+      startLaneOffset,
+      startY,
+    });
+
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+
+  const onDragMove = (e) => {
+    const s = dragRef.current;
+    if (!s) return;
+
+    // Calculate movement in screen pixels
+    const dyScreen = getPointerY(e) - s.pointerYStart;
+    // Convert to timeline coordinates based on scale
+    const dyTimeline = dyScreen / s.scaleSnapshot;
+
+    // Calculate the precise starting position
+    const startY = s.startRow * s.laneHeight + s.startLaneOffset;
+    // Apply the movement directly without any snapping
+    const newY = startY + dyTimeline;
+
+    // Store the exact position for reference
+    visualYRef.current = newY;
+
+    // Update both the item and connector with the exact same position
+    if (elRef.current) {
+      // Set exact position on the item
+      elRef.current.style.transform = `translateY(${newY}px)`;
+      // Apply the same position to connector
+      updateConnectorPosition(newY);
+      
+      // Force update
+      void elRef.current.getBoundingClientRect();
+      
+      // Notify other components
+      const updateEvent = new CustomEvent("timeline-position-changed", {
+        bubbles: true,
+        detail: { itemId: item.id },
+      });
+      document.dispatchEvent(updateEvent);
+    }
+  };
+
+  const onDragEnd = () => {
+    const s = dragRef.current;
+    if (!s) return;
+
+    // Get the exact final position
+    const finalY = visualYRef.current;
+    
+    // Calculate row and lane offset - use floor instead of round to prevent unwanted jumps
+    const finalRow = Math.floor(finalY / s.laneHeight);
+    const rowShift = finalRow - s.baseRow;
+    const laneOffset = finalY - (finalRow * s.laneHeight);
+    
+    TimelineLogger.debug("[POS] Drag end: Final position calculation", {
+      itemId: item.id,
+      finalY,
+      finalRow,
+      baseRow: s.baseRow,
+      rowShift,
+      laneOffset,
+    });
+
+    // Only save if position changed meaningfully
+    if (rowShift !== itemRowShift || Math.abs(laneOffset - itemLaneOffset) > 1) {
+      // Create a stable position object
+      const newPosition = { 
+        rowShift, 
+        laneOffset: parseFloat(laneOffset.toFixed(2)) // Prevent floating point issues
+      };
+      const itemIdCopy = item.id;
+
+      // Save the position without a timeout
+      saveCustomItemY(itemIdCopy, newPosition);
+      
+      // Important: DO NOT reset connector transform - keep it at the exact same position
+      // This prevents the jump
+      
+      // Force a repaint
+      void document.body.offsetHeight;
+
+      // Update connectors
+      const updateEvent = new CustomEvent("timeline-position-changed", {
+        bubbles: true,
+        detail: { itemId: itemIdCopy },
+      });
+      document.dispatchEvent(updateEvent);
+    } else {
+      TimelineLogger.debug("[POS] Drag end: No significant position change", {
+        itemId: item.id,
+      });
+    }
+
+    dragRef.current = null;
+  };
+
+  function getPointerY(e) {
+    return e.clientY ?? e.touches?.[0]?.clientY ?? 0;
+  }
+
   // Create a stable callback for position changes
   const handlePositionChange = React.useCallback(
     (id, pos, isDragEnd) => {
@@ -147,29 +337,6 @@ const DraggableBoardItem = ({
         // Use a timeout to break the update cycle
         setTimeout(() => {
           onPositionChange(id, pos, isDragEnd);
-
-          // If this is the end of a drag operation, dispatch a custom event
-          // to notify other components (especially connectors) of the position change
-          if (isDragEnd) {
-            const updateEvent = new CustomEvent(
-              "timeline-item-position-final",
-              {
-                bubbles: true,
-                detail: { itemId: id, position: pos },
-              },
-            );
-            document.dispatchEvent(updateEvent);
-
-            // Also trigger a standard position change event
-            const posChangeEvent = new CustomEvent(
-              "timeline-position-changed",
-              {
-                bubbles: true,
-                detail: { itemId: id, isDragEnd: true },
-              },
-            );
-            document.dispatchEvent(posChangeEvent);
-          }
         }, 10);
       }
     },
@@ -203,7 +370,7 @@ const DraggableBoardItem = ({
       position.y,
       size.width,
       size.height,
-      settings?.position,
+      timelinePosition,
       item?.id,
       handlePositionChange,
     ],
@@ -231,18 +398,13 @@ const DraggableBoardItem = ({
   // Create a stable mouseDown handler
   const itemMouseDown = React.useCallback(
     (e) => {
-      // Always stop propagation first to prevent parent elements from moving
-      e.stopPropagation();
-
-      // Always prevent default browser behavior
-      e.preventDefault();
-
       // Prevent accidental movements by checking if this is a simple click vs drag
       if (e.type === "click") {
         // For click events, don't trigger drag behavior
+        e.stopPropagation();
         return;
       }
-
+      
       TimelineLogger.debug(
         "[DRAG-DEBUG] handleMouseDown fired in ItemContainer",
         { itemId: item.id },
@@ -269,33 +431,20 @@ const DraggableBoardItem = ({
   };
 
   // Handle saving the selected date
-  const handleSaveDateWrapper = React.useCallback(
-    async (dateToSave) => {
-      try {
-        // Use the date passed from the modal
-        await handleSaveDate({
-          item,
-          selectedDate: dateToSave, // Use the date from the modal
-          settings,
-          context,
-          monday,
-          updateBoardItemDate,
-          setIsDatePickerOpen,
-          setSelectedDate,
-          onLabelChange,
-          date,
-        });
-
-        // Success! Modal will be closed by the DatePickerModal component
-        return true;
-      } catch (error) {
-        console.error("Error saving date:", error);
-        // Return false to indicate failure, but the modal will still close
-        return false;
-      }
-    },
-    [item, settings, context, monday, updateBoardItemDate, onLabelChange, date],
-  );
+  const handleSaveDateWrapper = () => {
+    return handleSaveDate({
+      item,
+      selectedDate,
+      settings,
+      context,
+      monday,
+      updateBoardItemDate,
+      setIsDatePickerOpen,
+      setSelectedDate,
+      onLabelChange,
+      date,
+    });
+  };
 
   return (
     <div
@@ -307,29 +456,12 @@ const DraggableBoardItem = ({
           containerRef.current = el.closest(".timeline-container");
         }
       }}
-      className={`draggable-board-item ${isDragging ? "dragging" : ""}`}
-      style={{
-        ...containerStyles,
-        // Ensure the draggable item doesn't move with its parent
-        position: "absolute",
-        willChange: "transform",
-        // Ensure it receives mouse events
-        pointerEvents: "auto",
-        // Make sure it's on top when dragging
-        zIndex: isDragging ? 1000 : containerStyles.zIndex || 1,
-        // Use GPU acceleration for smoother dragging
-        transform: containerStyles.transform || "translateX(-50%)",
-      }}
+      style={containerStyles}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onMouseDown={(e) => {
-        // Stop propagation and prevent default to keep events contained
-        e.stopPropagation();
-        e.preventDefault();
-        // Add a custom flag to this event to mark it as handled by our draggable item
-        e.nativeEvent._handledByDraggableItem = true;
-        itemMouseDown(e);
-      }}
+      onPointerDown={onDragStart}
+      onPointerMove={onDragMove}
+      onPointerUp={onDragEnd}
     >
       <ItemContainer
         shape={shape}

@@ -3,37 +3,34 @@
  * @param {Array} items - Array of timeline items with dates
  * @param {Date} startDate - Timeline start date
  * @param {Date} endDate - Timeline end date
- * @param {string} position - Position setting ('above', 'below', 'alternate')
- * @returns {Array} Array of items with calculated render positions
- */
-/**
- * Calculates positions for timeline items based on chronological order, position settings, and same-date handling
- * @param {Array} items - Array of timeline items with dates
- * @param {Date} startDate - Timeline start date
- * @param {Date} endDate - Timeline end date
  * @param {string} position - Current position setting ('above', 'below', 'alternate')
  * @param {string} [trackedPositionSetting] - Persisted position setting from storage
+ * @param {Object} [customItemY] - Object mapping itemId to {rowShift, laneOffset} for row-based positioning
  * @returns {Array} Array of items with calculated render positions
  */
-// Accepts an extra customYDeltas argument (object mapping itemId to yDelta)
 import TimelineLogger from "../utils/logger";
+import { getDefaultRowFor } from "./getDefaultRowFor";
+import { LANE_HEIGHT } from "../utils/configConstants";
+
 export function calculateTimelineItemPositions(
   items,
   startDate,
   endDate,
   position,
   trackedPositionSetting = null,
-  customYDeltas = {},
+  customItemY = {},
 ) {
   if (!items || items.length === 0) {
     return [];
   }
-  let applyYDeltas = false;
+
+  // Determine whether to apply custom positions
+  let applyCustomPositions = false;
   if (trackedPositionSetting && trackedPositionSetting === position) {
-    applyYDeltas = true;
+    applyCustomPositions = true;
     if (typeof TimelineLogger !== "undefined") {
       TimelineLogger.debug(
-        "[Y-DELTA][POSITION] Position setting matches, applying custom Y-deltas",
+        "[POS] Position setting matches, applying custom positions",
         {
           trackedPositionSetting,
           currentPositionSetting: position,
@@ -41,10 +38,10 @@ export function calculateTimelineItemPositions(
       );
     }
   } else if (trackedPositionSetting && trackedPositionSetting !== position) {
-    // Position setting has changed; ignore any custom Y-deltas for this render
+    // Position setting has changed; ignore any custom positions for this render
     if (typeof TimelineLogger !== "undefined") {
       TimelineLogger.debug(
-        "[Y-DELTA][POSITION] Position setting changed, ignoring custom Y-deltas",
+        "[POS] Position setting changed, ignoring custom positions",
         {
           trackedPositionSetting,
           currentPositionSetting: position,
@@ -86,7 +83,19 @@ export function calculateTimelineItemPositions(
 
     // Calculate horizontal position based on date
     const timeRange = endDate - startDate;
+    // Calculate a percentage position based on date range (0-100%)
     const datePosition = ((baseDate - startDate) / timeRange) * 100;
+
+    // Ensure datePosition is within valid range (0-100%)
+    const clampedDatePosition = Math.max(0, Math.min(100, datePosition));
+
+    TimelineLogger.debug("[POS] Calculated item position", {
+      date: baseDate,
+      datePosition: clampedDatePosition,
+      startDate,
+      endDate,
+      timeRange,
+    });
 
     dateItems.forEach((item, sameDateIndex) => {
       let itemPosition;
@@ -121,7 +130,7 @@ export function calculateTimelineItemPositions(
 
       // Ensure items stay within display bounds but maintain exact horizontal alignment with date marker
       // For perpendicular connector lines on initial render, keep exact datePosition with no offset
-      const finalHorizontalPosition = datePosition; // Exact alignment with date position for perpendicular line
+      const finalHorizontalPosition = clampedDatePosition; // Exact alignment with date position for perpendicular line
 
       // Use different max offsets for above and below timeline items
       const maxVerticalOffset =
@@ -135,16 +144,25 @@ export function calculateTimelineItemPositions(
           ? Math.max(-maxVerticalOffset, verticalOffset) // Only cap negative values
           : Math.min(maxVerticalOffset, verticalOffset); // Only cap positive values
 
-      // If we should apply Y-deltas, adjust the vertical position accordingly
+      // Calculate the final vertical position
       let yWithDelta = finalVerticalOffset;
-      if (
-        applyYDeltas &&
-        item.id &&
-        customYDeltas &&
-        typeof customYDeltas[item.id] === "number"
-      ) {
-        yWithDelta += customYDeltas[item.id];
+
+      // Apply custom Y positions if enabled
+      if (applyCustomPositions && item.id) {
+        // Check if this item has a custom Y position
+        const customPos = customItemY[item.id];
+        if (customPos && typeof customPos === "object") {
+          // Apply the rowShift and laneOffset directly
+          const baseRow = getDefaultRowFor(item, position);
+          const row = baseRow + (customPos.rowShift || 0);
+          const laneOffset = customPos.laneOffset || 0;
+          const adjustedY = row * LANE_HEIGHT + laneOffset;
+
+          // Use the adjusted Y value directly
+          yWithDelta = adjustedY;
+        }
       }
+
       renderedItems.push({
         ...item,
         renderPosition: {
@@ -152,8 +170,13 @@ export function calculateTimelineItemPositions(
           y: yWithDelta,
           zIndex: 10 + sameDateIndex, // Higher z-index for overlapping items
         },
+        // Keep the original vertical position for connector lines
+        originalY: yWithDelta,
         isCustomYDelta:
-          applyYDeltas && item.id && typeof customYDeltas[item.id] === "number",
+          applyCustomPositions &&
+          item.id &&
+          customItemY[item.id] &&
+          typeof customItemY[item.id] === "object",
       });
 
       globalIndex++;

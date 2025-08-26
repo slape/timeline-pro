@@ -12,21 +12,22 @@ import {
  * Custom hook to manage all mouse event handlers for draggable items
  * Consolidates drag and resize handler creation with proper memoization
  */
-export const useMouseHandlers = ({
-  containerRef,
-  dragStartPos,
-  dragOffset,
-  startSize,
-  position,
-  setPosition,
-  size,
-  setSize,
-  setIsDragging,
-  setIsResizing,
-  onPositionChange,
-  item,
-  timelinePosition,
-}) => {
+export const useMouseHandlers = (config) => {
+  const {
+    containerRef,
+    dragStartPos,
+    dragOffset,
+    startSize,
+    position,
+    setPosition,
+    size,
+    setSize,
+    setIsDragging,
+    setIsResizing,
+    onPositionChange,
+    item,
+    timelinePosition,
+  } = config;
   // Create mouse handlers using extracted functions with proper memoization
   const handleMouseMove = React.useMemo(
     () =>
@@ -34,13 +35,13 @@ export const useMouseHandlers = ({
         containerRef,
         dragStartPos,
         dragOffset,
-        position,
-        setPosition,
-        onPositionChange,
-        item,
+        position: null, // Don't pass position to avoid circular dependencies
+        setPosition, // This won't change, so it's safe
+        onPositionChange, // Pass this for setting during movement
+        item: item ? { id: item.id } : null, // Only pass the ID to minimize dependencies
         timelinePosition,
       }),
-    [position, onPositionChange, item, timelinePosition],
+    [timelinePosition, item?.id], // Only depend on stable values
   );
 
   const handleMouseUp = React.useMemo(
@@ -49,15 +50,21 @@ export const useMouseHandlers = ({
         setIsDragging,
         handleMouseMove,
         handleMouseUp: () => {
-  if (onPositionChange) {
-    onPositionChange(item.id, position, true);
-  }
-}, // Will be set by the function itself
-        onPositionChange,
+          // Create a local function that doesn't depend on position
+          if (onPositionChange && item?.id) {
+            // Use a snapshot of the position to prevent dependency issues
+            const positionSnapshot = { ...(position || { x: 0, y: 0 }) };
+            // Delay the callback to avoid update cycles
+            setTimeout(() => {
+              onPositionChange(item.id, positionSnapshot, true);
+            }, 0);
+          }
+        },
+        onPositionChange: null, // Don't pass this through to avoid dependency loops
         item,
-        position,
+        position: null, // Don't pass the position directly to avoid dependency loops
       }),
-    [handleMouseMove, onPositionChange, item, position],
+    [handleMouseMove, item?.id, setIsDragging], // Only depend on stable references
   );
 
   const handleMouseDown = React.useMemo(
@@ -68,9 +75,9 @@ export const useMouseHandlers = ({
         setIsDragging,
         handleMouseMove,
         handleMouseUp,
-        position,
+        position: null, // Pass null to avoid dependency loops
       }),
-    [handleMouseMove, handleMouseUp, position],
+    [handleMouseMove, handleMouseUp], // Only depend on handlers
   );
 
   const handleResizeMouseMove = React.useMemo(

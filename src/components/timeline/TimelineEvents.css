@@ -1,0 +1,74 @@
+/* Isolate the timeline container to prevent unwanted movement */
+.timeline-container {
+  position: relative !important;
+  isolation: isolate; /* Create a new stacking context */
+  touch-action: none;
+  user-select: none;
+  overflow: visible; /* Allow children to be positioned outside */
+  
+  /* Fix position */
+  left: 0 !important;
+  top: 0 !important;
+  transform: none !important;
+}
+
+/* Prevent mouse events on timeline containers that shouldn't be moved */
+.timeline-board {
+  user-select: none;
+  pointer-events: auto;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Make sure the connector anchors don't block mouse events */
+.connector-anchor {
+  pointer-events: none !important;
+  z-index: 1;
+}
+
+/* The timeline line should not be draggable */
+.timeline-line {
+  pointer-events: none !important;
+  user-select: none;
+  z-index: 0;
+}
+
+/* Prevent unwanted movement of timeline markers */
+.timeline-marker, .scale-marker {
+  pointer-events: none !important;
+  user-select: none;
+  z-index: 0;
+}
+
+/* Only allow dragging on specific elements */
+.timeline-board > *:not(.timeline-container), 
+.timeline-container > *:not(.draggable-board-item) {
+  pointer-events: none;
+}
+
+/* Re-enable pointer events for draggable items */
+.draggable-board-item {
+  pointer-events: auto !important;
+  /* Isolate the item from parent movements */
+  position: absolute !important;
+  will-change: transform;
+  /* Make sure drag events can be captured */
+  touch-action: none;
+  user-select: none;
+  z-index: 10;
+}
+
+/* Make sure the mouse events are prevented on the connector path */
+.leader-line {
+  pointer-events: none !important;
+}
+
+/* Make sure timeline scale markers aren't draggable */
+.timeline-scale-markers {
+  pointer-events: none !important;
+}
+
+/* Handle stacking context for dragged items */
+.dragging {
+  z-index: 1000 !important;
+}

@@ -18,7 +18,7 @@ export function renderTimelineItems(
   onPositionChange = () => {},
 ) {
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { settings, hiddenItemIds, customItemYDelta } = useZustandStore();
+  const { settings, hiddenItemIds } = useZustandStore();
   const shape = settings?.shape;
   // Support new settings key `itemDates`; fall back to legacy `showItemDates`
   const showDates = settings?.itemDates ?? settings?.showItemDates ?? true;
@@ -27,15 +27,15 @@ export function renderTimelineItems(
   // console.log('renderTimelineItems - hiddenItemIds:', hiddenItemIds); // Suppressed for focused debugging
   // console.log('renderTimelineItems - itemsWithPositions count:', itemsWithPositions?.length); // Suppressed for focused debugging
 
-  TimelineLogger.debug(`[Y-DELTA][UI] renderTimelineItems called`, {
+  TimelineLogger.debug(`[POSITION][UI] renderTimelineItems called`, {
     hiddenItemIds,
     itemsWithPositions: itemsWithPositions.map((i) => i.id),
   });
-  TimelineLogger.debug(`[Y-DELTA][UI] renderTimelineItems called`, {
+  TimelineLogger.debug(`[POSITION][UI] renderTimelineItems called`, {
     hiddenItemIds,
     itemsWithPositions: itemsWithPositions.map((i) => i.id),
   });
-  TimelineLogger.debug(`[Y-DELTA][UI] renderTimelineItems called`, {
+  TimelineLogger.debug(`[POSITION][UI] renderTimelineItems called`, {
     hiddenItemIds,
     itemsWithPositions: itemsWithPositions.map((i) => i.id),
   });
@@ -49,43 +49,79 @@ export function renderTimelineItems(
     // Check if this item should be hidden
     const isHidden = hiddenItemIds?.includes(item.id);
 
-    // console.log(`Item ${item.id}: isHidden=${isHidden}, hiddenItemIds includes:`, hiddenItemIds?.includes(item.id)); // Suppressed for focused debugging
+    // Ensure the item has a valid renderPosition
+    if (!item.renderPosition) {
+      TimelineLogger.error("[RENDER] Item missing renderPosition", {
+        itemId: item.id,
+        item: JSON.stringify(item),
+      });
 
-    TimelineLogger.debug("[Y-DELTA-DEBUG] Calculating render position", {
+      // Create a default renderPosition to avoid rendering errors
+      item.renderPosition = {
+        x: 50, // Center horizontally
+        y: 0, // Default vertical position
+        zIndex: 10,
+      };
+    }
+
+    TimelineLogger.debug("[POSITION-DEBUG] Calculating render position", {
       itemId: item.id,
+      itemX: item.renderPosition.x,
       finalY: item.renderPosition.y,
-      yDelta: customItemYDelta[item.id] || 0,
-      defaultY: item.position,
+      connectorY: item.connectorY,
     });
 
+    // Create a container for the item and a hidden connector anchor
     return (
-      <div
-        key={item.id}
-        id={`board-item-${item.id}`}
-        style={{
-          position: "absolute",
-          left: `${item.renderPosition.x}%`,
-          top: `calc(50% + ${item.renderPosition.y}px)`,
-          zIndex: item.renderPosition.zIndex,
-          display: isHidden ? "none" : "block", // Hide the item if it's in hiddenItemIds
-          transform: "translateX(-50%)", // Center the item on its position
-          textAlign: "center", // Center content within item
-        }}
-      >
-        <DraggableBoardItem
-          key={`${item.id}-${settings?.position || "default"}`}
-          item={item}
-          date={isValidDate(itemDate) ? itemDate : null}
-          shape={shape}
-          onLabelChange={(itemId, newLabel) =>
-            onLabelChange?.(itemId, newLabel)
-          }
-          onHideItem={onHideItem}
-          showItemDates={showDates}
-          onPositionChange={onPositionChange}
-          itemsForDefaultY={itemsWithPositions}
+      <React.Fragment key={item.id}>
+        {/* Hidden connector anchor point - uses the original calculated position for proper alignment */}
+        <div
+          id={`board-item-${item.id}`}
+          className="connector-anchor"
+          style={{
+            position: "absolute",
+            left: `${item.renderPosition.x}%`,
+            top: `calc(50% + ${item.connectorY || item.renderPosition.y}px)`,
+            width: "2px", // Small but substantial enough for connection
+            height: "2px", // Small but substantial enough for connection
+            pointerEvents: "none",
+            opacity: 0, // Make completely invisible
+            zIndex: 5, // Higher z-index to ensure visibility
+            // Key addition: transform should be synchronized with DraggableBoardItem
+            transform: `translateY(${item.renderPosition.transformY || 0}px)`,
+          }}
+          data-item-id={item.id} // Add data attribute for easier debugging
+          data-position-y={item.renderPosition.y} // Store original Y for debugging
         />
-      </div>
+
+        {/* Main draggable item - this is what users see and interact with */}
+        <div
+          key={`item-wrapper-${item.id}`}
+          style={{
+            position: "absolute",
+            left: `${item.renderPosition.x}%`,
+            top: `calc(50% + ${item.renderPosition.y}px)`,
+            zIndex: item.renderPosition.zIndex,
+            display: isHidden ? "none" : "block",
+            transform: "translateX(-50%)", // Center the item on its position
+            textAlign: "center",
+          }}
+        >
+          <DraggableBoardItem
+            key={`${item.id}-${settings?.position || "default"}`}
+            item={item}
+            date={isValidDate(itemDate) ? itemDate : null}
+            shape={shape}
+            onLabelChange={(itemId, newLabel) =>
+              onLabelChange?.(itemId, newLabel)
+            }
+            onHideItem={onHideItem}
+            showItemDates={showDates}
+            onPositionChange={onPositionChange}
+            itemsForDefaultY={itemsWithPositions}
+          />
+        </div>
+      </React.Fragment>
     );
   });
 }

@@ -118,6 +118,23 @@ const TimelineBoard = () => {
       padding="medium"
       rounded="medium"
       border="true"
+      style={{
+        position: "relative",
+        touchAction: "none",
+      }}
+      onMouseDown={(e) => {
+        // Always prevent propagation for the timeline board
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Check if this event came from a draggable item and don't interfere if it did
+        if (
+          e.target.closest(".draggable-board-item") ||
+          (e.nativeEvent && e.nativeEvent._handledByDraggableItem)
+        ) {
+          return;
+        }
+      }}
     >
       {/* Timeline Title */}
 

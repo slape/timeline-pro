@@ -1,51 +1,48 @@
-// eslint.config.js (Flat config)
+// eslint.config.js
 import js from "@eslint/js";
 import globals from "globals";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
-import prettier from "eslint-plugin-prettier";
+import prettierPlugin from "eslint-plugin-prettier";
+import eslintConfigPrettier from "eslint-config-prettier"; // flat-compatible
 
 export default [
-  // Base JS + browser/node globals
   {
     files: ["**/*.{js,jsx}"],
     ignores: ["node_modules/**", "build/**", "dist/**", "coverage/**"],
     languageOptions: {
       ecmaVersion: 2021,
       sourceType: "module",
-      parserOptions: {
-        ecmaFeatures: { jsx: true },
-      },
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-      },
+      parserOptions: { ecmaFeatures: { jsx: true } },
+      globals: { ...globals.browser, ...globals.node },
     },
     plugins: {
       react,
       "react-hooks": reactHooks,
-      prettier,
+      prettier: prettierPlugin,
     },
     rules: {
-      // ESLint recommended
+      // Base recommendations
       ...js.configs.recommended.rules,
-
-      // React
       ...react.configs.recommended.rules,
-
-      // React Hooks
       ...reactHooks.configs.recommended.rules,
 
-      // Prettier as an ESLint rule
-      "prettier/prettier": "error",
+      // Make Prettier violations show as ESLint errors
+      ...prettierPlugin.configs.recommended.rules,
 
-      // Common React tweaks
-      "react/react-in-jsx-scope": "off", // not needed with modern tooling
-      "react/prop-types": "off", // turn on if you use PropTypes
+      // Keep React tweaks
+      "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off",
       "react-hooks/exhaustive-deps": "off",
+
+      // Align with Prettier "trailingComma": "all"
+      "comma-dangle": ["error", "always-multiline"],
+      // If you set "trailingComma": "none", change to:
+      // "comma-dangle": ["error", "never"],
     },
-    settings: {
-      react: { version: "detect" },
-    },
+    settings: { react: { version: "detect" } },
   },
+
+  // Disable any remaining stylistic rules that may conflict with Prettier
+  eslintConfigPrettier,
 ];

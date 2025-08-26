@@ -1,60 +1,56 @@
-import TimelineLogger from "../utils/logger";
 import { ITEM_POSITIONS_KEY_PREFIX } from "../utils/configConstants";
+import TimelineLogger from "../utils/logger";
 
-const saveItemYDeltasToStorage = async (
-  storageService,
-  boardId,
-  customItemYDelta = {},
-  currentPositionSetting = null,
-) => {
-  TimelineLogger.debug("[Y-DELTA] saveItemYDeltasToStorage called", {
-    boardId,
-    customItemYDelta,
-  });
-  if (!storageService || !boardId) {
-    TimelineLogger.debug(
-      "Storage service not initialized or no boardId, skipping save",
+/**
+ * Save item positions to Monday.com storage using the Row/Lane Shift model
+ *
+ * @param {string} boardId - The board ID
+ * @param {Object} customItemY - Object mapping itemId to { rowShift, laneOffset }
+ * @param {Object} monday - Monday SDK instance
+ * @returns {Object} Result object with success flag and optional error
+ */
+export async function saveItemPositionsToStorage(boardId, customItemY, monday) {
+  if (!monday || !monday.storage || !monday.storage.instance) {
+    TimelineLogger.error(
+      "[POS] Cannot save - Monday SDK storage not available",
     );
-    return;
+    return { success: false, error: "Monday SDK storage not available" };
   }
-  try {
-    const storageKey = `${ITEM_POSITIONS_KEY_PREFIX}-${boardId}`;
-    const dataToSave = {
-      boardId,
-      customItemYDelta: customItemYDelta || {},
-      positionSetting: currentPositionSetting,
-    };
-    console.log("[Y-DELTA][STORAGE] Saving Y-deltas", {
-      boardId,
-      customItemYDelta,
-    });
-    // Serialize data before saving
-    const serializedDataToSave = JSON.stringify(dataToSave);
 
-    const response = await storageService.setInstanceItem(
-      storageKey,
-      serializedDataToSave,
+  if (!boardId) {
+    TimelineLogger.error("[POS] Cannot save - boardId is required");
+    return { success: false, error: "boardId is required" };
+  }
+
+  try {
+    const key = `${ITEM_POSITIONS_KEY_PREFIX}-${boardId}`;
+    const payload = { boardId, customItemY }; // NEW schema
+    const result = await monday.storage.instance.setItem(
+      key,
+      JSON.stringify(payload),
     );
-    if (response?.data?.success) {
+
+    if (result?.data?.success) {
       TimelineLogger.debug(
-        "Successfully saved item Y-deltas to Monday storage",
+        "[POS] Successfully saved positions to Monday storage",
         {
           boardId,
-          yDeltaCount: Object.keys(dataToSave.customItemYDelta || {}).length,
+          itemCount: Object.keys(customItemY || {}).length,
         },
       );
+      return { success: true };
     } else {
       TimelineLogger.error(
-        "Failed to save item Y-deltas to Monday storage",
-        response?.data?.error,
+        "[POS] Failed to save positions to Monday storage",
+        result?.data?.error,
       );
+      return { success: false, error: result?.data?.error || "Unknown error" };
     }
   } catch (error) {
     TimelineLogger.error(
-      "Failed to save item Y-deltas to Monday storage",
+      "[POS] Error saving positions to Monday storage",
       error,
     );
+    return { success: false, error: String(error?.message || error) };
   }
-};
-
-export default saveItemYDeltasToStorage;
+}

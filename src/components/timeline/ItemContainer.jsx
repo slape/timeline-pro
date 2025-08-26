@@ -34,11 +34,21 @@ const ItemContainer = ({
         width: "100%",
         height: "100%",
       }}
+      onMouseDown={(e) => {
+        // Stop propagation and prevent default to keep events contained
+        e.stopPropagation();
+        e.preventDefault();
+        if (handleMouseDown) handleMouseDown(e);
+      }}
     >
       <Box
         className={shape === "circle" ? "circle-shape" : ""}
         style={boxStyles}
-        onClick={onClick}
+        onClick={(e) => {
+          // Prevent click event from triggering dragging behavior
+          e.stopPropagation();
+          if (onClick) onClick(e);
+        }}
       >
         <ItemRemoveButton
           isVisible={isHovered && onHideItem}

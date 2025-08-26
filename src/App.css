@@ -10,3 +10,16 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+/* Connector anchor styles */
+.connector-anchor {
+  /* Use no transition for immediate positioning */
+  transition: none !important;
+  /* Ensure these elements don't interfere with interactions */
+  pointer-events: none;
+  /* Ensure these have good z-index for leader lines */
+  z-index: 5;
+  /* Make sure it's absolutely positioned */
+  position: absolute !important;
+}
+

@@ -1,83 +1,81 @@
-import TimelineLogger from "../utils/logger";
 import { ITEM_POSITIONS_KEY_PREFIX } from "../utils/configConstants";
+import TimelineLogger from "../utils/logger";
 
-const loadItemPositionsFromStorage = async (storageService, boardId) => {
-  if (!storageService || !boardId) {
-    TimelineLogger.debug(
-      "Storage service not initialized or no boardId, returning empty object",
+/**
+ * Load item positions from Monday.com storage
+ * Handles both new Row/Lane Shift format and legacy Y-Delta format
+ *
+ * @param {string} boardId - The board ID
+ * @param {Object} monday - Monday SDK instance
+ * @returns {Object} Object with customItemY and legacy data (if any)
+ */
+export async function loadItemPositionsFromStorage(boardId, monday) {
+  if (!monday || !monday.storage || !monday.storage.instance) {
+    TimelineLogger.error(
+      "[POS] Cannot load - Monday SDK storage not available",
     );
-    return {};
+    return { customItemY: {}, legacy: null };
   }
+
+  if (!boardId) {
+    TimelineLogger.error("[POS] Cannot load - boardId is required");
+    return { customItemY: {}, legacy: null };
+  }
+
   try {
-    const storageKey = `${ITEM_POSITIONS_KEY_PREFIX}-${boardId}`;
+    const key = `${ITEM_POSITIONS_KEY_PREFIX}-${boardId}`;
+    const res = await monday.storage.instance.getItem(key);
 
-    // Log the storage key being used
-    TimelineLogger.debug("[TEST] Using storage key", { storageKey });
-
-    const response = await storageService.getInstanceItem(storageKey);
-
-    // Log the raw response from storageService.getInstanceItem
-    TimelineLogger.debug(
-      "[TEST] Raw response from storageService.getInstanceItem",
-      {
-        response,
-      },
-    );
-
-    // Log the value field for debugging
-    TimelineLogger.debug("[DEBUG] Inspecting value field in storage response", {
-      value: response.data.value,
-    });
-
-    // Parse the value field if it is a string
-    let parsedValue = response.data.value;
-    if (typeof parsedValue === "string") {
-      try {
-        parsedValue = JSON.parse(parsedValue);
-      } catch (error) {
-        TimelineLogger.warn("Failed to parse value field in storage response", {
-          value: response.data.value,
-          error: error.message,
-        });
-        return {};
-      }
-    }
-
-    // Validate the structure of the parsed value
-    if (typeof parsedValue !== "object" || !parsedValue.customItemYDelta) {
-      TimelineLogger.warn("Invalid data structure in parsed storage value", {
-        parsedValue,
+    if (!res?.data?.value) {
+      TimelineLogger.debug("[POS] No saved positions found for board", {
+        boardId,
       });
-      return {};
+      return { customItemY: {}, legacy: null };
     }
 
-    // Ensure customItemYDelta is extracted correctly
-    const { customItemYDelta } = parsedValue;
-    if (!customItemYDelta || typeof customItemYDelta !== "object") {
-      TimelineLogger.warn(
-        "Invalid or missing customItemYDelta in parsed storage value",
-        {
-          parsedValue,
-        },
+    let parsed;
+    try {
+      parsed = JSON.parse(res.data.value);
+    } catch (parseError) {
+      TimelineLogger.error(
+        "[POS] Failed to parse stored positions",
+        parseError,
       );
-      return {};
+      return { customItemY: {}, legacy: null };
     }
 
-    TimelineLogger.debug("[TEST] Data fetched from Monday storage", {
-      positionData: { customItemYDelta },
-    });
+    // New schema with customItemY
+    if (parsed.customItemY) {
+      TimelineLogger.debug("[POS] Loaded positions using new schema", {
+        boardId,
+        itemCount: Object.keys(parsed.customItemY || {}).length,
+      });
+      return { customItemY: parsed.customItemY, legacy: null };
+    }
 
-    return {
-      boardId: parsedValue.boardId,
-      customItemYDelta,
-    };
+    // Legacy schema (yDelta)
+    if (parsed.customItemYDelta) {
+      TimelineLogger.debug("[POS] Found legacy Y-deltas to migrate", {
+        boardId,
+        deltaCount: Object.keys(parsed.customItemYDelta || {}).length,
+      });
+      return {
+        customItemY: {}, // Start with empty new format
+        legacy: {
+          customItemYDelta: parsed.customItemYDelta,
+          positionSetting: parsed.positionSetting, // may exist
+        },
+      };
+    }
+
+    // Unknown schema
+    TimelineLogger.warn("[POS] Unknown position data format", { parsed });
+    return { customItemY: {}, legacy: null };
   } catch (error) {
     TimelineLogger.error(
-      "Failed to load item positions from Monday storage",
+      "[POS] Error loading positions from Monday storage",
       error,
     );
-    return { boardId, customItemYDelta: {} };
+    return { customItemY: {}, legacy: null };
   }
-};
-
-export default loadItemPositionsFromStorage;
+}

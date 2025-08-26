@@ -69,7 +69,7 @@ const LeaderLineConnector = ({ fromId, toId }) => {
           height: fromRect.height,
         },
         transform: fromElem.style.transform,
-        transformY: transformY,
+        transformY: transformY
       });
       hasLoggedRef.current = true;
     }
@@ -141,13 +141,13 @@ const LeaderLineConnector = ({ fromId, toId }) => {
       if (!event.detail?.itemId || event.detail.itemId === currentItemId) {
         // Run an immediate update with a microtask for maximum responsiveness
         Promise.resolve().then(updateLinePosition);
-
+        
         // Schedule multiple updates to handle potential DOM settling
         // Use different timing patterns to catch various rendering phases
         setTimeout(updateLinePosition, 0);
         setTimeout(updateLinePosition, 8); // Half-frame on 60fps
         setTimeout(updateLinePosition, 16); // One frame on 60fps
-
+        
         // If this is the end of a drag operation, add extra updates
         // to ensure connector is perfectly aligned at final position
         if (event.detail?.isDragEnd) {
@@ -158,22 +158,11 @@ const LeaderLineConnector = ({ fromId, toId }) => {
       }
     };
 
-    // Add listener for our custom position change events
+    // Add listener for our custom position change event
     document.addEventListener(
       "timeline-position-changed",
       handlePositionChange,
     );
-    document.addEventListener(
-      "timeline-item-position-final",
-      handlePositionChange,
-    );
-    document.addEventListener(
-      "timeline-connector-update",
-      handlePositionChange,
-    );
-
-    // Also listen for timeline position changes
-    document.addEventListener("timeline-setting-changed", updateLinePosition);
 
     // Setup mutation observer to detect DOM changes
     const observer = new MutationObserver((mutations) => {
@@ -226,18 +215,6 @@ const LeaderLineConnector = ({ fromId, toId }) => {
       document.removeEventListener(
         "timeline-position-changed",
         handlePositionChange,
-      );
-      document.removeEventListener(
-        "timeline-item-position-final",
-        handlePositionChange,
-      );
-      document.removeEventListener(
-        "timeline-connector-update",
-        handlePositionChange,
-      );
-      document.removeEventListener(
-        "timeline-setting-changed",
-        updateLinePosition,
       );
 
       // Disconnect observer

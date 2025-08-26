@@ -56,3 +56,24 @@
   height: 100% !important;
   width: 100% !important;
 }
+
+/* Drag isolation styles */
+.draggable-board-item {
+  position: absolute;
+  touch-action: none;
+  will-change: transform;
+  z-index: 100;
+  pointer-events: auto !important;
+  user-select: none;
+}
+
+/* Ensure content inside draggable items can receive events */
+.draggable-board-item * {
+  pointer-events: auto;
+  user-select: none;
+}
+
+/* During drag operations, increase z-index for better stacking */
+.dragging {
+  z-index: 1000 !important;
+}

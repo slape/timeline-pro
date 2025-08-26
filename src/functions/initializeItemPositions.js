@@ -1,85 +1,67 @@
+import { useZustandStore } from "../store/useZustand";
+import { loadItemPositionsFromStorage } from "./loadItemPositionsFromStorage";
 import TimelineLogger from "../utils/logger";
-import loadItemPositionsFromStorage from "./loadItemPositionsFromStorage";
 
 /**
- * Initializes item positions from Monday.com storage and updates the store.
- * @param {Object} params
- * @param {Function} get - Zustand store getter
- * @param {Function} set - Zustand store setter
- * @param {any} storageService - Monday storage service
+ * Initialize item positions from Monday.com storage
+ * Loads positions and handles legacy data migration if needed
+ *
+ * @param {string} boardId - The board ID
  */
-export async function initializeItemPositions({ get, set, storageService }) {
-  // Log to verify if initializeItemPositions is called
-  TimelineLogger.debug("[TEST] initializeItemPositions function invoked");
-
-  TimelineLogger.debug("[Y-DELTA] initializeItemPositions called", {
-    hasStorageService: !!storageService,
-  });
-  const { context } = get();
-  const boardId = context?.boardId;
+export async function initializeItemPositions(boardId) {
+  const { setCustomItemYBulk, setItemPositionsLoaded, setItemPositionsError } =
+    useZustandStore.getState();
 
   if (!boardId) {
-    TimelineLogger.warn(
-      "Cannot initialize item positions: no boardId available",
+    TimelineLogger.error(
+      "[POS] Cannot initialize positions - boardId is required",
     );
-    set({
-      itemPositionsLoaded: true,
-      itemPositionsError: "No board ID available",
-    });
+    setItemPositionsError("Board ID is required");
     return;
   }
 
   try {
-    TimelineLogger.debug("🔄 Loading item positions from Monday storage...", {
-      boardId,
-    });
-    if (!storageService) {
-      TimelineLogger.warn("Storage service not initialized for item positions");
-      set({
-        itemPositionsLoaded: true,
-        itemPositionsError: "Storage service not available",
-      });
+    TimelineLogger.debug("[POS] Initializing item positions", { boardId });
+
+    // Get the monday SDK instance from the store
+    const monday = useZustandStore.getState().monday;
+    if (!monday) {
+      TimelineLogger.error(
+        "[POS] Cannot initialize positions - Monday SDK not available",
+      );
+      setItemPositionsError("Monday SDK not available");
       return;
     }
 
-    // Log the Zustand store state before attempting to load positions
-    TimelineLogger.debug("[TEST] Zustand store before loading positions", {
-      customItemYDelta: get().customItemYDelta,
-    });
-
-    const positionData = await loadItemPositionsFromStorage(
-      storageService,
+    // Load positions from storage
+    const { customItemY, legacy } = await loadItemPositionsFromStorage(
       boardId,
+      monday,
     );
 
-    // Log the data fetched from Monday storage
-    TimelineLogger.debug("[TEST] Data fetched from Monday storage", {
-      positionData,
-    });
+    // Update the store with loaded positions
+    setCustomItemYBulk(customItemY);
 
-    TimelineLogger.debug("✅ Setting customItemYDelta in store", {
+    // Stash legacy for a one-time migration when items + setting are known
+    if (legacy) {
+      window.__LEGACY_YDELTA__ = legacy;
+      TimelineLogger.info(
+        "[POS] Legacy deltas found; will migrate after items are ready",
+        {
+          boardId,
+          deltaCount: Object.keys(legacy.customItemYDelta || {}).length,
+        },
+      );
+    }
+
+    setItemPositionsLoaded(true);
+    TimelineLogger.debug("[POS] Item positions initialized successfully", {
       boardId,
-      customItemYDelta: positionData.customItemYDelta || {},
+      itemCount: Object.keys(customItemY || {}).length,
+      hasMigration: !!legacy,
     });
-    set({
-      customItemYDelta: positionData.customItemYDelta || {},
-    });
-
-    // Log the Zustand store state after updating with loaded positions
-    TimelineLogger.debug("[TEST] Zustand store after loading positions", {
-      customItemYDelta: get().customItemYDelta,
-    });
-    TimelineLogger.debug(
-      "[Y-DELTA] Zustand store customItemYDelta after reload",
-      {
-        customItemYDelta: positionData.customItemYDelta || {},
-      },
-    );
-  } catch (error) {
-    TimelineLogger.error("❌ Failed to initialize item positions", error);
-    set({
-      itemPositionsLoaded: true,
-      itemPositionsError: error.message || "Failed to load positions",
-    });
+  } catch (e) {
+    TimelineLogger.error("[POS] Failed to initialize item positions", e);
+    setItemPositionsError(String(e?.message || e));
   }
 }

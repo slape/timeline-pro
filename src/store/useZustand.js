@@ -1,15 +1,11 @@
 import { create } from "zustand";
 import TimelineLogger from "../utils/logger";
 import { MondayStorageService } from "./MondayStorageService";
-import { updatePositionSetting as updatePositionSettingFn } from "../functions/updatePositionSetting";
-import saveCustomItemYDeltaFn from "../functions/saveCustomItemYDelta";
+import { saveItemPositionsToStorage } from "../functions/saveItemPositionsToStorage";
 import { HIDDEN_ITEMS_KEY } from "../utils/configConstants";
-import { initializeItemPositions } from "../functions/initializeItemPositions";
 // Storage service instance (will be initialized when Monday SDK is available)
 let storageService = null;
 import loadHiddenItemsFromStorage from "../functions/loadHiddenItemsFromStorage";
-// Helper functions for Monday.com storage persistence
-// loadHiddenItemsFromStorage now imported from functions directory and called with (storageService, HIDDEN_ITEMS_KEY)
 
 export const useZustandStore = create((set, get) => ({
   settings: {},
@@ -19,14 +15,14 @@ export const useZustandStore = create((set, get) => ({
   hiddenItemIds: [], // Will be loaded asynchronously from Monday storage
   hiddenItemsLoaded: false, // Track if hidden items have been loaded from Monday storage
   appLoading: true, // New state to manage initial app load
-  // Y-delta persistence only
-  customItemYDelta: {}, // { itemId: number } - Y-axis delta persistence
+  // Row/Lane Shift model
+  customItemY: {}, // { itemId: { rowShift: number, laneOffset: number } }
   itemPositionsLoaded: false, // Loading state
   itemPositionsError: null, // Error handling
   timelineParams: {},
   timelineItems: [],
   // Tracks the current timeline position setting (e.g., 'above', 'below', 'alternate')
-  currentPositionSetting: null,
+  currentPositionSetting: "above",
   setSettings: (settings) => {
     set({ settings });
   },
@@ -214,21 +210,82 @@ export const useZustandStore = create((set, get) => ({
     }
   },
 
-  // Y-delta persistence methods
-  saveCustomItemYDelta: (itemId, yDelta) => {
-    return saveCustomItemYDeltaFn({ get, set, itemId, yDelta, storageService });
-  },
-
-  updatePositionSetting: (newSetting) => {
-    return updatePositionSettingFn({ get, set, newSetting, storageService });
-  },
-
-  initializeItemPositions: () => {
-    return initializeItemPositions({ get, set, storageService });
-  },
-
   // Updates the current position setting in the store
   setCurrentPositionSetting: (newSetting) => {
     set({ currentPositionSetting: newSetting });
   },
+
+  // Update position setting and trigger reset logic
+  updatePositionSetting: (newSetting) => {
+    const state = get();
+    const { currentPositionSetting, context } = state;
+    const boardId = context?.boardId;
+    const monday = storageService?.monday;
+
+    if (!boardId) {
+      TimelineLogger.warn(
+        "[POS] Cannot update position setting: no boardId available",
+      );
+      return;
+    }
+
+    if (currentPositionSetting === newSetting) {
+      TimelineLogger.debug("[POS] Position setting unchanged, skipping reset.");
+      return;
+    }
+
+    TimelineLogger.debug("[POS] Position setting changed", {
+      from: currentPositionSetting,
+      to: newSetting,
+    });
+
+    // Update the position setting in the store
+    set({ currentPositionSetting: newSetting });
+
+    // Import dynamically to avoid circular dependency
+    import("../functions/resetItemPositions")
+      .then(({ default: resetItemPositions }) => {
+        // Trigger reset logic with the Row/Lane model
+        resetItemPositions({ set, monday, boardId });
+      })
+      .catch((error) => {
+        TimelineLogger.error("[POS] Failed to reset item positions", error);
+      });
+  },
+
+  saveCustomItemY: (itemId, payload) => {
+    // Optimistically update the store
+    set((s) => ({ customItemY: { ...s.customItemY, [itemId]: payload } }));
+
+    // Get the boardId and save to storage
+    const { boardId } = get().context;
+    if (!boardId) {
+      TimelineLogger.warn("[POS] Cannot save position - boardId not available");
+      return;
+    }
+
+    if (!storageService || !storageService.monday) {
+      TimelineLogger.warn(
+        "[POS] Cannot save position - storage service not initialized",
+      );
+      return;
+    }
+
+    // Persist to Monday storage
+    const allCustomItemY = { ...get().customItemY, [itemId]: payload };
+    saveItemPositionsToStorage(boardId, allCustomItemY, storageService.monday)
+      .then((result) => {
+        if (!result.success) {
+          TimelineLogger.error("[POS] Failed to save position", result.error);
+        }
+      })
+      .catch((error) => {
+        TimelineLogger.error("[POS] Error saving position", error);
+      });
+  },
+
+  setCustomItemYBulk: (map) => set(() => ({ customItemY: map })),
+
+  setItemPositionsLoaded: (val) => set({ itemPositionsLoaded: val }),
+  setItemPositionsError: (err) => set({ itemPositionsError: err }),
 }));

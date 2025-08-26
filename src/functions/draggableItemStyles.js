@@ -21,7 +21,10 @@ export const getContainerStyles = (position, size, isDragging) => ({
   transform: DRAGGABLE_ITEM_STYLES.CENTER_TRANSFORM, // Center the item horizontally
   transition: isDragging
     ? "none"
-    : "transform 0.2s ease, box-shadow 0.2s ease, left 0.2s ease",
+    : "transform 0.1s ease-out, box-shadow 0.2s ease, left 0.2s ease",
+  willChange: isDragging ? "transform" : "auto", // Optimize for animation performance
+  touchAction: "none", // Prevent default touch actions
+  userSelect: "none", // Prevent text selection during drag
 });
 
 /**

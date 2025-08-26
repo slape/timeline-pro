@@ -20,6 +20,7 @@ const TimelineLine = ({ position }) => {
 
   return (
     <div
+      className="timeline-line"
       style={{
         position: "absolute",
         top: getTimelineTop(),
@@ -28,6 +29,11 @@ const TimelineLine = ({ position }) => {
         height: "2px",
         backgroundColor: "var(--ui-border-color)",
         zIndex: 0,
+        pointerEvents: "none", // Ensure this line doesn't capture events
+      }}
+      onMouseDown={(e) => {
+        e.stopPropagation(); // Stop event propagation as a fallback
+        e.preventDefault();
       }}
     />
   );

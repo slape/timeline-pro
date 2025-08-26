@@ -40,26 +40,54 @@ export default async function handleSaveDate({
       itemId: item.id,
       selectedDate: selectedDate,
       selectedDateType: typeof selectedDate,
-      isMoment: moment.isMoment(selectedDate),
+      isMoment: selectedDate ? moment.isMoment(selectedDate) : false,
     });
 
-    // Validate and convert date using centralized utility
-    const validation = validateDateInput(selectedDate);
-    if (!validation.isValid) {
-      TimelineLogger.warn("Invalid date selected", {
+    // Check for null/undefined selectedDate
+    if (!selectedDate) {
+      TimelineLogger.warn("No date selected for saving", {
         itemId: item.id,
-        error: validation.error,
       });
       return;
     }
 
-    const dateToUpdate = validation.date;
+    // Handle moment objects directly to avoid conversion issues
+    let dateToUpdate;
+
+    if (moment.isMoment(selectedDate)) {
+      // Check if the moment object is valid
+      if (!selectedDate.isValid()) {
+        TimelineLogger.warn("Invalid moment date selected", {
+          itemId: item.id,
+          momentDate: selectedDate,
+        });
+        return;
+      }
+
+      // Use the moment object's toDate method to get a JavaScript Date
+      dateToUpdate = selectedDate.toDate();
+      TimelineLogger.debug("🎯 Using moment date directly", {
+        itemId: item.id,
+        momentDate: selectedDate.format("YYYY-MM-DD"),
+        jsDate: dateToUpdate,
+      });
+    } else {
+      // Use validation for non-moment objects
+      const validation = validateDateInput(selectedDate);
+      if (!validation.isValid) {
+        TimelineLogger.warn("Invalid date selected", {
+          itemId: item.id,
+          error: validation.error,
+        });
+        return;
+      }
+      dateToUpdate = validation.date;
+    }
 
     TimelineLogger.debug("🎯 Date validation and conversion completed", {
       itemId: item.id,
-      originalSelectedDate: selectedDate,
+      originalSelectedDate: String(selectedDate),
       dateToUpdate: dateToUpdate,
-      validationResult: validation,
     });
 
     // Extract date column ID (handle both string and object formats)

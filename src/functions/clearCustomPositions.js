@@ -1,5 +1,5 @@
 import TimelineLogger from "../utils/logger";
-import saveItemPositionsToStorage from "./saveItemPositionsToStorage";
+import { saveItemPositionsToStorage } from "./saveItemPositionsToStorage";
 
 /**
  * Clears all custom item positions for the current board and persists the change.
@@ -19,15 +19,17 @@ export function clearCustomPositions({ get, set, storageService }) {
 
   TimelineLogger.debug("Clearing all custom item positions", { boardId });
   set({
-    customItemYDelta: {},
+    customItemY: {},
     itemPositionsLoaded: true,
     itemPositionsError: null,
   });
 
   // Persist cleared deltas
-  saveItemPositionsToStorage(
-    storageService,
-    boardId,
-    {},
-  );
+  if (storageService && storageService.monday) {
+    saveItemPositionsToStorage(boardId, {}, storageService.monday);
+  } else {
+    TimelineLogger.error(
+      "Cannot persist cleared positions - storage service not available",
+    );
+  }
 }

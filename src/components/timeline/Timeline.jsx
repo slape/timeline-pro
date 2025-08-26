@@ -7,6 +7,7 @@ import {
 } from "../../functions/calculateTimelineLayout";
 import TimelineLogger from "../../utils/logger";
 import { useZustandStore } from "../../store/useZustand";
+import "./TimelineEvents.css";
 
 // Custom hooks
 import { useTimelineSettings } from "../../hooks/useTimelineSettings";
@@ -21,6 +22,10 @@ import TimelineLine from "./TimelineLine";
 import TimelineMarkers from "./TimelineMarkers";
 import TimelineScaleMarkers from "./TimelineScaleMarkers";
 import TimelineConnectors from "./TimelineConnectors";
+
+// Import missing functions
+import { initializeItemPositions } from "../../functions/initializeItemPositions";
+import { migrateLegacyYDeltaToRowShift } from "../../functions/migrateLegacyYDeltaToRowShift";
 
 /**
  * Timeline component that displays a horizontal timeline with markers and draggable items
@@ -54,7 +59,7 @@ const Timeline = ({ onItemMove, onHideItem, onLabelChange }) => {
     endDate,
   });
 
-  const { customItemYDelta } = useZustandStore();
+  const { sdkReady, boardId, itemsReady, customItemY } = useZustandStore();
   // Get timeline data using original dates
   const { visibleBoardItems, visibleTimelineItems, visibleBoardItemsString } =
     useTimelineData(startDate, endDate, scale);
@@ -113,6 +118,36 @@ const Timeline = ({ onItemMove, onHideItem, onLabelChange }) => {
         to: position,
       });
       updatePositionSetting(position);
+
+      // Dispatch a custom event to notify connector lines about the position change
+      const updateEvent = new CustomEvent("timeline-setting-changed", {
+        bubbles: true,
+        detail: {
+          setting: "position",
+          from: currentPositionSetting,
+          to: position,
+        },
+      });
+      document.dispatchEvent(updateEvent);
+
+      // Force all connector anchors to update their positions
+      setTimeout(() => {
+        // Get all connector anchors
+        const connectorAnchors = document.querySelectorAll(".connector-anchor");
+
+        // Reset their transforms to ensure they're properly positioned
+        connectorAnchors.forEach((anchor) => {
+          // Get the corresponding timeline item's current transform
+          const itemId = anchor.dataset.itemId;
+          if (itemId) {
+            const item = document.querySelector(`[data-item-id="${itemId}"]`);
+            if (item) {
+              // Apply the same transform from the item to the anchor
+              anchor.style.transform = item.style.transform || "";
+            }
+          }
+        });
+      }, 50); // Small delay to ensure DOM has updated
     }
   }, [position, currentPositionSetting, updatePositionSetting]); // Removed `isInitialized` from dependencies
 
@@ -184,13 +219,58 @@ const Timeline = ({ onItemMove, onHideItem, onLabelChange }) => {
   );
 
   React.useEffect(() => {
-    // Initialize item positions on component mount
+    // Initialize item positions on component mount if we have a boardId
     const { initializeItemPositions } = useZustandStore.getState();
-    initializeItemPositions();
-  }, []);
+    if (boardId) {
+      initializeItemPositions(boardId);
+    }
+  }, [boardId]);
+
+  React.useEffect(() => {
+    if (sdkReady && boardId) initializeItemPositions(boardId);
+  }, [sdkReady, boardId]);
+
+  React.useEffect(() => {
+    if (!itemsReady || !boardId) return;
+    if (window.__LEGACY_YDELTA__) {
+      const monday = useZustandStore.getState().monday;
+      migrateLegacyYDeltaToRowShift({
+        boardId,
+        items: visibleTimelineItems,
+        positionSetting: currentPositionSetting,
+        monday,
+      });
+    }
+  }, [itemsReady, boardId, currentPositionSetting]);
+
+  // We no longer need to run resolveItemPositions separately
+  // We'll use the output of calculateTimelineItemPositions directly
 
   return (
-    <div className="timeline-container" style={TIMELINE_CONTAINER_STYLES}>
+    <div
+      className="timeline-container"
+      style={{
+        ...TIMELINE_CONTAINER_STYLES,
+        // Fix position to ensure it doesn't move
+        position: "relative",
+        // Ensure events don't propagate beyond this container
+        touchAction: "none",
+      }}
+      onMouseDown={(e) => {
+        // Always prevent default to stop unwanted dragging
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Check if the event originated from a draggable item
+        // If it has our custom flag, don't interfere with the drag
+        if (
+          e.target.closest(".draggable-board-item") ||
+          (e.nativeEvent && e.nativeEvent._handledByDraggableItem)
+        ) {
+          return; // Allow draggable items to handle their own events
+        }
+      }}
+    >
       {/* Timeline line */}
       <TimelineLine position={position} />
 
@@ -212,16 +292,29 @@ const Timeline = ({ onItemMove, onHideItem, onLabelChange }) => {
       {/* Board Items - Render all items chronologically with position logic */}
       {(() => {
         // Calculate positions for all items using effective dates
+        // This now incorporates the row/lane shift model directly
         const itemsWithPositions = calculateTimelineItemPositions(
           visibleTimelineItems,
           effectiveStartDate,
           effectiveEndDate,
           position,
           currentPositionSetting, // tracked position setting
-          customItemYDelta, // pass custom Y-deltas
+          customItemY, // row/lane shift model
         );
-        TimelineLogger.debug("itemsWithPositions", itemsWithPositions);
-        // Render items using extracted function
+
+        TimelineLogger.debug("[TIMELINE] Items with positions", {
+          count: itemsWithPositions.length,
+          sample:
+            itemsWithPositions.length > 0
+              ? {
+                  id: itemsWithPositions[0].id,
+                  x: itemsWithPositions[0].renderPosition?.x,
+                  y: itemsWithPositions[0].renderPosition?.y,
+                }
+              : null,
+        });
+
+        // Directly use the output from calculateTimelineItemPositions
         return renderTimelineItems(
           itemsWithPositions,
           onLabelChange,

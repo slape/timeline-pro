@@ -1,76 +1,58 @@
-import { calculateTimelineItemPositions } from "./calculateTimelineItemPositions";
+import { getDefaultRowFor } from "./getDefaultRowFor";
+import { clamp } from "./clamp";
+import {
+  LANE_HEIGHT,
+  OFFSET_MAX,
+  MIN_ROW,
+  MAX_ROW,
+} from "../utils/configConstants";
 import TimelineLogger from "../utils/logger";
 
 /**
- * Resolves item positions by merging default calculated positions with custom Y-Delta offsets
- * @param {Array} items - Array of timeline items with dates
- * @param {Date} startDate - Timeline start date
- * @param {Date} endDate - Timeline end date
- * @param {string} position - Position setting ('above', 'below', 'alternate')
- * @param {Object} customItemYDelta - Object mapping itemId to Y-Delta values { itemId: number }
+ * Resolves item positions using the Row/Lane Shift model
+ * @param {Array} items - Array of timeline items
+ * @param {string} positionSetting - Position setting ('above', 'below', 'alternate')
+ * @param {Object} customItemY - Object mapping itemId to { rowShift, laneOffset }
  * @returns {Array} Array of items with resolved render positions
  */
-export function resolveItemPositions(
-  items,
-  startDate,
-  endDate,
-  position,
-  customItemYDelta = {}
-) {
-  TimelineLogger.debug("[Y-DELTA] resolveItemPositions called", {
-    itemCount: items?.length || 0,
-    startDate: startDate?.toISOString(),
-    endDate: endDate?.toISOString(),
-    position,
-    customYDeltaCount: Object.keys(customItemYDelta).length,
-    customItemYDelta,
-  });
+export function resolveItemPositions({ items, positionSetting, customItemY }) {
+  return items.map((item) => {
+    const baseRow = getDefaultRowFor(item, positionSetting);
+    const override = customItemY[item.id] || { rowShift: 0, laneOffset: 0 };
 
-  // First, calculate default positions for all items
-  const itemsWithDefaultPositions = calculateTimelineItemPositions(
-    items,
-    startDate,
-    endDate,
-    position
-  );
+    const row = clamp(baseRow + (override.rowShift || 0), MIN_ROW, MAX_ROW);
+    const laneOffset = clamp(override.laneOffset || 0, -OFFSET_MAX, OFFSET_MAX);
+    const finalY = row * LANE_HEIGHT + laneOffset;
 
-  TimelineLogger.debug("[Y-DELTA] Default positions calculated", {
-    itemCount: itemsWithDefaultPositions.length,
-  });
-
-  // Then, apply custom Y-Delta offsets and clamp to bounds
-  const MIN_Y = -300;
-  const MAX_Y = 300;
-  const itemsWithResolvedPositions = itemsWithDefaultPositions.map((item) => {
-    const itemId = item.id;
-    const defaultY = item.renderPosition.y;
-    const yDelta = customItemYDelta[itemId] || 0;
-    let finalY = defaultY + yDelta;
-    // Clamp to bounds
-    finalY = Math.max(MIN_Y, Math.min(MAX_Y, finalY));
-    const isCustom = typeof customItemYDelta[itemId] === "number";
-    TimelineLogger.debug("[Y-DELTA] Resolved item Y", {
-      itemId,
-      defaultY,
-      yDelta,
+    // Log the position data for debugging
+    TimelineLogger.debug("[POS] Resolved item position", {
+      itemId: item.id,
+      originalX: item.renderPosition?.x,
+      originalY: item.renderPosition?.y,
       finalY,
-      isCustom,
+      baseRow,
+      row,
+      laneOffset,
+      hasCustomY: !!customItemY[item.id],
     });
+
     return {
       ...item,
+      finalY,
       renderPosition: {
-        ...item.renderPosition,
+        // Preserve existing renderPosition values if they exist
+        ...(item.renderPosition || {}),
+        // Override or set y position based on row/lane calculation
         y: finalY,
+        // Preserve the original x position if it exists
+        // This is critical for proper timeline placement
+        x: item.renderPosition?.x !== undefined ? item.renderPosition.x : 50,
+        // Ensure a default zIndex if not set
+        zIndex: item.renderPosition?.zIndex ?? 10,
       },
-      isCustomPosition: isCustom,
+      // Store the original y position for connector alignment
+      connectorY: item.originalY !== undefined ? item.originalY : finalY,
+      isCustomPosition: !!customItemY[item.id],
     };
   });
-
-  TimelineLogger.debug("[Y-DELTA] Positions resolved", {
-    totalItems: itemsWithResolvedPositions.length,
-    customPositions: itemsWithResolvedPositions.filter(item => item.isCustomPosition).length,
-    defaultPositions: itemsWithResolvedPositions.filter(item => !item.isCustomPosition).length,
-  });
-
-  return itemsWithResolvedPositions;
 }

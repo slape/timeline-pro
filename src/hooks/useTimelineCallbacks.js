@@ -11,13 +11,14 @@ import handleTimelineItemPositionChange from "../functions/handleTimelineItemPos
 export const useTimelineCallbacks = (startDate, endDate, onItemMove) => {
   // Handle item position changes during drag
   const onPositionChange = useCallback(
-    (itemId, newPosition) => {
+    (itemId, newPosition, isDragEnd = false) => {
       handleTimelineItemPositionChange(
         itemId,
         newPosition,
         startDate,
         endDate,
         onItemMove,
+        isDragEnd,
       );
     },
     [startDate, endDate, onItemMove],

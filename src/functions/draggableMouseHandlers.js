@@ -11,7 +11,28 @@ import {
  */
 
 /**
- * Creates mouse down handler for dragging
+ * Creat    // Apply the movement to the original drag offset position to maintain accuracy
+    // This prevents jumps as we're always calculating from the original offset
+    const proposedY = dragOffset.current.y + exactDy;
+
+    // Get reference to the element we're dragging
+    const draggableElement = containerRef?.current;
+    
+    // Store proposed values for debugging
+    if (draggableElement) {
+      draggableElement.dataset.proposedY = proposedY;
+      draggableElement.dataset.startY = dragStartPos.current.y;
+      draggableElement.dataset.offsetY = dragOffset.current.y;
+      draggableElement.dataset.exactDy = exactDy;
+    }
+
+    // Only apply bounds if needed (but try to maintain exact mouse tracking)
+    const boundedY = Math.max(bounds.minY, Math.min(proposedY, bounds.maxY));
+
+    // Store bounded value for debugging
+    if (draggableElement) {
+      draggableElement.dataset.boundedY = boundedY;
+    }ndler for dragging
  * @param {Object} params - Handler parameters
  * @param {React.RefObject} params.dragStartPos - Ref to store drag start position
  * @param {React.RefObject} params.dragOffset - Ref to store drag offset
@@ -33,18 +54,71 @@ export const createHandleMouseDown = ({
     // Only start drag on primary mouse button
     if (e.button !== 0) return;
 
+    // Always prevent default browser behavior and stop propagation
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Store the event type to differentiate between click and mousedown
+    // Some browsers/frameworks may convert clicks to mousedown events
+    const eventType = e.type;
+    const isSimpleClick = eventType === "click";
+
+    // Don't start dragging for simple clicks
+    if (isSimpleClick) {
+      TimelineLogger.debug("[DRAG-DEBUG] Ignoring simple click event", {});
+      return;
+    }
+
     // Prevent text selection during drag
     e.preventDefault();
 
-    // Save initial position
-    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    // Mark this event as handled by a draggable item
+    e.nativeEvent._handledByDraggableItem = true;
 
-    // Initialize drag offset to current item position to prevent jumping
-    // This ensures each drag starts from where the item currently is
+    // Save initial position with high precision
+    dragStartPos.current = {
+      x: e.clientX,
+      y: e.clientY,
+    };
+
+    // Get the current visual position of the element
+    // This ensures we start from the actual current position, not the state position
+    const currentElement = e.currentTarget;
+    let currentVisualY = 0;
+
+    if (currentElement) {
+      // Extract any existing transform to avoid jumps
+      const transform = currentElement.style.transform;
+      const translateYMatch = transform.match(/translateY\(([^)]+)\)/);
+      if (translateYMatch && translateYMatch[1]) {
+        // Parse the current translateY value
+        const translateY = translateYMatch[1];
+        currentVisualY = parseFloat(translateY);
+      }
+
+      // Add a dragging class to the element being dragged
+      currentElement.classList.add("dragging");
+    }
+
+    // Initialize drag offset to current visual position to prevent jumping
     dragOffset.current = {
       x: position?.x || 0,
-      y: position?.y || 0,
+      y: currentVisualY || position?.y || 0, // Use actual visual position if available
     };
+
+    // Store the original position for reference (helps with debugging)
+    if (currentElement) {
+      currentElement.dataset.originalX = position?.x || 0;
+      currentElement.dataset.originalY = position?.y || 0;
+      currentElement.dataset.startDragY = currentVisualY || position?.y || 0;
+    }
+
+    TimelineLogger.debug("[DRAG-DEBUG] Drag starting with offset", {
+      offsetX: dragOffset.current.x,
+      offsetY: dragOffset.current.y,
+      clientX: e.clientX,
+      clientY: e.clientY,
+    });
 
     // Set up event listeners for drag
     document.addEventListener("mousemove", handleMouseMove);
@@ -80,6 +154,9 @@ export const createHandleMouseMove = ({
     TimelineLogger.debug("[DRAG-DEBUG] createHandleMouseMove fired", {});
     if (!containerRef.current) return;
 
+    // Get reference to the element we're dragging - do this early to use throughout
+    const draggableElement = containerRef?.current;
+
     // Get timeline container dimensions dynamically
     const timelineContainer = document.querySelector(".timeline-container");
     if (!timelineContainer) {
@@ -91,9 +168,6 @@ export const createHandleMouseMove = ({
 
     const containerRect = timelineContainer.getBoundingClientRect();
     const itemRect = containerRef.current.getBoundingClientRect();
-
-    // Calculate new position based on mouse movement
-    const dy = e.clientY - dragStartPos.current.y;
 
     // Enhanced bounds calculation accounting for item size and timeline position
     const PADDING = DRAGGABLE_ITEM.CONTAINER_PADDING; // Minimum padding from container edges
@@ -245,22 +319,38 @@ export const createHandleMouseMove = ({
     // Convert bounded X position to percentage of timeline container width
     const newX = (boundedMouseX / containerRect.width) * 100;
 
-    // Calculate new Y position with proper bounds enforcement
-    const proposedY = dragOffset.current.y + dy;
+    // Calculate Y movement with high precision
+    // Use the exact mouse movement delta relative to start position
+    const exactDy = e.clientY - dragStartPos.current.y;
+
+    // Apply the movement to the original drag offset position to maintain accuracy
+    // This prevents jumps as we're always calculating from the original offset
+    const proposedY = dragOffset.current.y + exactDy;
+
+    // Preserve the proposed Y value in a data attribute for debugging
+    const element = containerRef?.current;
+    if (element) {
+      element.dataset.proposedY = proposedY;
+    }
+
+    // Only apply bounds if needed (but try to maintain exact mouse tracking)
     const boundedY = Math.max(bounds.minY, Math.min(proposedY, bounds.maxY));
 
-    // Only log when bounds are actually enforced in alternate mode
-    if (
-      timelinePosition === "alternate" &&
-      (boundedY !== proposedY ||
-        Math.abs(boundedMouseX - mouseXInContainer) >
-          DRAGGABLE_ITEM.MOUSE_POSITION_TOLERANCE)
-    ) {
-      TimelineLogger.debug("🚨 ALTERNATE BOUNDS ENFORCED", {
-        itemId: item.id,
+    // Preserve the bounded Y value too
+    if (element) {
+      element.dataset.boundedY = boundedY;
+    }
+
+    // Log when mouse tracking isn't exact due to bounds enforcement
+    if (boundedY !== proposedY) {
+      TimelineLogger.debug("🚨 Y BOUNDS ENFORCED", {
+        itemId: item?.id,
+        mouseY: e.clientY,
+        startY: dragStartPos.current.y,
+        exactDy,
+        offsetY: dragOffset.current.y,
         proposedY,
         boundedY,
-        yBoundsEnforced: boundedY !== proposedY,
       });
     }
 
@@ -270,12 +360,44 @@ export const createHandleMouseMove = ({
       y: boundedY,
     });
 
+    // CRITICAL: Update connector positions along with item position
+    // This ensures connectors move with items during drag
+    const connectorId = `board-item-${item?.id}`;
+    const connectorAnchor = document.getElementById(connectorId);
+    if (connectorAnchor) {
+      // Apply the EXACT same transform to the connector anchor as the item
+      // This is critical for maintaining alignment during drag
+      connectorAnchor.style.transform = `translateY(${boundedY}px)`;
+
+      // Force a minimal repaint to ensure the connector position is updated
+      // without causing unnecessary layout thrashing
+      void connectorAnchor.offsetHeight;
+    }
+
+    // Also apply the transform directly to the dragging element if available
+    // This ensures the element follows the mouse precisely
+    if (draggableElement) {
+      draggableElement.style.transform = `translateY(${boundedY}px)`;
+      void draggableElement.offsetHeight;
+    }
+
+    // Notify other components about the position change
+    const updateEvent = new CustomEvent("timeline-position-changed", {
+      bubbles: true,
+      detail: { itemId: item?.id },
+    });
+    document.dispatchEvent(updateEvent);
+
     // Notify parent of position change if callback is provided
-    if (onPositionChange) {
-      onPositionChange(item.id, {
-        x: newX,
-        y: boundedY
-      }, false); // isDragEnd = false during drag
+    if (onPositionChange && item?.id) {
+      onPositionChange(
+        item.id,
+        {
+          x: newX,
+          y: boundedY,
+        },
+        false, // isDragEnd = false during drag
+      );
     }
   };
 };
@@ -299,15 +421,94 @@ export const createHandleMouseUp = ({
   item,
   position,
 }) => {
-  return () => {
+  return (e) => {
     TimelineLogger.debug("[DRAG-DEBUG] createHandleMouseUp fired", {});
+
+    // Stop propagation and prevent default to keep events contained
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+
+    // Reset dragging state immediately
     setIsDragging(false);
+
+    // Clean up all event listeners
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("mouseup", handleMouseUp);
 
-    // Notify parent of position change (drag end)
-    TimelineLogger.debug('[Y-DELTA][DRAG-END] createHandleMouseUp: passing isDragEnd=true', { itemId: item.id, position });
-    onPositionChange?.(item.id, position, true);
+    // Find the element that was being dragged
+    const draggableElement = document.querySelector(".dragging");
+
+    // Remove the dragging class from any elements that have it
+    document.querySelectorAll(".dragging").forEach((el) => {
+      el.classList.remove("dragging");
+    });
+
+    // If we have a draggable element, make sure its final position is set correctly
+    if (draggableElement) {
+      // Get the current transform position as the final position
+      const transform = draggableElement.style.transform;
+      const translateYMatch = transform.match(/translateY\(([^)]+)\)/);
+      if (translateYMatch && translateYMatch[1]) {
+        // Parse the current translateY value
+        const translateY = translateYMatch[1];
+        const finalY = parseFloat(translateY);
+
+        // Update the position state to match the final visual position
+        if (
+          position &&
+          typeof position.y !== "undefined" &&
+          finalY !== position.y
+        ) {
+          // Update position with final values to prevent jumping
+          if (onPositionChange && item?.id) {
+            onPositionChange(
+              item.id,
+              { ...position, y: finalY },
+              true, // isDragEnd = true to save the position
+            );
+          }
+        }
+      }
+    }
+
+    // Make sure connector positions are updated too
+    if (item?.id) {
+      // Get the connector anchor element
+      const connectorId = `board-item-${item.id}`;
+      const connectorAnchor = document.getElementById(connectorId);
+
+      // If we have a connector anchor, update its position
+      if (connectorAnchor && position) {
+        // Apply the final Y position to the connector anchor
+        const finalY = position.y;
+        connectorAnchor.style.transform = `translateY(${finalY}px)`;
+
+        // Force a minimal repaint to ensure the connector position is updated
+        void connectorAnchor.offsetHeight;
+      }
+
+      // Trigger a specific event for connector line updates
+      const updateEvent = new CustomEvent("timeline-connector-update", {
+        bubbles: true,
+        detail: { itemId: item.id, isDragEnd: true },
+      });
+      document.dispatchEvent(updateEvent);
+    }
+
+    // Only call onPositionChange if both are provided to avoid issues
+    if (onPositionChange && item?.id && position) {
+      TimelineLogger.debug(
+        "[Y-DELTA][DRAG-END] createHandleMouseUp: passing isDragEnd=true",
+        { itemId: item.id, position },
+      );
+      onPositionChange(item.id, position, true);
+    } else {
+      // Use the closure-scoped handleMouseUp function that was provided
+      // This function should handle the position change in a way that avoids circular deps
+      handleMouseUp?.();
+    }
   };
 };
 
