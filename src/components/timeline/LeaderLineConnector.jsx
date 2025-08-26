@@ -49,12 +49,26 @@ const LeaderLineConnector = ({ fromId, toId }) => {
     // Get transform directly from the element style to ensure precision
     // This is crucial during active dragging operations
     let transformY = 0;
-    const transformStyle = fromElem.style.transform;
-    const translateYMatch = transformStyle.match(/translateY\(([^)]+)\)/);
-    if (translateYMatch && translateYMatch[1]) {
-      // Parse the current translateY value with pixel unit removed
-      const translateY = translateYMatch[1];
-      transformY = parseFloat(translateY);
+
+    // First check if we have a stored finalPosition from the most recent drag operation
+    if (fromElem.dataset.finalPosition) {
+      transformY = parseFloat(fromElem.dataset.finalPosition);
+      TimelineLogger.debug(
+        "[LeaderLineConnector] Using stored final position",
+        {
+          fromId,
+          storedFinalPosition: transformY,
+        },
+      );
+    } else {
+      // Otherwise, extract the transform from the style
+      const transformStyle = fromElem.style.transform;
+      const translateYMatch = transformStyle.match(/translateY\(([^)]+)\)/);
+      if (translateYMatch && translateYMatch[1]) {
+        // Parse the current translateY value with pixel unit removed
+        const translateY = translateYMatch[1];
+        transformY = parseFloat(translateY);
+      }
     }
 
     // Debug the positions
@@ -99,24 +113,52 @@ const LeaderLineConnector = ({ fromId, toId }) => {
     // This ensures the line is vertical regardless of item position
     const fromX = toX; // Always align with the marker's X position
 
-    // Determine if item is above or below the timeline
+    // For the draggable item, we need to find its center point
+    // Calculate the top and bottom of the item
     const itemTopY = fromRect.top - containerRect.top;
     const itemBottomY = fromRect.bottom - containerRect.top;
 
-    // Calculate attachment point based on item position relative to timeline
-    let fromY;
-    if (itemBottomY < toY) {
-      // Item is above timeline - attach to bottom edge
-      fromY = itemBottomY;
-    } else if (itemTopY > toY) {
-      // Item is below timeline - attach to top edge
-      fromY = itemTopY;
-    } else {
-      // Item overlaps timeline - attach to closest edge
-      const distanceToTop = Math.abs(itemTopY - toY);
-      const distanceToBottom = Math.abs(itemBottomY - toY);
-      fromY = distanceToTop < distanceToBottom ? itemTopY : itemBottomY;
+    // Calculate the center of the item (vertical center)
+    const itemCenterY = itemTopY + fromRect.height / 2;
+
+    // Choose the best position for the connector:
+    // 1. Use active drag itemCenterY if available (most accurate during dragging)
+    // 2. Use stored itemCenterY if available (precalculated center)
+    // 3. Fall back to calculated center
+    let fromY = itemCenterY;
+
+    // Priority 1: Check if the item is actively being dragged
+    if (
+      fromElem.dataset.isDragging === "true" &&
+      fromElem.dataset.itemCenterY
+    ) {
+      // Use the most recently calculated center position during dragging
+      fromY = parseFloat(fromElem.dataset.itemCenterY);
+      TimelineLogger.debug("[LeaderLineConnector] Using active drag center Y", {
+        fromId,
+        activeDragCenterY: fromY,
+        calculatedCenterY: itemCenterY,
+      });
     }
+    // Priority 2: Check if we have a pre-calculated item center Y stored in the dataset
+    else if (fromElem.dataset.itemCenterY) {
+      // Use the pre-calculated center Y that was provided during initialization
+      fromY = parseFloat(fromElem.dataset.itemCenterY);
+      TimelineLogger.debug("[LeaderLineConnector] Using stored item center Y", {
+        fromId,
+        storedCenterY: fromY,
+        calculatedCenterY: itemCenterY,
+      });
+    }
+
+    TimelineLogger.debug("[LeaderLineConnector] Item position details", {
+      fromId,
+      itemCenterY,
+      itemTopY,
+      itemBottomY,
+      timelineY: toY,
+      itemHeight: fromRect.height,
+    });
 
     // Ensure perfectly perpendicular line by using same X coordinate for both points
     const next = {
@@ -139,6 +181,23 @@ const LeaderLineConnector = ({ fromId, toId }) => {
 
       // Update if this is our item or if no specific item was mentioned
       if (!event.detail?.itemId || event.detail.itemId === currentItemId) {
+        // If this event includes itemCenterY, store it for future use
+        if (event.detail?.itemCenterY) {
+          // Store the center Y value in the element's dataset
+          const fromElem = document.getElementById(fromId);
+          if (fromElem) {
+            fromElem.dataset.itemCenterY = event.detail.itemCenterY;
+          }
+        }
+
+        // Mark if this is an active drag operation
+        if (event.detail?.isDragging) {
+          const fromElem = document.getElementById(fromId);
+          if (fromElem) {
+            fromElem.dataset.isDragging = "true";
+          }
+        }
+
         // Run an immediate update with a microtask for maximum responsiveness
         Promise.resolve().then(updateLinePosition);
 
@@ -148,9 +207,9 @@ const LeaderLineConnector = ({ fromId, toId }) => {
         setTimeout(updateLinePosition, 8); // Half-frame on 60fps
         setTimeout(updateLinePosition, 16); // One frame on 60fps
 
-        // If this is the end of a drag operation, add extra updates
+        // If this is the end of a drag operation or initialization, add extra updates
         // to ensure connector is perfectly aligned at final position
-        if (event.detail?.isDragEnd) {
+        if (event.detail?.isDragEnd || event.detail?.isInitializing) {
           setTimeout(updateLinePosition, 32);
           setTimeout(updateLinePosition, 64);
           setTimeout(updateLinePosition, 100);

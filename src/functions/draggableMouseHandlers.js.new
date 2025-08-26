@@ -1,14 +1,14 @@
-import {
-  createHandleMouseDown,
-  createHandleMouseMove,
-  createHandleMouseUp,
-} from "./mouse/dragHandlers";
+import { 
+  createHandleMouseDown, 
+  createHandleMouseMove, 
+  createHandleMouseUp 
+} from './mouse/dragHandlers';
 
 import {
   createHandleResizeMouseDown,
   createHandleResizeMouseMove,
-  createHandleResizeMouseUp,
-} from "./mouse/resizeHandlers";
+  createHandleResizeMouseUp
+} from './mouse/resizeHandlers';
 
 // Re-export all handlers for backward compatibility
 export {
@@ -17,5 +17,5 @@ export {
   createHandleMouseUp,
   createHandleResizeMouseDown,
   createHandleResizeMouseMove,
-  createHandleResizeMouseUp,
+  createHandleResizeMouseUp
 };

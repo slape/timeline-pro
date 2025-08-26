@@ -148,9 +148,19 @@ const DraggableBoardItem = ({
         setTimeout(() => {
           onPositionChange(id, pos, isDragEnd);
 
-          // If this is the end of a drag operation, dispatch a custom event
-          // to notify other components (especially connectors) of the position change
+          // IMPORTANT: Update connector anchor directly at the end of drag
           if (isDragEnd) {
+            // Update the connector anchor directly
+            const connectorAnchor = document.getElementById(`board-item-${id}`);
+            if (connectorAnchor) {
+              // Set the transform directly
+              connectorAnchor.style.transform = `translateY(${pos.y}px)`;
+              // Store the final position in data attributes
+              connectorAnchor.dataset.finalPosition = pos.y;
+              connectorAnchor.dataset.positionY = pos.y;
+            }
+
+            // Dispatch events for connector updates
             const updateEvent = new CustomEvent(
               "timeline-item-position-final",
               {
@@ -165,10 +175,17 @@ const DraggableBoardItem = ({
               "timeline-position-changed",
               {
                 bubbles: true,
-                detail: { itemId: id, isDragEnd: true },
+                detail: { itemId: id, isDragEnd: true, finalY: pos.y },
               },
             );
             document.dispatchEvent(posChangeEvent);
+
+            // Add a delayed update to ensure connector stays synchronized
+            setTimeout(() => {
+              if (connectorAnchor) {
+                connectorAnchor.style.transform = `translateY(${pos.y}px)`;
+              }
+            }, 50);
           }
         }, 10);
       }
@@ -308,6 +325,8 @@ const DraggableBoardItem = ({
         }
       }}
       className={`draggable-board-item ${isDragging ? "dragging" : ""}`}
+      data-id={item.id}
+      data-item-id={item.id}
       style={{
         ...containerStyles,
         // Ensure the draggable item doesn't move with its parent

@@ -81,17 +81,24 @@ export function renderTimelineItems(
           style={{
             position: "absolute",
             left: `${item.renderPosition.x}%`,
-            top: `calc(50% + ${item.connectorY || item.renderPosition.y}px)`,
-            width: "2px", // Small but substantial enough for connection
-            height: "2px", // Small but substantial enough for connection
+            // Position at the timeline center, then apply offset
+            top: "50%", // Always start at the timeline centerline
+            width: "4px", // Slightly larger to make it easier to hit
+            height: "4px", // Slightly larger to make it easier to hit
             pointerEvents: "none",
+            backgroundColor: "rgba(0,0,0,0)", // Completely transparent
             opacity: 0, // Make completely invisible
             zIndex: 5, // Higher z-index to ensure visibility
-            // Key addition: transform should be synchronized with DraggableBoardItem
-            transform: `translateY(${item.renderPosition.transformY || 0}px)`,
+            // Apply transform to keep it aligned with the draggable item
+            transform: `translateY(${item.renderPosition.y || 0}px)`,
+            // Ensure it stays visible during drag operations
+            willChange: "transform",
           }}
           data-item-id={item.id} // Add data attribute for easier debugging
           data-position-y={item.renderPosition.y} // Store original Y for debugging
+          data-final-position={item.renderPosition.y} // Store the position for connector line
+          data-active="true" // Mark as active for connector updates
+          data-item-center="true" // Mark this as an item center anchor
         />
 
         {/* Main draggable item - this is what users see and interact with */}

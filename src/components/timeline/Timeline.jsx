@@ -26,6 +26,7 @@ import TimelineConnectors from "./TimelineConnectors";
 // Import missing functions
 import { initializeItemPositions } from "../../functions/initializeItemPositions";
 import { migrateLegacyYDeltaToRowShift } from "../../functions/migrateLegacyYDeltaToRowShift";
+import initializeConnectorPositions from "../../functions/initializeConnectorPositions";
 
 /**
  * Timeline component that displays a horizontal timeline with markers and draggable items
@@ -246,6 +247,62 @@ const Timeline = ({ onItemMove, onHideItem, onLabelChange }) => {
   // We no longer need to run resolveItemPositions separately
   // We'll use the output of calculateTimelineItemPositions directly
 
+  // Prepare itemsWithPositions outside the rendering JSX
+  const itemsWithPositions = React.useMemo(() => {
+    // Calculate positions for all items using effective dates
+    // This now incorporates the row/lane shift model directly
+    const positions = calculateTimelineItemPositions(
+      visibleTimelineItems,
+      effectiveStartDate,
+      effectiveEndDate,
+      position,
+      currentPositionSetting, // tracked position setting
+      customItemY, // row/lane shift model
+    );
+
+    TimelineLogger.debug("[TIMELINE] Items with positions", {
+      count: positions.length,
+      sample:
+        positions.length > 0
+          ? {
+              id: positions[0].id,
+              x: positions[0].renderPosition?.x,
+              y: positions[0].renderPosition?.y,
+            }
+          : null,
+    });
+
+    return positions;
+  }, [
+    visibleTimelineItems,
+    effectiveStartDate,
+    effectiveEndDate,
+    position,
+    currentPositionSetting,
+    customItemY,
+  ]);
+
+  // Initialize connector positions when items are rendered
+  React.useEffect(() => {
+    if (itemsWithPositions.length > 0) {
+      // Use small delay to ensure DOM has rendered
+      const initTimer = setTimeout(() => {
+        initializeConnectorPositions();
+
+        // Trigger a global connector update
+        const updateEvent = new CustomEvent("timeline-connector-update", {
+          bubbles: true,
+          detail: {
+            isInitializing: true,
+          },
+        });
+        document.dispatchEvent(updateEvent);
+      }, 200);
+
+      return () => clearTimeout(initTimer);
+    }
+  }, [itemsWithPositions.length]);
+
   return (
     <div
       className="timeline-container"
@@ -290,38 +347,12 @@ const Timeline = ({ onItemMove, onHideItem, onLabelChange }) => {
       />
 
       {/* Board Items - Render all items chronologically with position logic */}
-      {(() => {
-        // Calculate positions for all items using effective dates
-        // This now incorporates the row/lane shift model directly
-        const itemsWithPositions = calculateTimelineItemPositions(
-          visibleTimelineItems,
-          effectiveStartDate,
-          effectiveEndDate,
-          position,
-          currentPositionSetting, // tracked position setting
-          customItemY, // row/lane shift model
-        );
-
-        TimelineLogger.debug("[TIMELINE] Items with positions", {
-          count: itemsWithPositions.length,
-          sample:
-            itemsWithPositions.length > 0
-              ? {
-                  id: itemsWithPositions[0].id,
-                  x: itemsWithPositions[0].renderPosition?.x,
-                  y: itemsWithPositions[0].renderPosition?.y,
-                }
-              : null,
-        });
-
-        // Directly use the output from calculateTimelineItemPositions
-        return renderTimelineItems(
-          itemsWithPositions,
-          onLabelChange,
-          onHideItem,
-          onPositionChange,
-        );
-      })()}
+      {renderTimelineItems(
+        itemsWithPositions,
+        onLabelChange,
+        onHideItem,
+        onPositionChange,
+      )}
 
       {/* LeaderLine Connectors - Connect board items to timeline markers */}
       <TimelineConnectors
