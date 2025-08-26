@@ -40,6 +40,7 @@ export const initializeDragPosition = ({
   dragStartPos,
   dragOffset,
   position,
+  currentVisualPosition,
 }) => {
   // Store drag start position
   dragStartPos.current = {
@@ -49,18 +50,34 @@ export const initializeDragPosition = ({
 
   // Get current element and extract visual position
   const currentElement = e.currentTarget;
+  
+  // IMPORTANT: Get the current visual position directly from the element
+  // This is crucial for handling subsequent drags correctly
   const currentVisualY = extractVisualYPosition(currentElement);
+  
+  // Log the current visual position and state position for debugging
+  TimelineLogger.debug("[DRAG-START] Position comparison", {
+    visualY: currentVisualY,
+    stateY: position?.y,
+    difference: position?.y !== undefined ? currentVisualY - position.y : "N/A",
+  });
 
   // Add dragging class
   if (currentElement) {
     currentElement.classList.add("dragging");
   }
 
-  // Initialize drag offset using visual position as priority
+  // CRITICAL: Use visual position as the source of truth to prevent jumps
+  // This ensures that the drag offset starts from where the element visually appears
   dragOffset.current = {
     x: position?.x || 0,
-    y: currentVisualY || position?.y || 0,
+    y: currentVisualY !== 0 ? currentVisualY : position?.y || 0,
   };
+  
+  // Update the current visual position ref if provided
+  if (currentVisualPosition) {
+    currentVisualPosition.current = currentVisualY;
+  }
 
   // Store debug info
   if (currentElement) {
@@ -71,6 +88,7 @@ export const initializeDragPosition = ({
       dragStartClientY: e.clientY,
       dragOffsetY: dragOffset.current.y,
       usedVisualY: Boolean(currentVisualY),
+      currentVisualY: currentVisualY,
     });
   }
 
@@ -80,6 +98,8 @@ export const initializeDragPosition = ({
     offsetY: dragOffset.current.y,
     clientX: e.clientX,
     clientY: e.clientY,
+    visualY: currentVisualY,
+    stateY: position?.y,
   });
 
   return { currentElement, currentVisualY };

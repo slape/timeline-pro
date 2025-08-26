@@ -89,22 +89,44 @@ export const synchronizePositionState = ({
 }) => {
   // CRITICAL: ALWAYS update position if we found a final position
   // This prevents jumps on subsequent drags by keeping state in sync with visual
-  if (positionFound && item?.id && onPositionChange) {
-    TimelineLogger.debug(
-      "[DRAG-END] Updating position state with final visual position",
-      {
-        itemId: item.id,
-        finalY,
-        previousStateY: position?.y,
-      },
-    );
+  if (item?.id && onPositionChange) {
+    // If we have a valid final position, use that as the source of truth
+    if (positionFound && finalY !== undefined) {
+      TimelineLogger.debug(
+        "[DRAG-END] Updating position state with final visual position",
+        {
+          itemId: item.id,
+          finalY,
+          previousStateY: position?.y,
+          diff: position ? finalY - position.y : "N/A",
+        },
+      );
 
-    // Use the ACTUAL final visual position for the state update
-    onPositionChange(
-      item.id,
-      { ...(position || { x: 0 }), y: finalY },
-      true, // isDragEnd = true to save the position
-    );
+      // Use the ACTUAL final visual position for the state update
+      onPositionChange(
+        item.id,
+        { ...(position || { x: 0 }), y: finalY },
+        true, // isDragEnd = true to save the position
+      );
+    } else if (position) {
+      // Even if we didn't find a final position, still update the state
+      // to ensure it's marked as final (prevents inconsistencies)
+      TimelineLogger.debug(
+        "[DRAG-END] No final position found, using existing position state",
+        {
+          itemId: item.id,
+          statePosition: position,
+        },
+      );
+      onPositionChange(item.id, position, true);
+    }
+    
+    // Mark the draggable element with the final position for reference
+    const draggableElement = document.querySelector(`[data-id="${item.id}"]`);
+    if (draggableElement) {
+      draggableElement.dataset.finalY = finalY;
+      draggableElement.dataset.syncedWithState = "true";
+    }
   }
 };
 

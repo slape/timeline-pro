@@ -73,6 +73,18 @@ export const updateElementsForDrag = ({
       exactDy,
       boundedY,
     });
+    
+    // Log position tracking for debugging
+    TimelineLogger.debug("[DRAG-MOVE] Position tracking", {
+      itemId: item?.id,
+      mouseY: e?.clientY || 0,
+      exactDy,
+      dragStartY: dragStartPos.current.y,
+      dragOffsetY: dragOffset.current.y,
+      proposedY,
+      boundedY,
+      visualPositionRef: currentVisualPosition?.current,
+    });
   }
 
   // Log when mouse tracking isn't exact due to bounds enforcement
@@ -90,16 +102,20 @@ export const updateElementsForDrag = ({
 
   // Apply the transform directly to the dragging element first
   if (element) {
+    // Update the element's visual position
     updateElementYPosition(element, boundedY);
 
-    // Track the current visual position for future reference
+    // CRITICAL: Always update the visual position ref to keep track of
+    // where the element actually is visually during the drag
     if (currentVisualPosition) {
       currentVisualPosition.current = boundedY;
     }
 
     // Also add position data attributes for the connector calculations
+    // and future reference to ensure consistent behavior
     element.dataset.dragY = boundedY;
     element.dataset.lastPositionY = boundedY;
+    element.dataset.currentVisualY = boundedY;
   }
 
   // Update connector position AFTER updating the element

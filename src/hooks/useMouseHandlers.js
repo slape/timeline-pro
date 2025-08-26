@@ -28,6 +28,11 @@ export const useMouseHandlers = (config) => {
     item,
     timelinePosition,
   } = config;
+  
+  // Create a ref to track the current visual position
+  // This helps ensure smooth transitions between drag operations
+  const currentVisualPosition = React.useRef(position?.y || 0);
+  
   // Create mouse handlers using extracted functions with proper memoization
   const handleMouseMove = React.useMemo(
     () =>
@@ -40,6 +45,7 @@ export const useMouseHandlers = (config) => {
         onPositionChange, // Pass this for setting during movement
         item: item ? { id: item.id } : null, // Only pass the ID to minimize dependencies
         timelinePosition,
+        currentVisualPosition, // Pass visual position ref to track during drag
       }),
     [timelinePosition, item?.id], // Only depend on stable values
   );
@@ -54,6 +60,12 @@ export const useMouseHandlers = (config) => {
           if (onPositionChange && item?.id) {
             // Use a snapshot of the position to prevent dependency issues
             const positionSnapshot = { ...(position || { x: 0, y: 0 }) };
+            
+            // If we have a visual position, use it to override the Y value
+            if (currentVisualPosition.current !== undefined) {
+              positionSnapshot.y = currentVisualPosition.current;
+            }
+            
             // Delay the callback to avoid update cycles
             setTimeout(() => {
               onPositionChange(item.id, positionSnapshot, true);
@@ -63,6 +75,7 @@ export const useMouseHandlers = (config) => {
         onPositionChange: null, // Don't pass this through to avoid dependency loops
         item,
         position: null, // Don't pass the position directly to avoid dependency loops
+        currentVisualPosition, // Pass visual position ref for end position
       }),
     [handleMouseMove, item?.id, setIsDragging], // Only depend on stable references
   );
@@ -75,9 +88,10 @@ export const useMouseHandlers = (config) => {
         setIsDragging,
         handleMouseMove,
         handleMouseUp,
-        position: null, // Pass null to avoid dependency loops
+        position, // Pass actual position for initial position calculation
+        currentVisualPosition, // Pass visual position ref to track during start
       }),
-    [handleMouseMove, handleMouseUp], // Only depend on handlers
+    [handleMouseMove, handleMouseUp, position?.y], // Depend on position.y to get updates
   );
 
   const handleResizeMouseMove = React.useMemo(
