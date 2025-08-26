@@ -87,30 +87,72 @@ export const createHandleMouseDown = ({
     let currentVisualY = 0;
 
     if (currentElement) {
-      // Extract any existing transform to avoid jumps
+      // ENHANCED: Get the most accurate current visual position using multiple methods
+
+      // Method 1: Extract inline style transform (most direct)
       const transform = currentElement.style.transform;
       const translateYMatch = transform.match(/translateY\(([^)]+)\)/);
       if (translateYMatch && translateYMatch[1]) {
         // Parse the current translateY value
         const translateY = translateYMatch[1];
         currentVisualY = parseFloat(translateY);
+        TimelineLogger.debug(
+          "[DRAG-DEBUG] Using inline transform for position",
+          {
+            transformValue: translateY,
+            parsedY: currentVisualY,
+          },
+        );
+      } else {
+        // Method 2: Try computed style matrix (more reliable but more expensive)
+        try {
+          const computedStyle = window.getComputedStyle(currentElement);
+          const matrix = new DOMMatrixReadOnly(computedStyle.transform);
+          // The Y translation is in matrix.m42
+          currentVisualY = matrix.m42;
+          TimelineLogger.debug(
+            "[DRAG-DEBUG] Using computed matrix for position",
+            {
+              matrixValue: matrix.toString(),
+              translateY: currentVisualY,
+            },
+          );
+        } catch (err) {
+          // Method 3: Fall back to position data attributes if available
+          if (currentElement.dataset.boundedY) {
+            currentVisualY = parseFloat(currentElement.dataset.boundedY);
+            TimelineLogger.debug(
+              "[DRAG-DEBUG] Using dataset.boundedY for position",
+              {
+                datasetValue: currentElement.dataset.boundedY,
+                parsedY: currentVisualY,
+              },
+            );
+          }
+        }
       }
 
       // Add a dragging class to the element being dragged
       currentElement.classList.add("dragging");
     }
 
-    // Initialize drag offset to current visual position to prevent jumping
+    // FIXED: Initialize drag offset using the actual visual position as priority
+    // This is critical to prevent jumping on subsequent drags
     dragOffset.current = {
       x: position?.x || 0,
-      y: currentVisualY || position?.y || 0, // Use actual visual position if available
+      // ALWAYS prioritize the visual position we just extracted over any state position
+      y: currentVisualY || position?.y || 0,
     };
 
-    // Store the original position for reference (helps with debugging)
+    // Enhanced debugging: store more detailed information
     if (currentElement) {
       currentElement.dataset.originalX = position?.x || 0;
       currentElement.dataset.originalY = position?.y || 0;
       currentElement.dataset.startDragY = currentVisualY || position?.y || 0;
+      // Add new data attributes for debugging second-drag issues
+      currentElement.dataset.dragStartClientY = e.clientY;
+      currentElement.dataset.dragOffsetY = dragOffset.current.y;
+      currentElement.dataset.usedVisualY = Boolean(currentVisualY).toString();
     }
 
     TimelineLogger.debug("[DRAG-DEBUG] Drag starting with offset", {
@@ -447,29 +489,84 @@ export const createHandleMouseUp = ({
 
     // If we have a draggable element, make sure its final position is set correctly
     if (draggableElement) {
-      // Get the current transform position as the final position
+      // ENHANCED: Get the most accurate current visual position
+      let finalY = 0;
+      let positionFound = false;
+
+      // Method 1: Extract inline style transform (most direct)
       const transform = draggableElement.style.transform;
       const translateYMatch = transform.match(/translateY\(([^)]+)\)/);
       if (translateYMatch && translateYMatch[1]) {
         // Parse the current translateY value
         const translateY = translateYMatch[1];
-        const finalY = parseFloat(translateY);
+        finalY = parseFloat(translateY);
+        positionFound = true;
 
-        // Update the position state to match the final visual position
-        if (
-          position &&
-          typeof position.y !== "undefined" &&
-          finalY !== position.y
-        ) {
-          // Update position with final values to prevent jumping
-          if (onPositionChange && item?.id) {
-            onPositionChange(
-              item.id,
-              { ...position, y: finalY },
-              true, // isDragEnd = true to save the position
+        TimelineLogger.debug(
+          "[DRAG-END] Using inline transform for final position",
+          {
+            itemId: item?.id,
+            transformValue: translateY,
+            parsedY: finalY,
+          },
+        );
+      }
+
+      // Method 2: If inline transform not found, try computed style
+      if (!positionFound) {
+        try {
+          const computedStyle = window.getComputedStyle(draggableElement);
+          const matrix = new DOMMatrixReadOnly(computedStyle.transform);
+          finalY = matrix.m42;
+          positionFound = true;
+
+          TimelineLogger.debug(
+            "[DRAG-END] Using computed matrix for final position",
+            {
+              itemId: item?.id,
+              matrixValue: matrix.toString(),
+              translateY: finalY,
+            },
+          );
+        } catch (err) {
+          // Method 3: Fall back to position data attributes if available
+          if (draggableElement.dataset.boundedY) {
+            finalY = parseFloat(draggableElement.dataset.boundedY);
+            positionFound = true;
+
+            TimelineLogger.debug(
+              "[DRAG-END] Using dataset.boundedY for final position",
+              {
+                itemId: item?.id,
+                datasetValue: draggableElement.dataset.boundedY,
+                parsedY: finalY,
+              },
             );
           }
         }
+      }
+
+      // Store the final position in a data attribute for future drag reference
+      draggableElement.dataset.lastFinalY = finalY;
+
+      // CRITICAL: ALWAYS update position if we found a final position
+      // This prevents jumps on subsequent drags by keeping state in sync with visual
+      if (positionFound && item?.id && onPositionChange) {
+        TimelineLogger.debug(
+          "[DRAG-END] Updating position state with final visual position",
+          {
+            itemId: item.id,
+            finalY,
+            previousStateY: position?.y,
+          },
+        );
+
+        // Use the ACTUAL final visual position for the state update
+        onPositionChange(
+          item.id,
+          { ...(position || { x: 0 }), y: finalY },
+          true, // isDragEnd = true to save the position
+        );
       }
     }
 
