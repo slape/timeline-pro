@@ -14,4 +14,23 @@ export interface MondayStorageResponse<T = any> {
     versioning?: boolean;
     version?: string;
   }
-  
+
+// ---- Minimal monday context we actually use ----
+export type MondayUser = {
+  id: string;
+  isAdmin: boolean;
+  isGuest: boolean;
+  isViewOnly: boolean;
+  countryCode?: string;
+};
+
+export type MondayContextMinimal = {
+  theme: "light" | "dark";
+  user: MondayUser;
+  boardId?: string | null;
+};
+
+// ---- Helpers (optional) ----
+export const posKey = (boardId: string, itemId: string) => `tp:pos:${boardId}:${itemId}`;
+export const hiddenKey = (boardId: string) => `tp:hidden:${boardId}`;
+export const settingsKey = (boardId: string) => `tp:settings:${boardId}`;
