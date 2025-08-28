@@ -1,9 +1,9 @@
 // src/hooks/useItemIdsListener.ts
 import { useEffect, useState } from "react";
 import mondaySdk from "monday-sdk-js";
-import { useStore } from "../store";
-import { ITEM_CAP } from "../lib/utils/constants";
-import { Err } from "../types/errors";
+import { useStore } from "@/store";
+import { ITEM_CAP } from "@/lib/utils/constants";
+import { Err } from "@/types/errors";
 
 const monday = mondaySdk();
 

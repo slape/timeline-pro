@@ -1,6 +1,6 @@
 // src/transformItems.ts
-import type { TimelineItem } from "../../types/Item";
-import type { TimelineSettings } from "../../types/settings";
+import type { TimelineItem } from "@/types/Item";
+import type { TimelineSettings } from "@/types/settings";
 import { getActiveDateISO } from "./activeDate";
 
 export function transformMondayItems(raw: any[], settings: TimelineSettings): TimelineItem[] {

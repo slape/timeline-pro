@@ -1,8 +1,8 @@
 // src/hooks/useMondayContext.ts
 import { useEffect } from "react";
 import mondaySdk from "monday-sdk-js";
-import { useStore } from "../store";
-import type { MondayContextMinimal } from "../types/monday_storage";
+import { useStore } from "@/store";
+import type { MondayContextMinimal } from "@/types/monday_storage";
 
 const monday = mondaySdk();
 

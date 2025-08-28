@@ -1,5 +1,5 @@
 // src/store/uiSlice.ts
-import type { SliceCreator, UiSlice } from "../types/app";
+import type { SliceCreator, UiSlice } from "@/types/app";
 
 export const createUiSlice: SliceCreator<UiSlice> = (set) => ({
   error: null,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { transformMondayItems } from "../lib/board_items/transformItems";
+import { transformMondayItems } from "@/lib/board_items/transformItems";
 
 describe("transformMondayItems", () => {
   const settings = { dateColumn: { date_abc: true } } as any;

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
-import { useBoardItems } from "../hooks/useBoardItems";
-import { useStore } from "../store";
-import type { MondayContextMinimal } from "../types/monday_storage";
+import { useBoardItems } from "@/hooks/useBoardItems";
+import { useStore } from "@/store";
+import type { MondayContextMinimal } from "@/types/monday_storage";
 
 // Mock the fetchBoardItems module
 vi.mock("@/lib/board_items/fetchBoardItems", () => ({

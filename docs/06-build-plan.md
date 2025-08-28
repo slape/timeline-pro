@@ -1,59 +1,8 @@
-## Common gotchas (read before coding)
-
-Enforce the 15 item cap before fetching/normalizing to keep the app fast and logic simple.
-
-Treat positions as app storage only; never write positional data to board columns.
-
-Editing dates must be optimistic but reversible on API error.
-
-Keep IDs as strings everywhere to prevent subtle type coercion bugs.
-
-Always subscribe to monday listeners before doing any reads that depend on them.
-
 ## Build Plan
-
-Add deps:
-
-pnpm add zustand immer framer-motion
-pnpm add html-to-image
-pnpm add zod                          # optional runtime validation
-pnpm add -D @types/html-to-image vitest @testing-library/react jsdom
-
-DoD: lockfile updated; app still runs.
-
----
-
-## Project skeleton & types
-
-Create structure per 05-project-structure.md (folders: types/, lib/, store/, hooks/, components/).
-
-Types: Copy TS interfaces from 00-system-context.md into src/types/monday.ts and src/types/app.ts.
-
-DoD: TypeScript compiles with no errors.
-
----
-
-## Zustand store
-
-store/index.ts: configure store with immer + subscribeWithSelector middleware.
-
-Slices: implement contextSlice.ts, settingsSlice.ts, itemsSlice.ts, uiSlice.ts as per interfaces.
-
-selectors.ts: add selectors: visibleItems, hiddenSet, byId helpers.
-
-DoD: simple unit test creates store, sets settings, upserts item.
-
----
 
 ## monday SDK client & listeners
 
 lib/mondayClient.ts: wrap SDK init and monday.listen calls for context, settings, itemIds.
-
-hooks/useMondayContext.ts: on mount, subscribe to context → setContext({ theme, user }).
-
-hooks/useSettingsListener.ts: subscribe to settings → validate to TimelineSettings (zod optional) → setSettings.
-
-hooks/useItemIdsListener.ts: subscribe to itemIds; if > ITEM_CAP (15) set global error and abort; else store itemIds in a ref/state for fetch step.
 
 DoD: Console logs show listeners firing inside monday shell (or mocked locally).
 

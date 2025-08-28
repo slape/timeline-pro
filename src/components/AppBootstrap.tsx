@@ -1,12 +1,12 @@
 // src/app/AppBootstrap.tsx
-import { useViewOnlyGate } from "../hooks/useViewOnlyGate";
-import { useMondayContext } from "../hooks/useMondayContext";
-import { useSettingsListener } from "../hooks/useSettingsListener";
-import { useItemIdsListener } from "../hooks/useItemIdsListener";
-import { useBoardItems } from "../hooks/useBoardItems";
-import { useSyncHidden } from "../hooks/useSyncHidden";
-import { useSyncPositions } from "../hooks/useSyncPositions";
-import { useStore } from "../store";
+import { useViewOnlyGate } from "@/hooks/useViewOnlyGate";
+import { useMondayContext } from "@/hooks/useMondayContext";
+import { useSettingsListener } from "@/hooks/useSettingsListener";
+import { useItemIdsListener } from "@/hooks/useItemIdsListener";
+import { useBoardItems } from "@/hooks/useBoardItems";
+import { useSyncHidden } from "@/hooks/useSyncHidden";
+import { useSyncPositions } from "@/hooks/useSyncPositions";
+import { useStore } from "@/store";
 
 
 export default function AppBootstrap() {

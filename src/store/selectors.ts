@@ -1,6 +1,6 @@
 // src/store/selectors.ts
-import type { StoreState } from "../types/app";
-import type { TimelineItem } from "../types/Item";
+import type { StoreState } from "@/types/app";
+import type { TimelineItem } from "@/types/Item";
 
 // Primitive pieces
 export const selectItemsById = (s: StoreState) => s.itemsById;

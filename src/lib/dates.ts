@@ -1,6 +1,6 @@
 // src/lib/dates.ts
-import type { BoardItem, ColumnValue } from "../types/Item";
-import type { DateFormat } from "../types/settings";
+import type { BoardItem, ColumnValue } from "@/types/Item";
+import type { DateFormat } from "@/types/settings";
 
 /** monday date column is JSON-as-string. These are the common shapes. */
 type MondayDateJSON =

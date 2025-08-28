@@ -5,6 +5,8 @@ import { MondayContextMinimal } from "./monday_storage";
 // src/store/types.ts
 import type { StateCreator } from "zustand";
 
+export type ItemPosition = { yDelta?: number; laneId?: string };
+
 // StateCreator with our two middlewares: immer + subscribeWithSelector
 export type SliceCreator<T> = StateCreator<
   StoreState,
@@ -31,13 +33,21 @@ export type ContextSlice = {
 
 export type SettingsSlice = {
   settings: TimelineSettings | null;
-  setSettings: (s: Partial<TimelineSettings>) => void;
+  /** Merge-patch into settings; creates settings if null */
+  setSettings: (patch: Partial<TimelineSettings>) => void;
+  /** Replace settings entirely */
+  replaceSettings: (value: TimelineSettings | null) => void;
 };
 
+
 export type ItemsSlice = {
-  itemsById: Record<string, TimelineItem>;
+  // normalized map
+  itemsById: Record<string, (TimelineItem & ItemPosition)>;
+  // actions
   upsertItems: (items: TimelineItem[]) => void;
-  updatePosition: (id: string, patch: PositionPatch) => void;
+  removeItems: (ids: string[]) => void;
+  clearItems: () => void;
+  updatePosition: (id: string, patch: ItemPosition) => void;
 };
 
 export type UiSlice = {
@@ -48,4 +58,6 @@ export type UiSlice = {
 };
 
 /** The app-wide Zustand store state */
-export type StoreState = ContextSlice & SettingsSlice & ItemsSlice & UiSlice;
+export type StoreState = ContextSlice & SettingsSlice & ItemsSlice & UiSlice & {
+  reset: () => void;
+};

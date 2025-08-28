@@ -15,7 +15,5 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     globals: true,
     css: true,
-    // optional nice-to-haves:
-    // coverage: { reporter: ['text', 'html'], include: ['src/**/*.{ts,tsx}'] },
   },
 });

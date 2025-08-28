@@ -1,5 +1,5 @@
 // src/components/ErrorBanner.tsx
-import { useStore } from "../store";
+import { useStore } from "@/store";
 
 export default function ErrorBanner() {
   const error = useStore((s) => s.error);

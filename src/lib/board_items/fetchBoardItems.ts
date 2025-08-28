@@ -1,11 +1,11 @@
 // src/lib/fetchBoardItems.ts
 import mondaySdk from "monday-sdk-js";
-import TimelineLogger from "../utils/logger";
+import TimelineLogger from "@/lib/utils/logger";
 import { FETCH_ITEMS_WITH_DATES } from "./query";
 import { transformMondayItems } from "./transformItems";
-import { TimelineSettings } from "../../types/settings";
-import type { MondayContextMinimal } from "../../types/monday_storage";
-import { Err } from "../../types/errors";
+import { TimelineSettings } from "@/types/settings";
+import type { MondayContextMinimal } from "@/types/monday_storage";
+import { Err } from "@/types/errors";
 
 const monday = mondaySdk();
 

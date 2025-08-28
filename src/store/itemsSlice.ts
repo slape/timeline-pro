@@ -1,25 +1,31 @@
 // src/store/itemsSlice.ts
-import type { ItemsSlice, PositionPatch, SliceCreator } from "../types/app";
-import type { TimelineItem } from "../types/Item";
+import type { ItemsSlice, SliceCreator } from "@/types/app";
 
-export const createItemsSlice: SliceCreator<ItemsSlice> = (set, get, _api) => ({
+export const createItemsSlice: SliceCreator<ItemsSlice> = (set, get) => ({
   itemsById: {},
 
-  upsertItems: (items: TimelineItem[]) => {
+  upsertItems: (items) =>
     set((s) => {
       for (const it of items) {
         const prev = s.itemsById[it.id];
-        s.itemsById[it.id] = prev ? { ...prev, ...it } : it;
+        s.itemsById[it.id] = { ...it, yDelta: prev?.yDelta, laneId: prev?.laneId };
       }
-    });
-  },
+    }),
 
-  updatePosition: (id: string, patch: PositionPatch) => {
+  removeItems: (ids) =>
     set((s) => {
-      const it = s.itemsById[id];
-      if (!it) return;
-      if (patch.laneId !== undefined) it.laneId = patch.laneId;
-      if (patch.yDelta !== undefined) it.yDelta = patch.yDelta;
-    });
-  },
+      for (const id of ids) delete s.itemsById[id];
+    }),
+
+  clearItems: () =>
+    set((s) => {
+      s.itemsById = {};
+    }),
+
+  updatePosition: (id, patch) =>
+    set((s) => {
+      const curr = s.itemsById[id];
+      if (!curr) return;
+      s.itemsById[id] = { ...curr, ...patch };
+    }),
 });

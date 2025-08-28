@@ -1,7 +1,7 @@
 // src/hooks/useViewOnlyGate.ts
 import { useEffect } from "react";
-import { useStore } from "../store";
-import { Err } from "../types/errors";
+import { useStore } from "@/store";
+import { Err } from "@/types/errors";
 
 /**
  * Gate that blocks the app if the monday user is "view only".

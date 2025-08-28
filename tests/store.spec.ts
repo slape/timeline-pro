@@ -1,13 +1,9 @@
 // tests/unit/store.spec.ts
-import { describe, it, expect, beforeEach } from "vitest";
-import { useStore } from "../store";
-import type { TimelineItem } from "../types/Item";
+import { describe, it, expect } from "vitest";
+import { useStore } from "@/store";
+import type { TimelineItem } from "@/types/Item";
 
 describe("Zustand store", () => {
-  beforeEach(() => {
-    // reset between tests
-    useStore.setState({ itemsById: {}, error: undefined, hiddenIds: [], settings: null, context: null } as any, true);
-  });
 
   it("sets settings (DoD part 1)", () => {
     useStore.getState().setSettings({ position: "above", yDeltaStepPx: 24 } as any);

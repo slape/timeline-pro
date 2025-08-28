@@ -1,10 +1,10 @@
 // src/hooks/useSettingsListener.ts
 import { useEffect, useRef } from "react";
-import { useStore } from "../store";
-import { DEFAULT_SETTINGS } from "../lib/utils/constants";
+import { useStore } from "@/store";
+import { DEFAULT_SETTINGS } from "@/lib/utils/constants";
 import mondaySdk from "monday-sdk-js";
-import { omitUndefined } from "../lib/objects"; // from earlier
-import { TimelineSettings } from "../types/settings";
+import { omitUndefined } from "@/lib/objects"; // from earlier
+import { TimelineSettings } from "@/types/settings";
 
 const monday = mondaySdk();
 

@@ -1,6 +1,6 @@
 // tests/unit/dates.spec.ts
 import { describe, it, expect } from "vitest";
-import { parseMondayDateColumn } from "../lib/dates";
+import { parseMondayDateColumn } from "@/lib/dates";
 
 describe("parseMondayDateColumn", () => {
   it("parses date column JSON", () => {

@@ -1,5 +1,5 @@
 // src/lib/activeDate.ts
-import type { TimelineSettings } from "../../types/settings";
+import type { TimelineSettings } from "@/types/settings";
 
 type Col = { id: string; type: string; value?: string | null; text?: string | null; date?: string | null; time?: string | null; from?: string | null; to?: string | null; };
 type RawItem = { id: string | number; name?: string; group?: any; column_values?: Col[] };

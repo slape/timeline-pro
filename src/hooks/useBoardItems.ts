@@ -1,9 +1,9 @@
 // src/hooks/useBoardItems.ts
 import { useEffect, useRef } from "react";
-import { fetchBoardItems } from "../lib/board_items/fetchBoardItems";
-import { useStore } from "../store";
-import type { TimelineSettings } from "../types/settings";
-import type { MondayContextMinimal } from "../types/monday_storage";
+import { fetchBoardItems } from "@/lib/board_items/fetchBoardItems";
+import { useStore } from "@/store";
+import type { TimelineSettings } from "@/types/settings";
+import type { MondayContextMinimal } from "@/types/monday_storage";
 
 type CtxLike = { boardId?: string };
 

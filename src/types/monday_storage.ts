@@ -31,6 +31,7 @@ export type MondayContextMinimal = {
 };
 
 // ---- Helpers (optional) ----
-export const posKey = (boardId: string, itemId: string) => `tp:pos:${boardId}:${itemId}`;
+export type PosValue = { yDelta?: number; laneId?: string };
 export const hiddenKey = (boardId: string) => `tp:hidden:${boardId}`;
 export const settingsKey = (boardId: string) => `tp:settings:${boardId}`;
+export const posKey = (boardId: string, itemId: string) => `tp:pos:${boardId}:${itemId}`;

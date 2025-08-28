@@ -1,14 +1,22 @@
 // src/store/settingsSlice.ts
-import type { SettingsSlice, SliceCreator } from "../types/app";
-import { omitUndefined } from "../lib/objects";
+import type { SettingsSlice, SliceCreator } from "@/types/app";
+import { TimelineSettings } from "@/types/settings";
 
-export const createSettingsSlice: SliceCreator<SettingsSlice> = (set) => ({
+export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
   settings: null,
-  setSettings: (patch) => {
+
+  setSettings: (patch) =>
     set((s) => {
-      const safePatch = omitUndefined(patch);
-      s.settings = s.settings ? { ...s.settings, ...safePatch } : (safePatch as any);
-      // optional: if you want a guaranteed full object, merge a DEFAULTS here instead
-    });
-  },
+      if (!s.settings) {
+        // initialize if null
+        s.settings = { ...(patch as TimelineSettings) };
+      } else {
+        Object.assign(s.settings, patch);
+      }
+    }),
+
+  replaceSettings: (value) =>
+    set((s) => {
+      s.settings = value;
+    }),
 });

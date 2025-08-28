@@ -1,5 +1,4 @@
 // src/lib/errors.ts
-import type { AppError } from "../types/app";
 
 export const Err = {
   viewOnly:    (m = "View-only users cannot use this app."): { type: "viewOnly";    message: string } => ({ type: "viewOnly",    message: m }),

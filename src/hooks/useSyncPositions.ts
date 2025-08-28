@@ -1,66 +1,69 @@
 // src/persistence/useSyncPositions.ts
-import { useEffect, useMemo, useRef } from "react";
-import { useStore } from "../store";
-import { useStorageService } from "../services/StorageServiceContext";
-import { posKey } from "../types/monday_storage";
+import { useEffect, useMemo } from "react";
+import { useStore } from "@/store";
+import { useStorageService } from "@/services/StorageServiceContext";
+import { posKey } from "@/types/monday_storage";
 
-type PosValue = { yDelta?: number; laneId?: string };
+export function useSyncPositions(boardId?: string, itemIds: string[] = []) {
+  const svc = useStorageService();
+  const updatePosition = useStore((s) => s.updatePosition);
 
-export function useSyncPositions(boardId?: string | null, itemIds: string[] = []) {
-  const storage = useStorageService();
-  const itemsById = useStore((s) => s.itemsById);
-  const upsertItems = useStore((s) => s.upsertItems);
-  const hydratedRef = useRef(false);
+  // Stable key for deps so we don't resubscribe on each render if the caller passes a new array
+  const idsKey = useMemo(() => itemIds.join(","), [itemIds]);
 
-  // Hydrate positions for current items
+  // HYDRATE once items are present
   useEffect(() => {
     if (!boardId || itemIds.length === 0) return;
+
+    // check presence lazily from the store to avoid selector churn
+    const hasAll = itemIds.every((id) => !!useStore.getState().itemsById[id]);
+    if (!hasAll) return; // try again on next render when items exist
+
+    let cancelled = false;
     (async () => {
-      const patches: Array<{ id: string; patch: PosValue }> = [];
       for (const id of itemIds) {
-        const res = await storage.getInstanceItem<PosValue>(posKey(boardId, id));
-        if (res?.data?.success && res.data.value) {
-          patches.push({ id, patch: res.data.value });
+        try {
+          const res = await svc.getInstanceItem(posKey(boardId, id));
+          const val = res?.data?.value;
+          if (!cancelled && val && typeof val === "object") {
+            updatePosition(id, { yDelta: val.yDelta, laneId: val.laneId });
+          }
+        } catch {
+          // ignore hydrate errors
         }
       }
-      if (patches.length) {
-        upsertItems(
-          patches
-            .map(({ id, patch }) => {
-              const base = itemsById[id];
-              if (!base) return null;
-              return { ...base, ...patch };
-            })
-            .filter(Boolean) as any
-        );
-      }
-      hydratedRef.current = true;
-    })().catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boardId, itemIds.join(","), upsertItems, storage]);
+    })();
 
-  // Prepare payload to persist
-  const toPersist = useMemo(() => {
-    return itemIds.map((id) => {
-      const it = itemsById[id];
-      return { id, value: { yDelta: it?.yDelta, laneId: it?.laneId } as PosValue };
-    });
-  }, [itemsById, itemIds]);
+    return () => {
+      cancelled = true;
+    };
+  }, [boardId, idsKey, svc, updatePosition, itemIds]);
 
-  // Debounced persist
+  // PERSIST on changes (debounced)
   useEffect(() => {
-    if (!boardId || !hydratedRef.current) return;
-    const t = setTimeout(async () => {
-      try {
-        await Promise.all(
-          toPersist.map(({ id, value }) =>
-            storage.setInstanceItem(posKey(boardId, id), value, { versioning: true })
-          )
-        );
-      } catch {
-        // you can toast or retry here
+    if (!boardId || itemIds.length === 0) return;
+
+    let timer: any;
+    const unsub = useStore.subscribe(
+      (s) => itemIds.map((id) => ({ id, yDelta: s.itemsById[id]?.yDelta, laneId: s.itemsById[id]?.laneId })),
+      (snap) => {
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+          await Promise.all(
+            snap.map(({ id, yDelta, laneId }) =>
+              svc.setInstanceItem(posKey(boardId, id), { yDelta, laneId }, { versioning: true })
+            )
+          );
+        }, 250);
+      },
+      {
+        equalityFn: (a, b) => JSON.stringify(a) === JSON.stringify(b),
       }
-    }, 150);
-    return () => clearTimeout(t);
-  }, [boardId, toPersist, storage]);
+    );
+
+    return () => {
+      clearTimeout(timer);
+      unsub();
+    };
+  }, [boardId, idsKey, svc, itemIds]);
 }

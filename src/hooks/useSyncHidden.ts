@@ -1,8 +1,8 @@
 // src/persistence/useSyncHidden.ts
 import { useEffect, useRef } from "react";
-import { useStore } from "../store";
-import { useStorageService } from "../services/StorageServiceContext";
-import { hiddenKey } from "../types/monday_storage";
+import { useStore } from "@/store";
+import { useStorageService } from "@/services/StorageServiceContext";
+import { hiddenKey } from "@/types/monday_storage";
 
 export function useSyncHidden(boardId?: string | null) {
   const storage = useStorageService();

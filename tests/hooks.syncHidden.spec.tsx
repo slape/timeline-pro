@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { render, act } from "@testing-library/react";
 import { useEffect } from "react";
-import { StorageServiceProvider } from "../services/StorageServiceContext";
-import { useSyncHidden } from "../hooks/useSyncHidden";
-import { useStore } from "../store";
+import { StorageServiceProvider } from "@/services/StorageServiceContext";
+import { useSyncHidden } from "@/hooks/useSyncHidden";
+import { useStore } from "@/store";
 
 class MockStorage {
   getInstanceItem = vi.fn(async () => ({ data: { success: true, value: ["1","2"] } }));
@@ -28,6 +28,9 @@ describe("useSyncHidden", () => {
       </StorageServiceProvider>
     );
     // wait a tick for effects
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+    });
     await new Promise((r) => setTimeout(r, 10));
     expect(useStore.getState().hiddenIds).toEqual(["1","3"]);
     expect(svc.setInstanceItem).toHaveBeenCalledWith("tp:hidden:B1", ["1","3"], { versioning: true });
