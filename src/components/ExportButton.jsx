@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button, Modal, Box, Checkbox, Flex, Text, Heading } from "@vibe/core";
 import { toPng } from "html-to-image";
 import { useZustandStore } from "../../store/useZustand";

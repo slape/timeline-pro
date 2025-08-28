@@ -2,9 +2,9 @@
 import { ThemeProvider } from "@vibe/core";
 import { useStore } from "./store";
 import AppBootstrap from "./components/AppBootstrap";
-import ErrorBanner from "./components/";
-import TimelineCanvas from "./components/Timeline/TimelineCanvas";
-import ToolBar from "./components/ToolBar";
+import ErrorBanner from "./components/ErrorBanner";
+//import TimelineCanvas from "./components/Timeline/TimelineCanvas";
+//import ToolBar from "./components/ToolBar";
 
 /**
  * Root App component.
@@ -17,10 +17,10 @@ export default function App() {
 
   return (
     <ThemeProvider systemTheme={theme}>
+      {/* <ToolBar /> */}
+      {/* <TimelineCanvas /> */}
       <AppBootstrap />
       <ErrorBanner />
-      <TimelineCanvas />
-      <ToolBar />
     </ThemeProvider>
   );
 }
