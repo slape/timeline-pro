@@ -2,11 +2,12 @@
 import { useEffect, useRef } from "react";
 import { useStore } from "@/store";
 import { DEFAULT_SETTINGS } from "@/lib/utils/constants";
-import mondaySdk from "monday-sdk-js";
 import { omitUndefined } from "@/lib/objects"; // from earlier
 import { TimelineSettings } from "@/types/settings";
+import { listenSettings, setMondaySettings } from "@/lib/utils/mondayClient";
+import { Err } from "@/types/errors";
 
-const monday = mondaySdk();
+
 
 function isBlankSettings(s: any): boolean {
   // matches what you described explicitly
@@ -50,12 +51,20 @@ export function useSettingsListener() {
   const setSettings = useStore((s) => s.setSettings);
   const lastAppliedRef = useRef<Partial<TimelineSettings> | null>(null);
   const appliedDefaultsRef = useRef(false);
+  const replaceSettings = useStore((s) => s.replaceSettings);
+  const setError = useStore((s) => s.setError);
 
   useEffect(() => {
-    const unsub = monday.listen("settings", async (res: any) => {
-      const raw = res?.data ?? {};
+    listenSettings(async (raw) => {
       // Guard against noisy repeats
-      if (lastAppliedRef.current && deepEqual(lastAppliedRef.current, raw)) {
+      if (lastAppliedRef.current && deepEqual(lastAppliedRef.current, raw)) return;
+
+      // Validate date column
+      const hasDate = !!raw?.dateColumn && Object.keys(raw.dateColumn ?? {}).length > 0;
+      if (!hasDate) {
+        setError(Err.invalidDate("Select a date column in app settings."));
+        replaceSettings(null);
+        lastAppliedRef.current = null;
         return;
       }
 
@@ -63,7 +72,7 @@ export function useSettingsListener() {
       if (!appliedDefaultsRef.current && raw?.dateColumn && isBlankSettings(raw)) {
         const toWrite = { ...DEFAULT_SETTINGS, dateColumn: raw.dateColumn };
         try {
-          await monday.set("settings", toWrite);
+          setMondaySettings(toWrite);
           appliedDefaultsRef.current = true;
           // Also reflect in store immediately (optimistic)
           setSettings(toWrite);
@@ -82,6 +91,7 @@ export function useSettingsListener() {
       lastAppliedRef.current = raw;
     });
 
-    return () => { try { unsub && unsub(); } catch {} };
-  }, [setSettings]);
+     // monday.listen doesn’t expose unsubscribe, so just return a noop
+    return () => {};
+}, [replaceSettings, setError]);
 }

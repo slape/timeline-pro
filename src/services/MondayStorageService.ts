@@ -4,7 +4,7 @@
  * A service for interacting with the Monday.com Storage API.
  * Provides methods for both instance-level and global-level storage operations.
  */
-import { MondayStorageOptions, MondayStorageResponse } from '../types/monday_storage';
+import { MondayStorageOptions, MondayStorageResponse } from '../types/monday';
 import TimelineLogger from '../lib/utils/logger';
 /**
  * Service for interacting with Monday.com's Storage API

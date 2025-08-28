@@ -2,7 +2,7 @@
 import { useEffect, useMemo } from "react";
 import { useStore } from "@/store";
 import { useStorageService } from "@/services/StorageServiceContext";
-import { posKey } from "@/types/monday_storage";
+import { posKey } from "@/types/monday";
 
 export function useSyncPositions(boardId?: string, itemIds: string[] = []) {
   const svc = useStorageService();

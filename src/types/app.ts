@@ -1,7 +1,7 @@
 // src/types/app.ts
 import { TimelineItem } from "./Item";
 import { TimelineSettings } from "./settings";
-import { MondayContextMinimal } from "./monday_storage";
+import { MondayContextMinimal } from "./monday";
 // src/store/types.ts
 import type { StateCreator } from "zustand";
 

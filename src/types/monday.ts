@@ -1,4 +1,8 @@
 // Types for Monday Storage API responses
+export interface MondayApiResponse<TData = any> {
+  data: TData;
+  account_id: number;
+}
 export interface MondayStorageResponse<T = any> {
     method: string;
     data: {

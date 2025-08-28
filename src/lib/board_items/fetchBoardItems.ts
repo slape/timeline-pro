@@ -1,13 +1,23 @@
 // src/lib/fetchBoardItems.ts
-import mondaySdk from "monday-sdk-js";
 import TimelineLogger from "@/lib/utils/logger";
 import { FETCH_ITEMS_WITH_DATES } from "./query";
 import { transformMondayItems } from "./transformItems";
-import { TimelineSettings } from "@/types/settings";
-import type { MondayContextMinimal } from "@/types/monday_storage";
+import type { TimelineSettings } from "@/types/settings";
+import type { MondayContextMinimal } from "@/types/monday"; // <- adjust if yours differs
+import type { AppError } from "@/types/app";
 import { Err } from "@/types/errors";
+import { api } from "@/lib/utils/mondayClient"; // <- use the typed api wrapper
 
-const monday = mondaySdk();
+// Shape of the GraphQL `data` for FETCH_ITEMS_WITH_DATES
+type ItemsQueryData = {
+  items: Array<{
+    id: string;
+    name: string;
+    board: { id: string };
+    group: { id: string; title: string; color: string };
+    column_values: Array<{ id: string; value: string; type?: string; text?: string }>;
+  }>;
+};
 
 export async function fetchBoardItems(
   context: MondayContextMinimal | null,
@@ -15,19 +25,24 @@ export async function fetchBoardItems(
   settings: TimelineSettings,
   onItems: (items: any[]) => void,
   setIsLoading: (v: boolean) => void,
-  setError: (err: import("../../types/app").AppError | null) => void
+  setError: (err: AppError | null) => void
 ) {
-  if (!context?.boardId) { onItems([]); return; }
-
-  // If no date columns configured, that’s an invalid config
-  if (!settings?.dateColumn || Object.keys(settings.dateColumn).length === 0) {
-    setError(Err.invalidDate());
+  // Guard: need boardId
+  if (!context?.boardId) {
     onItems([]);
     return;
   }
 
+  // Guard: a chosen date column must exist
+  if (!settings?.dateColumn || Object.keys(settings.dateColumn).length === 0) {
+    setError(Err.invalidDate("Select a date column in app settings."));
+    onItems([]);
+    return;
+  }
+
+  // Guard: must have visible ids
   if (!itemIds?.length) {
-    setError(Err.noItems());
+    setError(Err.noItems("No items are selected on this board view."));
     onItems([]);
     return;
   }
@@ -35,13 +50,15 @@ export async function fetchBoardItems(
   setIsLoading(true);
   setError(null);
 
- try {
-    const resp = await monday.api(FETCH_ITEMS_WITH_DATES, { variables: { ids: itemIds } });
+  try {
+    // ✅ Use the centralized api() helper; variables go in the 2nd arg
+    const resp = await api<ItemsQueryData>(FETCH_ITEMS_WITH_DATES, { ids: itemIds });
     const items = resp?.data?.items ?? [];
+
     const mapped = transformMondayItems(items, settings);
 
     if (!mapped.length) {
-      // items returned but none had a valid value in the active date column
+      // items returned but none had a valid date under the active date column
       setError(Err.invalidDate("No valid dates found in the selected date column."));
       onItems([]);
     } else {
@@ -50,8 +67,7 @@ export async function fetchBoardItems(
     }
   } catch (e) {
     TimelineLogger.error("fetchBoardItems.failed", e);
-    // optional: add a dedicated loadFailed type to AppError/Err; or reuse invalidDate if you must
-    setError(Err.loadFailed("Failed to fetch board items") ?? Err.invalidDate("Failed to fetch board items"));
+    setError(Err.loadFailed?.("Failed to fetch board items") ?? Err.invalidDate("Failed to fetch board items"));
     onItems([]);
   } finally {
     setIsLoading(false);
