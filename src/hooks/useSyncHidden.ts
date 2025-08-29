@@ -10,19 +10,30 @@ export function useSyncHidden(boardId?: string | null) {
   const setHiddenIds = useStore((s) => s.setHiddenIds);
   const hydratedRef = useRef(false);
 
-  // Hydrate once
+  // HYDRATE once
   useEffect(() => {
     if (!boardId || hydratedRef.current) return;
     (async () => {
-      const res = await storage.getInstanceItem<string[]>(hiddenKey(boardId), { versioning: true });
-      if (res?.data?.success && Array.isArray(res.data.value)) setHiddenIds(res.data.value);
-      hydratedRef.current = true;
-    })().catch(() => {});
+      try {
+        const res = await storage.getInstanceItem<string[]>(hiddenKey(boardId), { versioning: true });
+        if (res?.data?.success && Array.isArray(res.data.value)) {
+          setHiddenIds(res.data.value);
+        }
+      } finally {
+        hydratedRef.current = true;
+      }
+    })();
   }, [boardId, setHiddenIds, storage]);
 
-  // Persist on changes (optimistic)
+  // PERSIST after hydration (queue a microtask to avoid racing immediate hydration write)
   useEffect(() => {
     if (!boardId || !hydratedRef.current) return;
-    storage.setInstanceItem(hiddenKey(boardId), hiddenIds, { versioning: true }).catch(() => {});
+    const t = setTimeout(() => {
+    // ✅ always a Promise; no TypeError if a mock returns undefined
+    Promise
+      .resolve(storage.setInstanceItem(hiddenKey(boardId), hiddenIds, { versioning: true }))
+      .catch(() => {});
+    }, 0);
+    return () => clearTimeout(t);
   }, [boardId, hiddenIds, storage]);
 }

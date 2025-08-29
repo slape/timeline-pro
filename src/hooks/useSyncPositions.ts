@@ -6,18 +6,17 @@ import { posKey } from "@/types/monday";
 
 export function useSyncPositions(boardId?: string, itemIds: string[] = []) {
   const svc = useStorageService();
-  const updatePosition = useStore((s) => s.updatePosition);
-
-  // Stable key for deps so we don't resubscribe on each render if the caller passes a new array
+  const updatePosition = useStore((s: any) => s.updatePosition);
   const idsKey = useMemo(() => itemIds.join(","), [itemIds]);
 
-  // HYDRATE once items are present
-  useEffect(() => {
-    if (!boardId || itemIds.length === 0) return;
+  // ✅ Track readiness so hydration effect retries when items appear
+  const itemsReady = useStore(
+    (s) => itemIds.length > 0 && itemIds.every((id) => Boolean(s.itemsById[id]))
+  );
 
-    // check presence lazily from the store to avoid selector churn
-    const hasAll = itemIds.every((id) => !!useStore.getState().itemsById[id]);
-    if (!hasAll) return; // try again on next render when items exist
+  // HYDRATE
+  useEffect(() => {
+    if (!boardId || !itemsReady) return;
 
     let cancelled = false;
     (async () => {
@@ -25,7 +24,7 @@ export function useSyncPositions(boardId?: string, itemIds: string[] = []) {
         try {
           const res = await svc.getInstanceItem(posKey(boardId, id));
           const val = res?.data?.value;
-          if (!cancelled && val && typeof val === "object") {
+          if (!cancelled && val && typeof val === "object" && typeof updatePosition === "function") {
             updatePosition(id, { yDelta: val.yDelta, laneId: val.laneId });
           }
         } catch {
@@ -37,12 +36,11 @@ export function useSyncPositions(boardId?: string, itemIds: string[] = []) {
     return () => {
       cancelled = true;
     };
-  }, [boardId, idsKey, svc, updatePosition, itemIds]);
+  }, [boardId, idsKey, svc, itemsReady, updatePosition, itemIds]);
 
-  // PERSIST on changes (debounced)
+  // PERSIST (unchanged)
   useEffect(() => {
     if (!boardId || itemIds.length === 0) return;
-
     let timer: any;
     const unsub = useStore.subscribe(
       (s) => itemIds.map((id) => ({ id, yDelta: s.itemsById[id]?.yDelta, laneId: s.itemsById[id]?.laneId })),
@@ -56,11 +54,8 @@ export function useSyncPositions(boardId?: string, itemIds: string[] = []) {
           );
         }, 250);
       },
-      {
-        equalityFn: (a, b) => JSON.stringify(a) === JSON.stringify(b),
-      }
+      { equalityFn: (a, b) => JSON.stringify(a) === JSON.stringify(b) }
     );
-
     return () => {
       clearTimeout(timer);
       unsub();
