@@ -40,3 +40,29 @@ describe("useBoardItems", () => {
     expect(Object.keys(s.itemsById)).toEqual(["I1","I2"]);
   });
 });
+
+describe("useBoardItems extras", () => {
+  it("handles empty itemIds", async () => {
+    function EmptyComp() {
+      useBoardItems({ context, itemIds: [], settings });
+      return null;
+    }
+    render(<EmptyComp />);
+    await new Promise((r) => setTimeout(r, 10));
+    const s = useStore.getState();
+    expect(Object.keys(s.itemsById)).toEqual([]); // no items added
+  });
+
+  it("handles null context", async () => {
+    function NoCtxComp() {
+      useBoardItems({ context: null, itemIds: ["I1"], settings });
+      return null;
+    }
+    render(<NoCtxComp />);
+    await new Promise((r) => setTimeout(r, 10));
+    const s = useStore.getState();
+    expect(Object.keys(s.itemsById)).toEqual([]); // no items added
+  });
+});
+
+

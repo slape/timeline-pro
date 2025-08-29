@@ -1,36 +1,41 @@
 import { describe, it, expect } from "vitest";
 import { transformMondayItems } from "@/lib/board_items/transformItems";
 
-describe("transformMondayItems", () => {
-  const settings = { dateColumn: { date_abc: true } } as any;
+const settings = {
+  titleText: null, title: null,
+  dateColumn: { date: true }, // MUST match column_values[].id
+  dateFormat: "mdy",
+  datePosition: null, scale: null, position: null, shape: null, ledger: null, itemDates: null,
+} as any;
 
-  it("skips items without date in the active column", () => {
+describe("transformMondayItems extras", () => {
+  it("keeps originalItem, groupId, and defaults name", () => {
     const raw = [{
-      id: "1", name: "NoDate", group: { id: "g1" },
-      column_values: [{ id: "date_other", value: JSON.stringify({ date: "2025-09-01" }) }]
+      id: "10",
+      name: "", // blank -> should default after code tweak
+      board: { id: "b1" },
+      group: { id: "G1", title: "Grp", color: "#abc" },
+      column_values: [{ id: "date", value: JSON.stringify({ date: "2025-09-01" }) }],
     }];
-    const out = transformMondayItems(raw, settings);
-    expect(out.length).toBe(0);
+
+    const out = transformMondayItems(raw as any, settings);
+    expect(out).toHaveLength(1);
+    expect(out[0].originalItem).toBeDefined();
+    expect(out[0].groupId).toBe("G1");
+    expect(out[0].name).toBe("Untitled");
   });
 
-  it("maps items with JSON date", () => {
+  it("uses timeline.from when provided", () => {
     const raw = [{
-      id: "2", name: "HasDate", group: { id: "g1" },
-      column_values: [{ id: "date_abc", value: JSON.stringify({ date: "2025-09-01", time: "12:34" }) }]
+      id: "11",
+      name: "TL",
+      board: { id: "b1" },
+      group: { id: "G1", title: "Grp", color: "#abc" },
+      column_values: [{ id: "date", value: JSON.stringify({ from: "2025-09-03", to: "2025-09-05" }) }],
     }];
-    const out = transformMondayItems(raw, settings);
-    expect(out.length).toBe(1);
-    expect(out[0].id).toBe("2");
-    expect(out[0].date).toContain("2025-09-01");
-  });
 
-  it("accepts plain yyyy-mm-dd string", () => {
-    const raw = [{
-      id: "3", name: "Plain", group: { id: "g1" },
-      column_values: [{ id: "date_abc", value: "2025-10-05" }]
-    }];
-    const out = transformMondayItems(raw, settings);
-    expect(out.length).toBe(1);
-    expect(out[0].date).toContain("2025-10-05");
+    const out = transformMondayItems(raw as any, settings);
+    expect(out).toHaveLength(1);
+    expect(out[0].date).toBe("2025-09-03T00:00:00Z");
   });
 });

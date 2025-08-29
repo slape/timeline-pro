@@ -10,10 +10,10 @@ export function transformMondayItems(raw: any[], settings: TimelineSettings): Ti
   for (const item of raw) {
     const iso = getActiveDateISO(item, settings);
     if (!iso) continue; // skip items without date in the active column
-
+    const name = typeof item.name === "string" && item.name.trim() ? item.name : "Untitled";
     out.push({
       id: String(item.id),
-      name: item.name ?? "Untitled",
+      name,
       date: iso,                 // ISO used for layout
       groupId: item.group?.id,
       originalItem: item,        // retains all date/timeline columns for instant switching

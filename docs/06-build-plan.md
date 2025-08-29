@@ -1,21 +1,5 @@
 ## Build Plan
 
-## Minimal monday API + normalization
-
-lib/mondayApi.ts: add two functions:
-
-fetchItems(itemIds: string[], columnId: string) → GraphQL for name, group{id,title,color}, column_values{id,value} filtered to the selected date column.
-
-updateItemDate(itemId: string, columnId: string, iso: string) → GraphQL mutation. (Use the monday SDK monday.api(query) under the hood; leave TODOs if token wiring is needed.)
-
-hooks/useBoardItems.ts: when itemIds and settings.dateColumn are ready → fetch → map to TimelineItem using dates.ts.
-
-lib/dates.ts: implement parseDate(value, format) and formatDate(date, format) for mdyy|md|mdy.
-
-DoD: With mock data, TimelineItem[] appears in store with parsed dates.
-
----
-
 ## App storage (positions, hidden, settings)
 
 lib/storage.ts: implement helpers using monday app storage:
