@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useStore } from "@/store";
 import { listenContext } from "@/lib/utils/mondayClient";
 import type { MondayContextMinimal } from "@/types/monday";
+import TimelineLogger from "@/lib/utils/logger";
 
 export function useMondayContext() {
   const setContext = useStore((s) => s.setContext);
@@ -26,7 +27,12 @@ export function useMondayContext() {
           ? String(ctx.boardIds[0])
           : null,
       };
-
+      TimelineLogger.debug("[TEST] context.applied", {
+        theme: minimal.theme,
+        boardId: minimal.boardId,
+        userId: minimal.user.id,
+        viewOnly: minimal.user.isViewOnly,
+      });
       setContext(minimal);
     });
 

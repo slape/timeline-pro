@@ -1,5 +1,5 @@
 // src/store/settingsSlice.ts
-import type { SettingsSlice, SliceCreator } from "@/types/app";
+import type { SettingsSlice, SliceCreator } from "@/types/store";
 import { TimelineSettings } from "@/types/settings";
 
 export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({

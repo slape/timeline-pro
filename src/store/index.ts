@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 
-import type { StoreState } from "@/types/app";
+import type { StoreState } from "@/types/store";
 import { createContextSlice } from "./contextSlice";
 import { createSettingsSlice } from "./settingsSlice";
 import { createItemsSlice } from "./itemsSlice";

@@ -1,5 +1,5 @@
 // src/store/selectors.ts
-import type { StoreState } from "@/types/app";
+import type { StoreState } from "@/types/store";
 import type { TimelineItem } from "@/types/Item";
 
 // Primitive pieces

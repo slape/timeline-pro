@@ -1,5 +1,5 @@
 // src/store/itemsSlice.ts
-import type { ItemsSlice, SliceCreator } from "@/types/app";
+import type { ItemsSlice, SliceCreator } from "@/types/store";
 
 export const createItemsSlice: SliceCreator<ItemsSlice> = (set, get) => ({
   itemsById: {},

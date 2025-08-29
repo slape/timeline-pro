@@ -39,7 +39,6 @@ export type SettingsSlice = {
   replaceSettings: (value: TimelineSettings | null) => void;
 };
 
-
 export type ItemsSlice = {
   // normalized map
   itemsById: Record<string, (TimelineItem & ItemPosition)>;

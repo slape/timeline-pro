@@ -5,9 +5,8 @@ import { DEFAULT_SETTINGS } from "@/lib/utils/constants";
 import { omitUndefined } from "@/lib/objects"; // from earlier
 import { TimelineSettings } from "@/types/settings";
 import { listenSettings, setMondaySettings } from "@/lib/utils/mondayClient";
+import TimelineLogger from "@/lib/utils/logger";
 import { Err } from "@/types/errors";
-
-
 
 function isBlankSettings(s: any): boolean {
   // matches what you described explicitly
@@ -62,6 +61,7 @@ export function useSettingsListener() {
       // Validate date column
       const hasDate = !!raw?.dateColumn && Object.keys(raw.dateColumn ?? {}).length > 0;
       if (!hasDate) {
+        TimelineLogger.warn("Settings invalid: no date column");
         setError(Err.invalidDate("Select a date column in app settings."));
         replaceSettings(null);
         lastAppliedRef.current = null;
@@ -71,6 +71,7 @@ export function useSettingsListener() {
       // If dateColumn exists and the rest is “blank”, apply defaults once
       if (!appliedDefaultsRef.current && raw?.dateColumn && isBlankSettings(raw)) {
         const toWrite = { ...DEFAULT_SETTINGS, dateColumn: raw.dateColumn };
+        TimelineLogger.debug("[TEST] settings.seed.defaults", { toWrite });
         try {
           setMondaySettings(toWrite);
           appliedDefaultsRef.current = true;
@@ -87,6 +88,7 @@ export function useSettingsListener() {
       // For normal (or post-default) settings: normalize & set
       const normalized = normalizeIncoming(raw);
       // No undefined fields hit the store (fixes your TS WritableDraft error)
+      TimelineLogger.debug("[TEST] settings.apply", { keys: Object.keys(normalized) });
       setSettings(normalized);
       lastAppliedRef.current = raw;
     });

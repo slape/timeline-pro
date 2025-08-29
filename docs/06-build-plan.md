@@ -1,13 +1,5 @@
 ## Build Plan
 
-## monday SDK client & listeners
-
-lib/mondayClient.ts: wrap SDK init and monday.listen calls for context, settings, itemIds.
-
-DoD: Console logs show listeners firing inside monday shell (or mocked locally).
-
----
-
 ## Minimal monday API + normalization
 
 lib/mondayApi.ts: add two functions:
