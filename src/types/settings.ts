@@ -24,11 +24,11 @@ export type DatePosition =
   | "angled-below"
   | "none";
 export type Scale =
-  | "day"
-  | "week"
-  | "month"
-  | "quarter"
-  | "year"
+  | "days"
+  | "weeks"
+  | "months"
+  | "quarters"
+  | "years"
   | "none";
 export type Position = "above" | "below" | "alternate";
 export type Shape = "circle" | "rectangle";

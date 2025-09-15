@@ -4,7 +4,7 @@ import { useStore } from "@/store";
 import { useStorageService } from "@/services/StorageServiceContext";
 import { posKey } from "@/types/monday";
 
-export function useSyncPositions(boardId?: string, itemIds: string[] = []) {
+export function useSyncPositions(boardId?: string | null, itemIds: string[] = []) {
   const svc = useStorageService();
   const updatePosition = useStore((s: any) => s.updatePosition);
   const idsKey = useMemo(() => itemIds.join(","), [itemIds]);

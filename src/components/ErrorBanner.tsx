@@ -1,5 +1,6 @@
 // src/components/ErrorBanner.tsx
 import { useStore } from "@/store";
+import { AttentionBox } from "@vibe/core";
 
 export default function ErrorBanner() {
   const error = useStore((s) => s.error);
@@ -15,7 +16,7 @@ export default function ErrorBanner() {
       title = "Invalid Date Column";
       break;
     case "tooManyItems":
-      title = "Too Many Items";
+      title = "Too Many Board Items";
       break;
     case "noItems":
       title = "No Items";
@@ -24,11 +25,17 @@ export default function ErrorBanner() {
 
   return (
     <div
-      role="alert"
-      className="tp-error-banner p-4 bg-red-50 border border-red-300 text-red-800 rounded-md mb-4"
-    >
-      <h3 className="font-semibold">{title}</h3>
-      <p>{error.message}</p>
-    </div>
+  style={{
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  height: '100vh'
+}}
+>
+  <AttentionBox
+    text={error.message}
+    title={title}
+  />
+</div>
   );
 }

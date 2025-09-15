@@ -16,7 +16,7 @@ function isBlankSettings(s: any): boolean {
     s.title === false &&
     s.dateFormat === null &&
     s.datePosition === null &&
-    (s.scale === null || s.scale === "weeks") && // allow "weeks" from earlier code
+    s.scale === null &&
     s.position === null &&
     s.shape === null &&
     s.ledger === false &&
@@ -25,15 +25,13 @@ function isBlankSettings(s: any): boolean {
 }
 
 function normalizeIncoming(s: any): Partial<TimelineSettings> {
-  // sanitize oddities and normalize plural "weeks" -> "week"
-  const scaleNorm = s.scale === "weeks" ? "week" : s.scale;
   return omitUndefined({
     titleText: s.titleText ?? null,
     title: typeof s.title === "boolean" ? s.title : null,
     dateColumn: s.dateColumn, // keep as-is; required
     dateFormat: s.dateFormat ?? null,
     datePosition: s.datePosition ?? null,
-    scale: scaleNorm ?? null,
+    scale: s.scale ?? null,
     position: s.position ?? null,
     shape: s.shape ?? null,
     ledger: typeof s.ledger === "boolean" ? s.ledger : null,

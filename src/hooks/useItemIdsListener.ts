@@ -16,11 +16,11 @@ export function useItemIdsListener(): string[] {
       const asStrings = (next ?? []).map(String);
 
       if (asStrings.length > ITEM_CAP) {
-        TimelineLogger.warn("Too many items selected", { count: asStrings.length, cap: ITEM_CAP });
+        TimelineLogger.warn("Too many board items selected", { count: asStrings.length, cap: ITEM_CAP });
         // cap exceeded → surface error and clear ids so the timeline won’t render
         setError(
           Err.tooManyItems(
-            `Too many items selected (${asStrings.length}). Limit is ${ITEM_CAP}.`
+            `Too many board items selected (${asStrings.length}). Filter your board view to 15 items or less.`
           )
         );
         setIds([]);
