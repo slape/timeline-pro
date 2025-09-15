@@ -16,7 +16,7 @@ export const DEFAULT_SETTINGS: Omit<TimelineSettings, "dateColumn"> & { dateForm
   title: true,
   dateFormat: "md",
   datePosition: "angled-below" as DatePosition,
-  scale: "week" as Scale,          // normalize to "week" (not "weeks")
+  scale: "weeks" as Scale, 
   position: "above" as Position,
   shape: "circle" as Shape,
   ledger: true,
@@ -134,10 +134,10 @@ export const DRAGGABLE_ITEM_STYLES = {
 
 /**
  * Get timeline position ratio based on position setting
- * @param {string} position - Position setting ('above', 'below', 'center')
+ * @param {DatePosition} position - Position setting ('above', 'below', 'center')
  * @returns {number} Position ratio (0.25, 0.5, or 0.75)
  */
-export const getTimelinePositionRatio = (position) => {
+export const getTimelinePositionRatio = (position: string) => {
   switch (position) {
     case UI_COMPONENTS.POSITION_ABOVE_STR:
       return TIMELINE_LAYOUT.POSITION_ABOVE;
@@ -153,7 +153,7 @@ export const getTimelinePositionRatio = (position) => {
  * @param {string} position - Position setting ('above', 'below', 'center')
  * @returns {string} CSS top value ('25%', '50%', or '75%')
  */
-export const getTimelineTopCSS = (position) => {
+export const getTimelineTopCSS = (position: string) => {
   switch (position) {
     case UI_COMPONENTS.POSITION_ABOVE_STR:
       return UI_COMPONENTS.TIMELINE_TOP_ABOVE;
